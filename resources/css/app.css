@@ -1,0 +1,13 @@
+/* Einstiegspunkt fuer das Stylesheet. Wird zu public/css/app.css kompiliert
+   (`just css`). Reihenfolge ist bedeutsam: erst Tailwind, dann Tokens, dann
+   Komponenten. */
+
+@import "tailwindcss";
+@import "./theme.css";
+@import "./components.css";
+
+/* Tailwind muss wissen, wo es nach Klassennamen suchen soll.
+   Templates UND PHP-Quellen, denn auch Controller geben teils Klassen zurueck
+   (z. B. die Farbfelder im Styleguide). */
+@source "../views";
+@source "../../app";

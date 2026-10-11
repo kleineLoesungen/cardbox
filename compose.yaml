@@ -1,0 +1,82 @@
+# Zwei Betriebsarten:
+#
+#   just db-up   -> nur Postgres im Container, Anwendung laeuft nativ (schnellste Schleife)
+#   just up      -> alles im Container, so wie in Produktion
+#
+# In Produktion ist die Datenbank extern; dann faellt der `db`-Dienst weg und
+# DB_HOST zeigt auf den echten Server.
+
+# Fester Projektname. Ohne diese Zeile leitet Docker ihn vom Ordnernamen ab —
+# beim Umbenennen oder Kopieren des Verzeichnisses waeren die Container und
+# vor allem das Datenbank-Volume ploetzlich andere, und die lokalen Daten
+# scheinbar verschwunden.
+name: starter-php
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: starter
+      POSTGRES_PASSWORD: starter
+      POSTGRES_DB: starter
+    ports:
+      # 56432 statt 5432, damit eine lokal installierte Postgres (oder das
+      # Rust-Kit auf 55432) nicht kollidiert.
+      - "56432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Legt beim ersten Start zusaetzlich die Testdatenbank an.
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-testdb.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U starter"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mail:
+    # Mailpit nimmt jede Mail an und verschickt NICHTS. Die Mails erscheinen
+    # in einer Weboberflaeche — zum Ansehen von Layout und Links, ohne dass
+    # beim Testen versehentlich echte Adressen etwas bekommen.
+    image: axllent/mailpit:latest
+    ports:
+      # Eigene Ports statt 1025/8025, damit ein Mailpit aus einem anderen
+      # Projekt nicht kollidiert.
+      - "52025:1025"   # SMTP
+      - "59025:8025"   # Weboberflaeche: http://localhost:59025
+
+  app:
+    # Nur mit `--profile app`, damit `just db-up` nicht die ganze Anwendung baut.
+    profiles: ["app"]
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: Starter
+      APP_ENV: production
+      APP_DEBUG: "false"
+      # Nur fuer den lokalen Containerlauf. In Produktion ein eigener Schluessel:
+      #   php artisan key:generate --show
+      APP_KEY: base64:c3RhcnRlci1waHAtbnVyLWxva2FsLW5pY2h0LWVjaHQ=
+      APP_URL: http://localhost:8000
+      # Im Container-Netz heisst der Datenbankrechner "db", nicht "localhost".
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: starter
+      DB_USERNAME: starter
+      DB_PASSWORD: starter
+      SESSION_SECURE_COOKIE: "false"
+      # Im Container-Netz heisst Mailpit "mail".
+      MAIL_MAILER: smtp
+      MAIL_HOST: mail
+      MAIL_PORT: "1025"
+      MAIL_FROM_ADDRESS: noreply@localhost
+      MAIL_FROM_NAME: Starter
+      LOG_LEVEL: info
+    depends_on:
+      db:
+        condition: service_healthy
+      mail:
+        condition: service_started
+
+volumes:
+  db-data:

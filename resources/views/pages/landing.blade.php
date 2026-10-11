@@ -1,0 +1,41 @@
+@extends('layouts.base')
+@section('title', 'Start')
+
+@section('body')
+<div class="flex min-h-dvh flex-col">
+  <header class="border-b border-border">
+    <div class="container-app flex h-14 items-center">
+      <span class="font-semibold tracking-tight">{{ $branding->name }}</span>
+      <div class="ml-auto flex items-center gap-2">
+        @auth
+          <a href="/dashboard" class="btn btn-primary btn-sm">Zur Übersicht</a>
+        @else
+          @if ($firstSetup)
+            <a href="/register" class="btn btn-primary btn-sm">Einrichten</a>
+          @else
+            <a href="/login" class="btn btn-primary btn-sm">Anmelden</a>
+          @endif
+        @endauth
+      </div>
+    </div>
+  </header>
+
+  <main class="container-app flex flex-1 flex-col items-center justify-center gap-6 py-20 text-center">
+    <h1 class="max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+      Startpunkt für Webanwendungen in PHP
+    </h1>
+    <p class="max-w-xl text-balance text-muted">
+      Laravel, Blade und htmx auf einer externen Postgres-Datenbank.
+      Anmeldung, Rollen und App-Tokens sind bereits eingebaut.
+    </p>
+    <div class="flex flex-wrap justify-center gap-3">
+      @if ($firstSetup)
+        <a href="/register" class="btn btn-primary btn-lg">Ersten Administrator anlegen</a>
+      @else
+        <a href="/login" class="btn btn-primary btn-lg">Anmelden</a>
+      @endif
+      <a href="/styleguide" class="btn btn-secondary btn-lg">Styleguide ansehen</a>
+    </div>
+  </main>
+</div>
+@endsection

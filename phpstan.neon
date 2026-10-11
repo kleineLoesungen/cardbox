@@ -1,0 +1,12 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+        - routes/
+        - config/
+        - database/
+    # Stufe 6: prueft Typen von Parametern und Rueckgaben, ohne jede
+    # Sammlung bis ins letzte Element beschriften zu muessen.
+    level: 6
