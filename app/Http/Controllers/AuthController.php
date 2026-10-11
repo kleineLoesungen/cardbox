@@ -74,7 +74,7 @@ class AuthController extends Controller
         // Zurueck dorthin, wo der Benutzer hinwollte. Laravel speichert das Ziel
         // in der Session, nicht in der URL — eine offene Weiterleitung ist so
         // nicht moeglich.
-        return redirect()->intended('/dashboard');
+        return redirect()->intended('/learn');
     }
 
     /** Registration form, or the confirmation after a successful registration. */
@@ -105,7 +105,7 @@ class AuthController extends Controller
 
         Log::info('Ersteinrichtung abgeschlossen', ['user_id' => $user->id]);
 
-        return redirect('/dashboard');
+        return redirect('/learn');
     }
 
     /**

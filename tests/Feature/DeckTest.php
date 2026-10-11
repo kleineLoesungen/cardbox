@@ -140,7 +140,7 @@ describe('Eigene Stapel', function () {
         Deck::factory()->shared()->create(['name' => 'Fremder']);
 
         $this->get('/decks')->assertSee('Eigener')->assertSee('Gefolgter')->assertDontSee('Fremder');
-        $this->get('/dashboard')->assertSee('Eigener')->assertSee('Gefolgter');
+        $this->get('/learn')->assertSee('Eigener')->assertSee('Gefolgter');
     });
 });
 

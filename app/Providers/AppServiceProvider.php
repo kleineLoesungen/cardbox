@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\LeitnerService;
 use App\Services\UserService;
 use App\Support\Branding;
 use App\Support\Changelog;
@@ -14,7 +15,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // One instance per request: caches the learning plan between services.
+        $this->app->scoped(LeitnerService::class);
     }
 
     public function boot(): void

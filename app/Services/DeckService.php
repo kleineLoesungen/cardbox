@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\Language;
 use App\Models\Card;
+use App\Models\CardProgress;
 use App\Models\Deck;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,17 +48,26 @@ class DeckService
      */
     public function mine(User $user): Collection
     {
-        return Deck::query()
+        return $this->mineQuery($user)
             ->with('user')
             ->withCount(['cards', 'followers'])
-            ->where(fn (Builder $q) => $q
-                ->where('user_id', $user->id)
-                ->orWhere(fn (Builder $q) => $q
-                    ->where('is_shared', true)
-                    ->whereHas('followers', fn (Builder $f) => $f->whereKey($user->id))))
             ->orderByRaw('user_id = ? DESC', [$user->id])
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Query behind "Meine Stapel" — also what "Los geht's" learns from.
+     *
+     * @return Builder<Deck>
+     */
+    public function mineQuery(User $user): Builder
+    {
+        return Deck::query()->where(fn (Builder $q) => $q
+            ->where('user_id', $user->id)
+            ->orWhere(fn (Builder $q) => $q
+                ->where('is_shared', true)
+                ->whereHas('followers', fn (Builder $f) => $f->whereKey($user->id))));
     }
 
     /**
@@ -247,7 +257,8 @@ class DeckService
     /**
      * Copy a visible deck into a new private deck of the user, with copies of
      * all cards. The copy is independent: later changes to the original do
-     * not reach it.
+     * not reach it. The user's own progress on the cards is copied along, so
+     * following first and copying later does not start from scratch.
      *
      * @throws ModelNotFoundException<Deck>
      */
@@ -267,19 +278,48 @@ class DeckService
             $copy->save();
 
             $now = now();
+            $newIds = [];
             $rows = $original->cards()->orderBy('created_at')->get()
-                ->map(fn (Card $card) => [
+                ->map(function (Card $card) use ($copy, $now, &$newIds) {
+                    $newIds[$card->id] = (string) Str::uuid();
+
+                    return [
+                        'id' => $newIds[$card->id],
+                        'deck_id' => $copy->id,
+                        'front' => json_encode($card->front, JSON_UNESCAPED_UNICODE),
+                        'back' => json_encode($card->back, JSON_UNESCAPED_UNICODE),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })
+                ->all();
+
+            foreach (array_chunk($rows, 500) as $chunk) {
+                Card::insert($chunk);
+            }
+
+            // Only the copying person's progress — never anybody else's.
+            $progress = CardProgress::query()
+                ->where('user_id', $user->id)
+                ->whereIn('card_id', array_keys($newIds))
+                ->get()
+                ->map(fn (CardProgress $p) => [
                     'id' => (string) Str::uuid(),
-                    'deck_id' => $copy->id,
-                    'front' => json_encode($card->front, JSON_UNESCAPED_UNICODE),
-                    'back' => json_encode($card->back, JSON_UNESCAPED_UNICODE),
+                    'user_id' => $user->id,
+                    'card_id' => $newIds[$p->card_id],
+                    'direction' => $p->direction->value,
+                    'box' => $p->box,
+                    'due_on' => $p->due_on?->toDateString(),
+                    'last_reviewed_at' => $p->last_reviewed_at,
+                    'review_count' => $p->review_count,
+                    'correct_count' => $p->correct_count,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ])
                 ->all();
 
-            foreach (array_chunk($rows, 500) as $chunk) {
-                Card::insert($chunk);
+            foreach (array_chunk($progress, 500) as $chunk) {
+                CardProgress::insert($chunk);
             }
 
             return $copy;

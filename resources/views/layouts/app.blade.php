@@ -23,7 +23,7 @@
   <header class="sticky top-0 z-30 border-b border-border bg-surface-raised/85 backdrop-blur">
     <div class="container-app flex h-14 items-center gap-2">
 
-      <a href="/dashboard" class="row mr-2 shrink-0 font-semibold tracking-tight">
+      <a href="/learn" class="row mr-2 shrink-0 font-semibold tracking-tight">
         <span class="grid size-7 place-items-center rounded-ui bg-brand text-brand-content text-xs font-bold">
           {{ $branding->initial() }}
         </span>
@@ -81,7 +81,7 @@
 
 {{-- --- Untere Leiste, nur auf schmalen Bildschirmen ------------------------ --}}
 <nav class="tabbar lg:hidden" aria-label="Hauptnavigation">
-  <a href="/dashboard" class="tab {{ request()->is('dashboard') ? 'tab-active' : '' }}">
+  <a href="/learn" class="tab {{ request()->is('learn') ? 'tab-active' : '' }}">
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>

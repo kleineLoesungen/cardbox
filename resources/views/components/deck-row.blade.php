@@ -1,8 +1,9 @@
 {{--
   One deck in a list: name, direction, card count; for other people's decks
-  the owner's display name (never the username).
+  the owner's display name (never the username). With learning stats: share
+  of mastered cards and cards due today.
 --}}
-@props(['deck'])
+@props(['deck', 'stats' => null])
 @php($own = $deck->user_id === auth()->id())
 <li>
   <a href="/decks/{{ $deck->id }}" class="list-row">
@@ -14,8 +15,15 @@
       @unless ($own)
         <span class="block truncate text-xs text-subtle">von {{ $deck->user->name }}</span>
       @endunless
+      @if ($stats !== null && ($deck->cards_count ?? 0) > 0)
+        <span class="meter meter-success mt-2" title="{{ $stats['mastered_percent'] }} % kann ich">
+          <span style="width: {{ $stats['mastered_percent'] }}%"></span>
+        </span>
+      @endif
     </span>
-    @if ($own && $deck->is_shared)
+    @if ($stats !== null && $stats['due'] > 0)
+      <span class="badge badge-brand shrink-0">{{ $stats['due'] }} fällig</span>
+    @elseif ($own && $deck->is_shared)
       <span class="badge badge-brand shrink-0" title="Mit allen geteilt">geteilt</span>
     @elseif ($own)
       <span class="badge badge-neutral shrink-0" title="Nur für dich sichtbar">privat</span>

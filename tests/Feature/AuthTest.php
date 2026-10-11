@@ -24,7 +24,7 @@ describe('Ersteinrichtung', function () {
 
     it('macht das erste Konto zum freigegebenen Administrator und meldet es an', function () {
         $this->post('/register', registration(['username' => ' Erste.Person ']))
-            ->assertRedirect('/dashboard');
+            ->assertRedirect('/learn');
 
         $user = User::sole();
         expect($user->role)->toBe(Role::Admin)
@@ -116,7 +116,7 @@ describe('Anmelden', function () {
         $user = User::factory()->create(['username' => 'anna']);
 
         $this->post('/login', ['username' => ' ANNA ', 'password' => UserFactory::PASSWORD])
-            ->assertRedirect('/dashboard');
+            ->assertRedirect('/learn');
 
         $this->assertAuthenticatedAs($user);
     });
@@ -169,11 +169,11 @@ describe('Anmelden', function () {
 
     it('meldet ein Konto bei der nächsten Anfrage ab, sobald es gesperrt wird', function () {
         $user = actingAsUser();
-        $this->get('/dashboard')->assertOk();
+        $this->get('/learn')->assertOk();
 
         $user->update(['is_active' => false]);
 
-        $this->get('/dashboard')->assertRedirect('/login');
+        $this->get('/learn')->assertRedirect('/login');
         $this->assertGuest();
     });
 
@@ -186,7 +186,7 @@ describe('Anmelden', function () {
 
     it('leitet Gäste von geschützten Seiten zum Login', function (string $path) {
         $this->get($path)->assertRedirect('/login');
-    })->with(['/dashboard', '/notes', '/account', '/moderation', '/admin/users']);
+    })->with(['/learn', '/dashboard', '/learn/round', '/notes', '/account', '/moderation', '/admin/users']);
 });
 
 describe('Anmeldebremse', function () {

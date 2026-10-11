@@ -40,7 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Wer nicht angemeldet ist, landet beim Login. Laravel merkt sich das
         // Ziel (url.intended) und schickt nach dem Anmelden dorthin zurueck.
         $middleware->redirectGuestsTo('/login');
-        $middleware->redirectUsersTo('/dashboard');
+        $middleware->redirectUsersTo('/learn');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // --- JSON-Schnittstelle: Fehler immer als {"error": {...}} -----------

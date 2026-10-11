@@ -375,3 +375,53 @@
   }
   .sheet-action-danger { @apply text-danger; }
 }
+
+/* =========================================================================
+   Cardbox — learning (stage 2)
+   ========================================================================= */
+@layer components {
+
+  /* --- Progress meter ("3 / 12", share of mastered cards) ------------- */
+  .meter {
+    @apply block h-2 w-full overflow-hidden rounded-full bg-surface-sunken;
+  }
+  .meter > span { @apply block h-full rounded-full bg-brand transition-[width]; }
+  .meter-success > span { @apply bg-success; }
+
+  /* --- Flash card with a 3D flip -------------------------------------- */
+  /*
+    Both faces are stacked in one grid cell, so the card is as tall as the
+    taller face without fixed heights. With reduced motion the global rule
+    in app.css turns the transition off and the card simply switches.
+  */
+  .flashcard { perspective: 1200px; }
+  .flashcard-inner {
+    @apply grid min-h-64 w-full rounded-2xl text-center;
+    transform-style: preserve-3d;
+    transition: transform 400ms ease;
+  }
+  .is-flipped .flashcard-inner { transform: rotateY(180deg); }
+  .flashcard-face {
+    @apply flex min-w-0 flex-col items-center justify-center gap-3 rounded-2xl
+           border border-border bg-surface-raised px-5 py-8 shadow-sm;
+    grid-area: 1 / 1;
+    backface-visibility: hidden;
+  }
+  .flashcard-back { transform: rotateY(180deg); }
+  .flashcard-text { @apply max-w-full font-semibold break-words text-balance; }
+
+  /* --- Box tiles on the deck page ("Neu · 1 · 2 · … · Kann ich") ------- */
+  .box-tiles {
+    @apply grid gap-1.5;
+    grid-template-columns: repeat(var(--boxes), minmax(0, 1fr));
+  }
+  .box-tile {
+    @apply flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5
+           rounded-ui bg-surface-sunken px-1 py-2 text-center transition-colors
+           hover:bg-border;
+  }
+  .box-tile-count { @apply text-lg font-semibold tabular-nums; }
+  .box-tile-label { @apply max-w-full text-[0.6875rem] leading-tight text-muted; }
+  .box-tile-mastered { @apply bg-success-subtle text-success; }
+  .box-tile-mastered .box-tile-label { @apply text-success; }
+}

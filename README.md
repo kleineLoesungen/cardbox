@@ -23,11 +23,11 @@ htmx statt Nuxt.
 |---|---|---|
 | Konten: Anmeldung mit Benutzername, Registrierung mit Freigabe | ✅ fertig | [konten-ohne-email.md](docs/specs/konten-ohne-email.md) |
 | Stapel und Karten: anlegen, Liste einfügen, folgen, kopieren | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
-| Lernen: Karteikasten, Lernrunde, freies Üben, Lernserie | 🔜 Stufe 2 | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
+| Lernen: Karteikasten, Lernrunde, freies Üben, Lernserie | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
 | Feinschliff: Lernplan, Hilfe, Vorlesen, Wischgesten | 🔜 Stufe 3 | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
 
-Gelernt wird ab Stufe 2. Bis dahin zeigt „Heute“ die eigenen und gefolgten
-Stapel.
+Als Nächstes kommt der Feinschliff: eigener Lernplan, Hilfeseite, Vorlesen
+und Wischgesten.
 
 ---
 
@@ -151,7 +151,7 @@ vor jedem `git commit` aus und bricht bei einem roten Ergebnis ab.
 
 ```
 app/Services/          Fachlogik und Validierung — kennt weder Request noch View
-                       (DeckService, CardService, CardImportService, UserService …)
+                       (DeckService, CardService, LeitnerService, StudyRoundService …)
 app/Http/Controllers/  dünne HTML-Controller; Api/V1/ für JSON
 app/Models/            Daten und Beziehungen, keine Regeln
 routes/web.php         wer was darf, entscheidet die Routengruppe

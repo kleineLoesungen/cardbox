@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Direction;
 use App\Services\CardService;
 use App\Services\DeckService;
+use App\Services\LearningOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +16,11 @@ use Illuminate\View\View;
  */
 class DeckController extends Controller
 {
-    public function __construct(private DeckService $decks, private CardService $cards) {}
+    public function __construct(
+        private DeckService $decks,
+        private CardService $cards,
+        private LearningOverviewService $overview,
+    ) {}
 
     /** "Meine" and "Entdecken" on one page, switched by ?tab=. */
     public function index(Request $request): View
@@ -47,10 +53,15 @@ class DeckController extends Controller
         $user = $request->user();
         $model = $this->decks->getVisible($user, $deck);
         $isOwner = $model->isOwnedBy($user);
+        $direction = Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward;
+        $cards = $this->cards->listForDeck($model);
 
         return view('decks.show', [
             'deck' => $model,
-            'cards' => $this->cards->listForDeck($model),
+            'direction' => $direction,
+            // Only needed when there is something to learn.
+            'boxes' => $cards->isEmpty() ? null : $this->overview->boxes($user, $model, $direction, $cards->count()),
+            'cards' => $cards,
             'isOwner' => $isOwner,
             'isFollowing' => ! $isOwner && $this->decks->isFollowing($user, $model),
             'followerCount' => $this->decks->followerCount($model),
@@ -95,6 +106,28 @@ class DeckController extends Controller
         $this->decks->unfollow($request->user(), $deck);
 
         return redirect('/decks')->with('toast', ['kind' => 'success', 'message' => 'Du folgst dem Stapel nicht mehr.']);
+    }
+
+    /** "Fortschritt zurücksetzen": the user's own progress on this deck, both directions. */
+    public function reset(Request $request, string $deck): RedirectResponse
+    {
+        $this->overview->resetDeck($request->user(), $deck);
+
+        return redirect("/decks/{$deck}")->with('toast', ['kind' => 'success', 'message' => 'Fortschritt zurückgesetzt. Alle Karten sind wieder neu.']);
+    }
+
+    /** htmx: the cards in one box, for the sheet behind the box bar. */
+    public function box(Request $request, string $deck, string $box): View
+    {
+        $direction = Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward;
+
+        return view('decks.partials.box-cards', [
+            'deckId' => $deck,
+            'direction' => $direction,
+            'boxCount' => $this->overview->boxCount($request->user()),
+            'box' => (int) $box,
+            'entries' => $this->overview->cardsInBox($request->user(), $deck, $direction, (int) $box),
+        ]);
     }
 
     public function copy(Request $request, string $deck): RedirectResponse

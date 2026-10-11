@@ -337,6 +337,12 @@ ihn vorher zurück.
 - Gleiche Oberfläche, oben die Plakette „Freies Üben – zählt nicht".
 - Bis zu 20 zufällige Karten des Stapels, bei „gemischt" je Karte zufällige
   Richtung. „Nochmal" stellt die Karte ans Ende (höchstens dreimal).
+- **Auf ein Fach:** Im Blatt hinter einer Fach-Kachel steht oben „Diese
+  3 Karten üben“. Geübt werden nur die Karten dieses Fachs in der gerade
+  gewählten Richtung (Neu = noch nie beantwortet, „Kann ich“ schließt Fächer
+  über N ein), ebenfalls zufällig und höchstens 20. „Gemischt“ geht hier
+  nicht, weil ein Fach zu einer Richtung gehört. Ein unbekanntes Fach ergibt
+  eine Fehlermeldung.
 - Es wird **nichts** gespeichert, auch nicht für die Lernserie.
 
 ### Lernplan (`/learn/settings`, unter „Mehr")
@@ -506,8 +512,33 @@ Runde (3), Importgrenzen.
    - „Liste einfügen“ ist auf 20 Anfragen pro Minute gedrosselt.
    - „Zurück zur Liste" in der Import-Vorschau führt zu einem leeren
      Eingabefeld. Der eingefügte Text muss dann neu eingefügt werden.
-2. **Lernen**: Migration 2, Karteikasten, Lernrunde, Freies Üben, Heute,
+2. **Lernen** ✅: Migration 2, Karteikasten, Lernrunde, Freies Üben, Heute,
    Fächer-Leiste, Lernserie, Lernstand beim Kopieren.
+
+   Umgesetzt mit diesen Abweichungen bzw. Zwischenständen:
+   - `card_progress` hat eine eigene UUID als Schlüssel und einen
+     eindeutigen Index über (`user_id`, `card_id`, `direction`) statt eines
+     zusammengesetzten Primärschlüssels, damit es ein normales
+     Eloquent-Modell ist. Migration `2026_10_11_110000_create_learning_tables.php`.
+     `due_on` ist bei „Kann ich“ leer.
+   - `learning_settings` wird gelesen, aber erst in Stufe 3 bearbeitbar
+     (Lernplan). Ohne Zeile gilt „Normal“ aus `config/learning.php`.
+   - „Ein Fach weiter“ auf dem Endbildschirm zählt nur gewusste Karten. Eine
+     neue, nicht gewusste Karte landet zwar in Fach 1, steigt aber nicht auf.
+   - Während Wiederholungen bleibt der Zähler auf der letzten Zahl
+     („3 / 3“), daneben steht „Wiederholung“.
+   - Zusätzlich zur Bedienung per Finger: Leertaste/Enter dreht um,
+     Pfeil links/rechts bewertet (für Tastaturen und Tablets).
+   - Wischgesten und Vorlesen folgen in Stufe 3.
+   - Der Anteil „Kann ich“ in „Meine Stapel“ bezieht sich auf die schon
+     begonnenen Richtungen.
+   - Jede Antwort trägt die Schrittnummer der Runde mit. Eine Antwort mit
+     veralteter Nummer (Doppeltipp, altes Tab, gehaltene Taste) wird
+     ignoriert. Antworten einer Sitzung laufen nacheinander (`->block()`
+     an der Route), damit zwei gleichzeitige Anfragen eine Karte nicht
+     doppelt befördern.
+   - Das Fach-Blatt rechnet „morgen / in 3 Tagen“ über reine
+     Kalenderdaten. Unbekannte Fachnummern ergeben 404.
 3. **Feinschliff**: Lernplan, Hilfe, Vorlesen, Wischen, Leerzustände,
    Prüfung auf echten Geräten (iPhone SE, kleines Android).
 

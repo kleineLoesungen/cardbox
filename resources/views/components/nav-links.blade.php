@@ -9,7 +9,7 @@
 
 @php($user = auth()->user())
 
-<a href="/dashboard" class="{{ $linkClass }} {{ request()->is('dashboard') ? 'nav-link-active' : '' }}">Heute</a>
+<a href="/learn" class="{{ $linkClass }} {{ request()->is('learn') ? 'nav-link-active' : '' }}">Heute</a>
 <a href="/decks" class="{{ $linkClass }} {{ request()->is('decks*') ? 'nav-link-active' : '' }}">Stapel</a>
 
 @if ($user?->hasRole(\App\Enums\Role::Moderator))

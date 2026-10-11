@@ -207,7 +207,7 @@ describe('Fußzeile', function () {
     it('zeigt Angemeldeten die Version', function () {
         actingAsUser();
 
-        $this->get('/dashboard')->assertOk()->assertSee('Version 01.01.2026');
+        $this->get('/learn')->assertOk()->assertSee('Version 01.01.2026');
     });
 
     it('zeigt sie Gästen nicht', function () {

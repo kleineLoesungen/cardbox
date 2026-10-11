@@ -8,7 +8,7 @@
       <span class="font-semibold tracking-tight">{{ $branding->name }}</span>
       <div class="ml-auto flex items-center gap-2">
         @auth
-          <a href="/dashboard" class="btn btn-primary btn-sm">Zur Übersicht</a>
+          <a href="/learn" class="btn btn-primary btn-sm">Zu Cardbox</a>
         @else
           @if ($firstSetup)
             <a href="/register" class="btn btn-primary btn-sm">Einrichten</a>

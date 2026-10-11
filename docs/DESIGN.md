@@ -176,6 +176,7 @@ Blade-Komponenten (`resources/views/components/`) gibt es nur dort, wo Markup
 | Navigation | `nav-link`, `nav-link-active` |
 | Sonstiges | `empty`, `code`, `code-block`, `toast`, `spinner`, `container-app`, `stack`, `row` |
 | Telefon (Cardbox) | `dialog-sheet` (Blatt von unten, über `<x-sheet>`), `fab` (schwebender Knopf über der Tab-Leiste), `segmented` (Umschalter), `list` + `list-row` (Tipp-Zeilen ≥ 56 px), `card-row-sides` (vorne \| hinten), `sheet-action`, `input-lg`, `tab-badge` |
+| Lernen (Cardbox) | `flashcard` + `flashcard-inner` / `-face` / `-back` / `-text` (Karte mit 3D-Umdrehen, `.is-flipped` am Elternelement), `meter` (+ `meter-success`), `box-tiles` + `box-tile` (`--boxes` = Spaltenzahl), Layout `layouts/focus` für Vollbild ohne Navigation |
 
 **Blätter statt eigener Seiten.** Kurze Aufgaben wie Karte anlegen,
 bearbeiten oder Stapel umbenennen laufen in einem Blatt von unten:

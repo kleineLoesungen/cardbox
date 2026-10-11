@@ -24,4 +24,18 @@ return [
     // Search results in "Aus anderen Stapeln übernehmen".
     'search_limit' => 30,
 
+    // "Today" for due dates is the calendar day in this time zone, not UTC —
+    // otherwise cards would become due at 1 or 2 a.m. local time.
+    'timezone' => env('LEARNING_TIMEZONE', 'Europe/Berlin'),
+
+    // Default plan ("Normal"): boxes 0 (new) … box_count (mastered), and the
+    // interval in days for each box 1 … box_count-1.
+    'default_box_count' => 5,
+    'default_day_gaps' => [1, 2, 4, 7],
+
+    // A round holds at most this many cards; a card not known comes back at
+    // the end of the round at most this many times.
+    'round_size' => 20,
+    'round_repeats' => 3,
+
 ];

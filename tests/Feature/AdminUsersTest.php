@@ -223,10 +223,10 @@ describe('Freigabe', function () {
         User::factory()->pending()->count(2)->create();
 
         actingAsAdmin();
-        $this->get('/dashboard')->assertSee('2 warten auf Freigabe');
+        $this->get('/learn')->assertSee('2 warten auf Freigabe');
 
         actingAsUser(['role' => Role::Moderator]);
-        $this->get('/dashboard')->assertDontSee('warten auf Freigabe');
+        $this->get('/learn')->assertDontSee('warten auf Freigabe');
     });
 });
 

@@ -8,10 +8,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
+use App\Http\Controllers\LearnController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PwaController;
+use App\Http\Controllers\StudyRoundController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -60,7 +62,16 @@ Route::post('/password-suggestion', [AuthController::class, 'suggestPassword'])-
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/dashboard', [PageController::class, 'dashboard']);
+    // "Heute" lives at /learn; /dashboard stays as an old address.
+    Route::redirect('/dashboard', '/learn');
+    Route::get('/learn', [LearnController::class, 'today']);
+
+    // Learning round (state in the session, see StudyRoundController).
+    Route::post('/learn/round', [StudyRoundController::class, 'start']);
+    Route::get('/learn/round', [StudyRoundController::class, 'show']);
+    // block(): answers of one session are handled one after another, so two
+    // simultaneous requests cannot both rate the same card.
+    Route::post('/learn/round/answer', [StudyRoundController::class, 'answer'])->block(5, 5);
 
     Route::get('/account', [AccountController::class, 'show']);
     Route::post('/account', [AccountController::class, 'updateProfile']);
@@ -78,6 +89,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/follow', [DeckController::class, 'follow']);
         Route::post('/unfollow', [DeckController::class, 'unfollow']);
         Route::post('/copy', [DeckController::class, 'copy']);
+        Route::post('/reset', [DeckController::class, 'reset']);
+        Route::get('/box/{box}', [DeckController::class, 'box'])->where('box', '[0-9]{1,2}');
 
         Route::post('/cards', [DeckCardController::class, 'store']);
         Route::get('/cards/{card}/edit', [DeckCardController::class, 'edit']);

@@ -51,7 +51,7 @@ docker run -d \
 Mit einer Umgebungsdatei `/etc/cardbox/env` (Rechte `600`):
 
 ```ini
-APP_NAME=Vereinsportal
+APP_NAME=Cardbox
 APP_KEY=base64:…
 APP_URL=https://app.example.com
 TRUST_PROXY=true
@@ -65,8 +65,10 @@ DB_SSLMODE=require
 MAIL_MAILER=smtp
 MAIL_URL=smtps://benutzer:passwort@mail.example.com:465
 MAIL_FROM_ADDRESS=noreply@example.com
-MAIL_FROM_NAME=Vereinsportal
+MAIL_FROM_NAME=Cardbox
 LOG_LEVEL=info
+# Kalendertag für fällige Karten (Standard Europe/Berlin)
+LEARNING_TIMEZONE=Europe/Berlin
 ```
 
 **Passwörter nicht als `-e` übergeben**, sie stehen sonst in `docker inspect`
@@ -106,7 +108,7 @@ steht unter **System** und klein in der Fußzeile — beides nur für Angemeldet
 Mit
 
 ```bash
-UPDATE_CHECK_URL=https://raw.githubusercontent.com/konto/repo/main/CHANGELOG.md
+UPDATE_CHECK_URL=https://raw.githubusercontent.com/kleineLoesungen/cardbox/main/CHANGELOG.md
 ```
 
 vergleicht die Instanz ihre Version höchstens **einmal täglich** mit dieser

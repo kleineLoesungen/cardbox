@@ -2,24 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\DeckService;
 use App\Services\UserService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PageController extends Controller
 {
-    public function landing(UserService $users): View
+    /** Signed-in people go straight to "Heute". */
+    public function landing(Request $request, UserService $users): View|RedirectResponse
     {
-        return view('pages.landing', ['firstSetup' => $users->isEmpty()]);
-    }
+        if ($request->user() !== null) {
+            return redirect('/learn');
+        }
 
-    public function dashboard(Request $request, DeckService $decks): View
-    {
-        return view('pages.dashboard', [
-            'user' => $request->user(),
-            'decks' => $decks->mine($request->user()),
-        ]);
+        return view('pages.landing', ['firstSetup' => $users->isEmpty()]);
     }
 
     /**

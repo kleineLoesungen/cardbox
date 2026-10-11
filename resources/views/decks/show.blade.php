@@ -62,6 +62,10 @@
     </div>
   @endif
 
+  @if ($boxes !== null)
+    @include('decks.partials.learn-panel')
+  @endif
+
   <ul id="card-list" class="list">
     @foreach ($cards as $card)
       <x-card-row :card="$card" :deck="$deck" :editable="$isOwner" />
@@ -119,6 +123,7 @@
         @csrf
         <button type="submit" class="sheet-action">Kopie anlegen</button>
       </form>
+      @include('decks.partials.reset-action')
       <form method="post" action="/decks/{{ $deck->id }}/delete"
             data-confirm="Stapel „{{ $deck->name }}“ mit {{ $cards->count() === 1 ? '1 Karte' : $cards->count().' Karten' }} löschen?{{ $followerCount > 0 ? ' '.($followerCount === 1 ? '1 Person folgt' : $followerCount.' Personen folgen').' ihm und verliert ihn auch.' : '' }}">
         @csrf
@@ -141,6 +146,7 @@
         @csrf
         <button type="submit" class="sheet-action">Als eigenen Stapel kopieren</button>
       </form>
+      @include('decks.partials.reset-action')
 
       {{-- Display only; the moderation routes check the role themselves. --}}
       @if (auth()->user()->hasRole(\App\Enums\Role::Moderator))
