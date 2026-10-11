@@ -343,7 +343,7 @@
     @apply grid grid-flow-col auto-cols-fr gap-1 rounded-ui bg-surface-sunken p-1;
   }
   .segmented > * {
-    @apply flex min-h-11 items-center justify-center rounded-ui px-3 text-sm
+    @apply flex min-h-11 items-center justify-center rounded-ui px-3 text-center text-sm
            font-medium text-muted transition-colors;
   }
   .segmented > .is-active { @apply bg-surface-raised text-content shadow-sm; }
@@ -424,4 +424,27 @@
   .box-tile-label { @apply max-w-full text-[0.6875rem] leading-tight text-muted; }
   .box-tile-mastered { @apply bg-success-subtle text-success; }
   .box-tile-mastered .box-tile-label { @apply text-success; }
+}
+
+/* =========================================================================
+   Cardbox — stage 3
+   ========================================================================= */
+@layer components {
+
+  /* --- Large choice card around a radio button ("Lernplan") ------------ */
+  .choice-card {
+    @apply flex min-h-16 cursor-pointer items-start gap-3 rounded-ui border border-border
+           bg-surface-raised px-4 py-3 transition-colors hover:bg-surface-sunken;
+  }
+  .choice-card:has(input:checked) { @apply border-brand bg-brand-subtle; }
+  .choice-card:has(input:focus-visible) { @apply outline-2 outline-offset-2 outline-brand; }
+  .choice-card input { @apply mt-1 size-5 shrink-0 accent-brand; }
+
+  /* --- "−  5  +" stepper ------------------------------------------------ */
+  .stepper { @apply inline-flex items-center gap-3; }
+  .stepper output { @apply min-w-8 text-center text-2xl font-semibold tabular-nums; }
+
+  /* --- Card being dragged in a round (swipe to rate) -------------------- */
+  .flashcard-inner.is-dragging { transition: none; }
+  .flashcard { touch-action: pan-y; }
 }

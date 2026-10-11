@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\LeitnerService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,12 @@ class PageController extends Controller
         }
 
         return view('pages.landing', ['firstSetup' => $users->isEmpty()]);
+    }
+
+    /** "So funktioniert der Karteikasten" — shows the person's own plan. */
+    public function help(Request $request, LeitnerService $leitner): View
+    {
+        return view('pages.help', ['plan' => $leitner->plan($request->user())]);
     }
 
     /**

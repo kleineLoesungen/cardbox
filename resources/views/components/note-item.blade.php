@@ -19,7 +19,7 @@
             hx-delete="/notes/{{ $note->id }}"
             hx-target="#note-{{ $note->id }}"
             hx-swap="outerHTML swap:150ms"
-            hx-confirm="Diese Notiz wirklich löschen?"
+            hx-confirm="Diese Notiz wirklich löschen?" data-confirm-action="Löschen"
             aria-label="Notiz löschen">
       Löschen
     </button>

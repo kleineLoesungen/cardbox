@@ -11,6 +11,8 @@
 
 <a href="/learn" class="{{ $linkClass }} {{ request()->is('learn') ? 'nav-link-active' : '' }}">Heute</a>
 <a href="/decks" class="{{ $linkClass }} {{ request()->is('decks*') ? 'nav-link-active' : '' }}">Stapel</a>
+<a href="/learn/settings" class="{{ $linkClass }} {{ request()->is('learn/settings') ? 'nav-link-active' : '' }}">Lernplan</a>
+<a href="/help" class="{{ $linkClass }} {{ request()->is('help') ? 'nav-link-active' : '' }}">Hilfe</a>
 
 @if ($user?->hasRole(\App\Enums\Role::Moderator))
   <a href="/moderation" class="{{ $linkClass }} {{ request()->is('moderation*') ? 'nav-link-active' : '' }}">Moderation</a>

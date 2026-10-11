@@ -24,7 +24,7 @@
       <pre class="code-block">{{ $example }}</pre>
       <textarea class="textarea font-mono" id="text" name="text" rows="10"
                 placeholder="{{ $deck->frontLabel() }} = {{ $deck->backLabel() }}"
-                autocapitalize="off" autocorrect="off" spellcheck="false">{{ old('text') }}</textarea>
+                autocapitalize="off" autocorrect="off" spellcheck="false">{{ old('text', $draft) }}</textarea>
       <p class="hint">Du kannst auch zwei Spalten aus Excel, Word oder Numbers kopieren und hier einfügen.</p>
     </div>
 

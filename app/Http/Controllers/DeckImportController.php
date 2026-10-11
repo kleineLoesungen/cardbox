@@ -19,13 +19,29 @@ class DeckImportController extends Controller
 
     public function show(Request $request, string $deck): View
     {
-        return view('decks.import', ['deck' => $this->decks->getOwned($request->user(), $deck)]);
+        $model = $this->decks->getOwned($request->user(), $deck);
+        $draft = $request->session()->get('import_draft');
+
+        return view('decks.import', [
+            'deck' => $model,
+            // Only via "Zurück zur Liste" (?back=1) and only for this deck.
+            'draft' => $request->boolean('back') && is_array($draft) && ($draft['deck'] ?? null) === $model->id
+                ? (string) ($draft['text'] ?? '')
+                : '',
+        ]);
     }
 
     public function preview(Request $request, string $deck): View
     {
         $model = $this->decks->getOwned($request->user(), $deck);
         $text = $this->import->textFrom($request->only('text', 'file'));
+        // Kept for "Zurück zur Liste": one draft per session (a new preview
+        // replaces it), and only reasonably small lists, since the session is
+        // loaded on every request.
+        $request->session()->forget('import_draft');
+        if (strlen($text) <= 100 * 1024) {
+            $request->session()->put('import_draft', ['deck' => $model->id, 'text' => $text]);
+        }
 
         return view('decks.import-preview', [
             'deck' => $model,
@@ -37,6 +53,7 @@ class DeckImportController extends Controller
     public function store(Request $request, string $deck): RedirectResponse
     {
         $count = $this->import->import($request->user(), $deck, $request->only('text'));
+        $request->session()->forget('import_draft');
 
         return redirect("/decks/{$deck}")->with('toast', [
             'kind' => 'success',

@@ -9,6 +9,7 @@ use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\LearnController;
+use App\Http\Controllers\LearningSettingsController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
@@ -65,6 +66,10 @@ Route::middleware('auth')->group(function () {
     // "Heute" lives at /learn; /dashboard stays as an old address.
     Route::redirect('/dashboard', '/learn');
     Route::get('/learn', [LearnController::class, 'today']);
+    Route::get('/learn/settings', [LearningSettingsController::class, 'show']);
+    Route::post('/learn/settings', [LearningSettingsController::class, 'update']);
+    // A controller rather than Route::view, so RouteProtectionTest sees it.
+    Route::get('/help', [PageController::class, 'help']);
 
     // Learning round (state in the session, see StudyRoundController).
     Route::post('/learn/round', [StudyRoundController::class, 'start']);

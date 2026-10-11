@@ -28,6 +28,7 @@
             <button type="submit" class="btn btn-primary btn-sm">Freigeben</button>
           </form>
           <form method="post" action="/admin/users/{{ $p->id }}/reject"
+                data-confirm-action="Ablehnen"
                 data-confirm="Registrierung von „{{ $p->name }}“ ablehnen? Das Konto wird gelöscht.">
             @csrf
             <button type="submit" class="btn btn-ghost btn-sm">Ablehnen</button>

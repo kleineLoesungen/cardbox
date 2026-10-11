@@ -79,6 +79,17 @@
   </footer>
 </div>
 
+{{-- Shared confirmation sheet, see the script below (Leitlinie 8). --}}
+<dialog id="confirm-sheet" class="dialog-sheet" role="alertdialog" aria-labelledby="confirm-sheet-text" aria-describedby="confirm-sheet-text">
+  <div class="dialog-sheet-body stack">
+    <p id="confirm-sheet-text" class="text-base" data-confirm-text></p>
+    <button type="button" class="btn btn-danger btn-lg btn-block" data-confirm-yes>Ja</button>
+    <form method="dialog">
+      <button type="submit" class="btn btn-ghost btn-lg btn-block" data-confirm-no>Abbrechen</button>
+    </form>
+  </div>
+</dialog>
+
 {{-- --- Untere Leiste, nur auf schmalen Bildschirmen ------------------------ --}}
 <nav class="tabbar lg:hidden" aria-label="Hauptnavigation">
   <a href="/learn" class="tab {{ request()->is('learn') ? 'tab-active' : '' }}">
@@ -180,10 +191,36 @@
   document.body.addEventListener("sheet-close", () => {
     document.querySelectorAll("dialog.dialog-sheet[open]").forEach((d) => d.close());
   });
-  // Confirmation before destructive forms; text in data-confirm, never in onsubmit.
+  // --- Confirmation sheet (instead of the browser's confirm()) -----------
+  // Plain forms: data-confirm="question", data-confirm-action="Stapel löschen".
+  // htmx: hx-confirm="question" plus the same data-confirm-action.
+  // The question comes from a data attribute, never from inline script.
+  const confirmSheet = document.getElementById("confirm-sheet");
+  const askConfirm = (question, action, onYes) => {
+    confirmSheet.querySelector("[data-confirm-text]").textContent = question;
+    const yes = confirmSheet.querySelector("[data-confirm-yes]");
+    yes.textContent = action || "Ja";
+    yes.onclick = () => { confirmSheet.close(); onYes(); };
+    confirmSheet.showModal();
+    confirmSheet.querySelector("[data-confirm-no]").focus();
+  };
   document.addEventListener("submit", (e) => {
     const form = e.target.closest("form[data-confirm]");
-    if (form && !confirm(form.dataset.confirm)) e.preventDefault();
+    if (!form || form.dataset.confirmed === "1") return;
+    e.preventDefault();
+    const submitter = e.submitter;
+    askConfirm(form.dataset.confirm, form.dataset.confirmAction, () => {
+      form.dataset.confirmed = "1";
+      form.requestSubmit(submitter);
+      // The submit handler ran synchronously; ask again next time (bfcache).
+      delete form.dataset.confirmed;
+    });
+  });
+  document.body.addEventListener("htmx:confirm", (e) => {
+    if (!e.detail.question) return;
+    e.preventDefault();
+    const source = e.detail.elt.closest("[data-confirm-action]");
+    askConfirm(e.detail.question, source?.dataset.confirmAction, () => e.detail.issueRequest(true));
   });
   // A sheet can ask to be open right away (e.g. "add card" after creating a deck).
   document.querySelectorAll("dialog.dialog-sheet[data-open-on-load]").forEach((d) => d.showModal());

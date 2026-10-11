@@ -44,6 +44,12 @@ class LeitnerService
         return $this->plans[$user->id] ??= $this->loadPlan($user);
     }
 
+    /** Drops the remembered plan, e.g. right after it was changed. */
+    public function forgetPlan(User $user): void
+    {
+        unset($this->plans[$user->id]);
+    }
+
     /** @return array{box_count: int, day_gaps: list<int>} */
     private function loadPlan(User $user): array
     {

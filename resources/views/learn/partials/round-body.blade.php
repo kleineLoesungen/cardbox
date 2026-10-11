@@ -64,6 +64,27 @@
         @endforeach
       </div>
     </div>
+
+    {{--
+      Read aloud: the question before flipping, the answer after. Hidden
+      until the script finds a voice for the language; never shown for
+      "Aufgabe"/"Ergebnis", which have no language tag.
+    --}}
+    <div class="mt-3 flex min-h-11 justify-center">
+      <button type="button" class="btn btn-ghost" data-speak hidden
+              data-question="{{ $question[0] ?? '' }}" data-question-lang="{{ $qLang?->tag() }}"
+              data-answer="{{ implode(', ', $answer) }}" data-answer-lang="{{ $aLang?->tag() }}">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+        </svg>
+        Vorlesen
+      </button>
+      {{-- Shown instead when the device could speak but has no voice for this language. --}}
+      <a href="/help#vorlesen" class="self-center text-sm text-subtle hover:text-content" data-speak-missing hidden>
+        Vorlesen fehlt? So geht's
+      </a>
+    </div>
   </div>
 
   {{-- Under the thumbs: flip first, then rate --}}

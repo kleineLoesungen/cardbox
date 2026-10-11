@@ -176,6 +176,7 @@ Blade-Komponenten (`resources/views/components/`) gibt es nur dort, wo Markup
 | Navigation | `nav-link`, `nav-link-active` |
 | Sonstiges | `empty`, `code`, `code-block`, `toast`, `spinner`, `container-app`, `stack`, `row` |
 | Telefon (Cardbox) | `dialog-sheet` (Blatt von unten, über `<x-sheet>`), `fab` (schwebender Knopf über der Tab-Leiste), `segmented` (Umschalter), `list` + `list-row` (Tipp-Zeilen ≥ 56 px), `card-row-sides` (vorne \| hinten), `sheet-action`, `input-lg`, `tab-badge` |
+| Auswahl (Cardbox) | `choice-card` (große Fläche um einen Radioknopf, markiert über `:has(:checked)`), `stepper` (− Zahl +) |
 | Lernen (Cardbox) | `flashcard` + `flashcard-inner` / `-face` / `-back` / `-text` (Karte mit 3D-Umdrehen, `.is-flipped` am Elternelement), `meter` (+ `meter-success`), `box-tiles` + `box-tile` (`--boxes` = Spaltenzahl), Layout `layouts/focus` für Vollbild ohne Navigation |
 
 **Blätter statt eigener Seiten.** Kurze Aufgaben wie Karte anlegen,
@@ -183,8 +184,12 @@ bearbeiten oder Stapel umbenennen laufen in einem Blatt von unten:
 `<x-sheet id="…" title="…">`. Geöffnet wird es mit `data-open-sheet="…"`.
 Es öffnet sich auch selbst, sobald htmx Inhalt hineinlädt. Geschlossen wird
 es mit ✕, Escape, einem Tipp daneben oder per Antwortkopf
-`HX-Trigger: sheet-close`. Es ist immer nur ein Blatt offen. Rückfragen vor
-dem Löschen kommen über `data-confirm="…"` am Formular.
+`HX-Trigger: sheet-close`. Es ist immer nur ein Blatt offen.
+
+**Rückfragen** vor dem Löschen erscheinen als eigenes Blatt mit rotem Knopf,
+nie über `confirm()` des Browsers. Am Formular `data-confirm="Frage"` und
+`data-confirm-action="Stapel löschen"`, bei htmx `hx-confirm="Frage"` plus
+dasselbe `data-confirm-action`. Der Knopf nennt die Handlung, nicht „OK“.
 
 Alle im Betrieb zu sehen unter [/styleguide](http://localhost:8001/styleguide).
 

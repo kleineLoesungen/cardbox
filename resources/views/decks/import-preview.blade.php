@@ -8,7 +8,7 @@
 @section('main')
 @php($count = count($result['rows']))
 <div class="mx-auto max-w-md">
-  <a href="/decks/{{ $deck->id }}/import" class="text-sm text-muted hover:text-content">← Zurück zur Liste</a>
+  <a href="/decks/{{ $deck->id }}/import?back=1" class="text-sm text-muted hover:text-content">← Zurück zur Liste</a>
   <h1 class="mt-1 mb-4 text-2xl font-semibold tracking-tight">Vorschau</h1>
 
   @if ($result['swapped'])
@@ -58,7 +58,7 @@
     <div class="empty">
       <p class="empty-title">Keine gültige Zeile gefunden</p>
       <p class="empty-hint">Schreib jede Karte in eine eigene Zeile, mit „=“ zwischen vorne und hinten.</p>
-      <a href="/decks/{{ $deck->id }}/import" class="btn btn-primary">Zurück zur Liste</a>
+      <a href="/decks/{{ $deck->id }}/import?back=1" class="btn btn-primary">Zurück zur Liste</a>
     </div>
   @endif
 </div>

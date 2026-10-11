@@ -35,6 +35,7 @@
               hx-post="/admin/tokens/{{ $token->id }}/revoke"
               hx-target="#token-{{ $token->id }}"
               hx-swap="outerHTML"
+              data-confirm-action="Widerrufen"
               hx-confirm="Token widerrufen? Systeme, die es benutzen, verlieren sofort den Zugriff.">
         Widerrufen
       </button>

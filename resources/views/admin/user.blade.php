@@ -112,6 +112,7 @@
           <p class="hint">Das eigene Konto lässt sich nicht löschen.</p>
         @else
           <form method="post" action="/admin/users/{{ $edited->id }}/delete"
+                data-confirm-action="Konto löschen"
                 data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?{{ $deckSummary['decks'] > 0 ? ' Dabei werden '.$deckSummary['decks'].' Stapel gelöscht' : '' }}{{ $deckSummary['followers'] > 0 ? ', denen insgesamt '.$deckSummary['followers'].' Personen folgen' : '' }}{{ $deckSummary['decks'] > 0 ? '.' : '' }}">
             @csrf
             <button type="submit" class="btn btn-danger">Konto löschen</button>

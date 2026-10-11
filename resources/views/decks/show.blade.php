@@ -125,6 +125,7 @@
       </form>
       @include('decks.partials.reset-action')
       <form method="post" action="/decks/{{ $deck->id }}/delete"
+            data-confirm-action="Stapel löschen"
             data-confirm="Stapel „{{ $deck->name }}“ mit {{ $cards->count() === 1 ? '1 Karte' : $cards->count().' Karten' }} löschen?{{ $followerCount > 0 ? ' '.($followerCount === 1 ? '1 Person folgt' : $followerCount.' Personen folgen').' ihm und verliert ihn auch.' : '' }}">
         @csrf
         <button type="submit" class="sheet-action sheet-action-danger">Stapel löschen</button>
@@ -132,6 +133,7 @@
     @else
       @if ($isFollowing)
         <form method="post" action="/decks/{{ $deck->id }}/unfollow"
+              data-confirm-action="Nicht mehr folgen"
               data-confirm="Nicht mehr folgen? Dein Lernstand bleibt erhalten, falls du wieder folgst.">
           @csrf
           <button type="submit" class="sheet-action">Nicht mehr folgen</button>
@@ -153,11 +155,13 @@
         <div class="my-2 border-t border-border"></div>
         <p class="px-3 text-xs font-medium text-subtle">Moderation</p>
         <form method="post" action="/moderation/decks/{{ $deck->id }}/unshare"
+              data-confirm-action="Teilen beenden"
               data-confirm="Teilen von „{{ $deck->name }}“ beenden? Er ist dann nur noch für {{ $deck->user->name }} sichtbar.">
           @csrf
           <button type="submit" class="sheet-action">Teilen beenden</button>
         </form>
         <form method="post" action="/moderation/decks/{{ $deck->id }}/delete"
+              data-confirm-action="Stapel löschen"
               data-confirm="Stapel „{{ $deck->name }}“ von {{ $deck->user->name }} endgültig löschen?">
           @csrf
           <button type="submit" class="sheet-action sheet-action-danger">Stapel löschen</button>

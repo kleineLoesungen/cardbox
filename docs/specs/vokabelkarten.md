@@ -506,12 +506,10 @@ Runde (3), Importgrenzen.
      bleibt offen, die Eingaben bleiben stehen. Normale Formulare (Stapel
      anlegen/bearbeiten) öffnen ihr Blatt wieder und zeigen den Fehler am
      Feld.
-   - Rückfragen vor dem Löschen nutzen vorerst `confirm()` des Browsers
-     (`data-confirm`, `hx-confirm`) statt eines eigenen Blatts mit rotem
-     Knopf (Leitlinie 8). Das eigene Blatt folgt in Stufe 3.
+   - Rückfragen vor dem Löschen: seit Stufe 3 ein eigenes Blatt mit rotem
+     Knopf (siehe dort).
    - „Liste einfügen“ ist auf 20 Anfragen pro Minute gedrosselt.
-   - „Zurück zur Liste" in der Import-Vorschau führt zu einem leeren
-     Eingabefeld. Der eingefügte Text muss dann neu eingefügt werden.
+   - „Zurück zur Liste" in der Import-Vorschau behält den Text (seit Stufe 3).
 2. **Lernen** ✅: Migration 2, Karteikasten, Lernrunde, Freies Üben, Heute,
    Fächer-Leiste, Lernserie, Lernstand beim Kopieren.
 
@@ -521,15 +519,14 @@ Runde (3), Importgrenzen.
      zusammengesetzten Primärschlüssels, damit es ein normales
      Eloquent-Modell ist. Migration `2026_10_11_110000_create_learning_tables.php`.
      `due_on` ist bei „Kann ich“ leer.
-   - `learning_settings` wird gelesen, aber erst in Stufe 3 bearbeitbar
-     (Lernplan). Ohne Zeile gilt „Normal“ aus `config/learning.php`.
+   - `learning_settings`: Ohne Zeile gilt „Normal“ aus `config/learning.php`.
+     Bearbeitbar seit Stufe 3 (Lernplan).
    - „Ein Fach weiter“ auf dem Endbildschirm zählt nur gewusste Karten. Eine
      neue, nicht gewusste Karte landet zwar in Fach 1, steigt aber nicht auf.
    - Während Wiederholungen bleibt der Zähler auf der letzten Zahl
      („3 / 3“), daneben steht „Wiederholung“.
    - Zusätzlich zur Bedienung per Finger: Leertaste/Enter dreht um,
      Pfeil links/rechts bewertet (für Tastaturen und Tablets).
-   - Wischgesten und Vorlesen folgen in Stufe 3.
    - Der Anteil „Kann ich“ in „Meine Stapel“ bezieht sich auf die schon
      begonnenen Richtungen.
    - Jede Antwort trägt die Schrittnummer der Runde mit. Eine Antwort mit
@@ -539,8 +536,29 @@ Runde (3), Importgrenzen.
      doppelt befördern.
    - Das Fach-Blatt rechnet „morgen / in 3 Tagen“ über reine
      Kalenderdaten. Unbekannte Fachnummern ergeben 404.
-3. **Feinschliff**: Lernplan, Hilfe, Vorlesen, Wischen, Leerzustände,
+3. **Feinschliff** ✅: Lernplan, Hilfe, Vorlesen, Wischen, Leerzustände,
    Prüfung auf echten Geräten (iPhone SE, kleines Android).
+
+   Umgesetzt mit diesen Abweichungen bzw. Ergänzungen:
+   - **Lernplan** (`/learn/settings`, `LearningSettingsService`): Ohne
+     JavaScript sind alle Tagesfelder sichtbar, „−“/„+“ und die Vorschau
+     braucht es nicht. Gespeichert werden nur die ersten N−1 Abstände.
+   - **Hilfe** (`/help`) zeichnet die Fächer nach dem eigenen Lernplan, die
+     Tage stehen im Fach.
+   - **Vorlesen**: ein Knopf unter der Karte statt in der Karte (kein
+     Bedienelement in einem Bedienelement). Er liest vor dem Umdrehen die
+     Frage, danach alle Bedeutungen der Antwort.
+   - **Wischen**: Pointer-Ereignisse, also Finger und Maus. Erst nach dem
+     Umdrehen; die Karte folgt dem Finger, ab einem Viertel der Breite
+     (höchstens 120 px) wird bewertet, sonst springt sie zurück.
+   - **Rückfragen** als Blatt (`#confirm-sheet` in `layouts/app`): Text
+     aus `data-confirm` bzw. `hx-confirm`, roter Knopf mit dem Namen aus
+     `data-confirm-action`, darunter „Abbrechen“. Gilt auch in der
+     Verwaltung.
+   - **Prüfung auf echten Geräten** ersetzt vorerst eine Prüfung in 320 px
+     Breite (kleiner als iPhone SE) im Browser: kein waagerechtes Scrollen
+     auf Heute, Stapel, Stapelansicht, Runde, Lernplan und Hilfe. Ein Test
+     auf echten Telefonen steht noch aus.
 
 Jede Stufe endet mit grünem `just check` und eigenem Changelog-Eintrag.
 
