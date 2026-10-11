@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Starter'),
+    'name' => env('APP_NAME', 'Cardbox'),
 
     /*
     |--------------------------------------------------------------------------
@@ -25,7 +25,7 @@ return [
     |
     */
 
-    'short_name' => env('APP_SHORT_NAME', env('APP_NAME', 'Starter')),
+    'short_name' => env('APP_SHORT_NAME', env('APP_NAME', 'Cardbox')),
 
     /*
     |--------------------------------------------------------------------------

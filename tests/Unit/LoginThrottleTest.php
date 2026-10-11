@@ -21,6 +21,6 @@ it('lässt die Wartezeit wachsen und deckelt sie', function () {
 });
 
 it('normalisiert die Schlüssel', function () {
-    expect(LoginThrottle::keys('  Max@Example.COM ', '10.0.0.1'))->toBe(['email:max@example.com', 'ip:10.0.0.1'])
-        ->and(LoginThrottle::keys('a@b.de', null))->toBe(['email:a@b.de']);
+    expect(LoginThrottle::keys('  Max.M ', '10.0.0.1'))->toBe(['user:max.m', 'ip:10.0.0.1'])
+        ->and(LoginThrottle::keys('anna', null))->toBe(['user:anna']);
 });

@@ -158,8 +158,9 @@ Ablaufdatum zurück.
 
 ### `GET /api/v1/users` — Scope `users:read`
 
-Alle Benutzer mit `id`, `email`, `name`, `role`, `is_active`, `created_at`,
-`updated_at`. Welche Felder die Schnittstelle verlassen, steht ausdrücklich in
+Alle Benutzer mit `id`, `username`, `name`, `role`, `is_active`, `created_at`,
+`updated_at`. Ein Feld `email` gibt es nicht — Konten haben keine
+E-Mail-Adresse. Welche Felder die Schnittstelle verlassen, steht ausdrücklich in
 `app/Http/Resources/UserResource.php` — Passwortdaten stehen dort nicht.
 
 ### Notizen

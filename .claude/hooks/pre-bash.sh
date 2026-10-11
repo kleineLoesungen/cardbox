@@ -53,8 +53,7 @@ enthaelt() { printf '%s' "$BEFEHL" | grep -Eqi "$1"; }
 # --- 1. Zerstoererische Befehle -------------------------------------------
 
 # `docker compose down -v` und `just db-reset` loeschen das Datenbank-Volume
-# mitsamt aller lokalen Konten. In einem noch nicht umbenannten Klon des Kits
-# traefe es sogar die Datenbank des Kits selbst.
+# mitsamt aller lokalen Konten.
 if enthaelt 'docker +compose.*down.*(-v|--volumes)' || enthaelt '(^| )just +db-reset( |$)'; then
   ablehnen "Dieser Befehl löscht das Datenbank-Volume mitsamt aller lokalen Daten. Bitte selbst im Terminal ausführen, wenn das wirklich gewollt ist."
 fi
@@ -64,11 +63,11 @@ if enthaelt 'docker +volume +rm'; then
 fi
 
 # migrate:fresh und Verwandte verwerfen ALLE Tabellen der Entwicklungsdatenbank.
-# Die Tests brauchen das nicht: Sie laufen mit RefreshDatabase gegen starter_test.
+# Die Tests brauchen das nicht: Sie laufen mit RefreshDatabase gegen cardbox_test.
 # `(^| )` statt irgendwo im Text: Sonst schlaegt die Regel schon an, wenn der
 # Befehl nur in einem Heredoc erwaehnt wird — etwa beim Schreiben dieser Doku.
 if enthaelt '(^| )php +artisan +(migrate:(fresh|reset|refresh)|db:wipe)'; then
-  ablehnen "Dieser Befehl verwirft alle Tabellen samt Daten. Für Schemaänderungen eine neue Migration anlegen (just migration <name>); die Tests benutzen ohnehin die eigene Datenbank starter_test."
+  ablehnen "Dieser Befehl verwirft alle Tabellen samt Daten. Für Schemaänderungen eine neue Migration anlegen (just migration <name>); die Tests benutzen ohnehin die eigene Datenbank cardbox_test."
 fi
 
 # DROP/TRUNCATE nur dann abweisen, wenn sie an eine laufende Datenbank gehen.

@@ -32,7 +32,7 @@ Migrationen, Validierung, Sitzungen, Mail, Tests — alles folgt Konventionen,
 die ein Assistent richtig rät. Das ist der Hauptgrund.
 
 Das Ökosystem drängt aber Richtung Node (Vite), Livewire und Starter-Kits wie
-Breeze, die hunderte Dateien erzeugen. Das Kit nimmt davon bewusst nur den Kern:
+Breeze, die hunderte Dateien erzeugen. Cardbox nimmt davon bewusst nur den Kern:
 Routing, Eloquent, Blade, Validierung, Mail. Was fehlt, steht in
 [CLAUDE.md](../CLAUDE.md#laravel-werkzeuge-die-hier-nicht-benutzt-werden)
 samt Begründung.
@@ -84,7 +84,7 @@ htmx (`bootstrap/app.php`).
 ### Warum Models ohne Regeln?
 
 Eloquent-Modelle können alles — Validierung in `saving`-Events, Geschäftsregeln
-in Methoden, Abfragen in Scopes. Genau deshalb landet dort sonst alles. Im Kit
+in Methoden, Abfragen in Scopes. Genau deshalb landet dort sonst alles. Hier
 beschreibt ein Modell Daten und kleine Ableitungen (`initials()`, `isValid()`);
 Regeln wie „der letzte Administrator bleibt" stehen im Service, wo man sie sucht.
 
@@ -102,8 +102,7 @@ Die Middleware lädt den Benutzer, prüft die Rolle und weist ab, bevor der
 Controller läuft. Eine Prüfung im Controller ließe sich vergessen — und niemand
 merkt es, weil die Seite ja funktioniert.
 
-PHP hat kein Typsystem, das eine vergessene Gruppe verhindern könnte (das
-Rust-Kit erzwingt es über Extractor-Typen). Den Ersatz liefert
+PHP hat kein Typsystem, das eine vergessene Gruppe verhindern könnte. Den Ersatz liefert
 `tests/Feature/RouteProtectionTest.php`: Er geht **alle** Routen durch und
 schlägt fehl, sobald eine ohne `auth`, `api.token` oder `scope:` dasteht, die
 nicht ausdrücklich als öffentlich gelistet ist. Zusätzlich muss alles unter

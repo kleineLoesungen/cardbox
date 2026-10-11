@@ -49,7 +49,7 @@ Fokusringe und selbst die leichte Tönung der Hintergründe wandern mit.
 > Den passenden Hex-Wert zeigt der Browser: im Styleguide mit den
 > Entwicklerwerkzeugen die Farbe von `bg-brand` untersuchen.
 
-**Ausprobieren ohne Neustart:** Der [Styleguide](http://localhost:8000/styleguide)
+**Ausprobieren ohne Neustart:** Der [Styleguide](http://localhost:8001/styleguide)
 hat Regler für Farbton, Farbkraft und Rundung. Wenn es passt, den Wert in
 `theme.css` eintragen.
 
@@ -117,7 +117,9 @@ automatisch mit, die zweite bleibt weiß.
 `brand-subtle` (zurückhaltende Markenfläche)
 
 **Zustände:** `success`, `warning`, `danger` — jeweils auch als `-subtle`
-für die zugehörige Hintergrundfläche.
+für die zugehörige Hintergrundfläche. Dazu `danger-content` für Schrift auf
+`bg-danger` (Löschen-Knopf, Zähler am Tab): hell im Hellmodus, dunkel im
+Dunkelmodus, weil das Rot dort heller ist.
 
 Jede Rolle gibt es als `bg-`, `text-` und `border-`. Dazu `rounded-ui` für die
 projektweit einheitliche Eckenrundung und `ring-focus` für Fokusringe.
@@ -173,8 +175,17 @@ Blade-Komponenten (`resources/views/components/`) gibt es nur dort, wo Markup
 | Tabellen | `table-wrap` (scrollt waagerecht) + `table` |
 | Navigation | `nav-link`, `nav-link-active` |
 | Sonstiges | `empty`, `code`, `code-block`, `toast`, `spinner`, `container-app`, `stack`, `row` |
+| Telefon (Cardbox) | `dialog-sheet` (Blatt von unten, über `<x-sheet>`), `fab` (schwebender Knopf über der Tab-Leiste), `segmented` (Umschalter), `list` + `list-row` (Tipp-Zeilen ≥ 56 px), `card-row-sides` (vorne \| hinten), `sheet-action`, `input-lg`, `tab-badge` |
 
-Alle im Betrieb zu sehen unter [/styleguide](http://localhost:8000/styleguide).
+**Blätter statt eigener Seiten.** Kurze Aufgaben wie Karte anlegen,
+bearbeiten oder Stapel umbenennen laufen in einem Blatt von unten:
+`<x-sheet id="…" title="…">`. Geöffnet wird es mit `data-open-sheet="…"`.
+Es öffnet sich auch selbst, sobald htmx Inhalt hineinlädt. Geschlossen wird
+es mit ✕, Escape, einem Tipp daneben oder per Antwortkopf
+`HX-Trigger: sheet-close`. Es ist immer nur ein Blatt offen. Rückfragen vor
+dem Löschen kommen über `data-confirm="…"` am Formular.
+
+Alle im Betrieb zu sehen unter [/styleguide](http://localhost:8001/styleguide).
 
 ### Eine neue Komponente anlegen
 
@@ -217,7 +228,7 @@ als Rückfallebene lassen.
 
 ## 7. Schmale Bildschirme
 
-Das Kit ist für beide Fälle gedacht: am Schreibtisch und auf dem Telefon. Der
+Die Grundlage ist für beide Fälle gebaut: am Schreibtisch und auf dem Telefon. Der
 Anspruch auf schmalen Bildschirmen ist **voll benutzbar** — alles erreichbar,
 nichts abgeschnitten, keine waagerechte Scrollleiste — ohne dabei eine eigene
 Mobilfassung zu pflegen. Eine Codebasis, zwei Erscheinungsformen.
@@ -363,6 +374,6 @@ Eingebaut und bitte nicht entfernen:
 
 ## 10. Änderungen prüfen
 
-Nach jeder Anpassung den [Styleguide](http://localhost:8000/styleguide) öffnen und
+Nach jeder Anpassung den [Styleguide](http://localhost:8001/styleguide) öffnen und
 durchsehen — in beiden Modi. Er zeigt jede Komponente im echten Zustand. Was
 dort gut aussieht, sieht überall gut aus.

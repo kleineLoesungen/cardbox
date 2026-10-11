@@ -1,13 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "kleineloesungen/starter-php",
+    "name": "app/cardbox",
     "type": "project",
-    "description": "Startpunkt für Webanwendungen in PHP: Laravel, Blade, htmx, Tailwind v4, PostgreSQL.",
+    "description": "Cardbox: Vokabeln lernen mit dem Karteikasten, fürs Smartphone. Laravel, Blade, htmx, PostgreSQL.",
     "keywords": [
         "laravel",
         "htmx",
         "tailwind",
-        "starter"
+        "vocabulary",
+        "leitner"
     ],
     "license": "proprietary",
     "require": {

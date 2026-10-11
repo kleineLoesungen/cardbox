@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\DeckService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,9 +31,14 @@ class UserController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
 
+        // No scheduler in the container: stale registrations are cleaned up
+        // whenever an admin looks at the list.
+        $this->users->pruneUnapproved();
+
         return view('admin.users', [
             'users' => $this->users->list($search),
-            'total' => $this->users->count(),
+            'pending' => $this->users->pending(),
+            'total' => $this->users->countApproved(),
             'search' => $search,
         ]);
     }
@@ -40,17 +46,18 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $role = $this->roleFrom($request);
-        $created = $this->users->create($request->only('name', 'email', 'password'), $role);
+        $created = $this->users->create($request->only('name', 'username', 'password'), $role, $request->user());
 
         Log::info('Benutzer angelegt', ['by' => $request->user()->id, 'user_id' => $created->id, 'role' => $role->value]);
 
         return redirect("/admin/users/{$created->id}")->with('saved', true);
     }
 
-    public function show(User $user): View
+    public function show(User $user, DeckService $decks): View
     {
         return view('admin.user', [
             'edited' => $user,
+            'deckSummary' => $decks->ownerSummary($user),
             // Steuert nur, welche Bedienelemente die Seite sperrt. Die eigentliche
             // Absicherung liegt im UserService, nicht in dieser Anzeige.
             'isSelf' => $user->is(request()->user()),
@@ -73,7 +80,7 @@ class UserController extends Controller
         // Eine Transaktion: Scheitert die Rollenaenderung, bleibt auch der
         // geaenderte Name ungespeichert — sonst waere halb gespeichert.
         DB::transaction(function () use ($request, $user, $role, $active) {
-            $this->users->updateProfile($user, $request->only('name', 'email'));
+            $this->users->updateProfile($user, $request->only('name', 'username'));
 
             // Beide Aufrufe pruefen selbst, ob dadurch der letzte Administrator verschwaende.
             if ($user->role !== $role) {
@@ -109,6 +116,38 @@ class UserController extends Controller
         Log::info('Benutzer gelöscht', ['by' => $request->user()->id, 'user_id' => $user->id]);
 
         return redirect('/admin/users')->with('toast', ['kind' => 'success', 'message' => 'Konto gelöscht.']);
+    }
+
+    public function approve(Request $request, User $user): RedirectResponse
+    {
+        $this->users->approve($user, $request->user());
+
+        Log::info('Konto freigegeben', ['by' => $request->user()->id, 'user_id' => $user->id]);
+
+        return redirect('/admin/users')->with('toast', ['kind' => 'success', 'message' => "{$user->username} ist freigegeben."]);
+    }
+
+    public function reject(Request $request, User $user): RedirectResponse
+    {
+        $this->users->reject($user);
+
+        Log::info('Registrierung abgelehnt', ['by' => $request->user()->id, 'user_id' => $user->id]);
+
+        return redirect('/admin/users')->with('toast', ['kind' => 'success', 'message' => 'Registrierung abgelehnt.']);
+    }
+
+    /**
+     * htmx: proposes a username for the typed name. Leaves a username the
+     * admin already entered untouched.
+     */
+    public function suggestUsername(Request $request): View
+    {
+        $current = trim((string) $request->query('username', ''));
+        $name = trim((string) $request->query('name', ''));
+
+        return view('partials.username-field', [
+            'value' => $current !== '' || $name === '' ? $current : $this->users->suggestUsername($name),
+        ]);
     }
 
     /** @throws ValidationException */

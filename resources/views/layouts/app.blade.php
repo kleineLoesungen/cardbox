@@ -32,7 +32,7 @@
 
       {{-- Breite Bildschirme: Navigation direkt in der Kopfzeile. --}}
       <nav class="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
-        <x-nav-links link-class="nav-link" />
+        <x-nav-links link-class="nav-link" :pending="$pendingUserCount" />
       </nav>
 
       <div class="ml-auto flex items-center gap-1">
@@ -68,8 +68,6 @@
   <footer class="border-t border-border py-6 pb-24 lg:pb-6">
     <div class="container-app flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-subtle">
       <span>{{ $branding->name }}</span>
-      <a href="/styleguide" class="hover:text-content">Styleguide</a>
-      <a href="/api/v1/health" class="hover:text-content">API-Status</a>
       {{-- Nur fuer Angemeldete: Ein Veroeffentlichungsdatum verriete sonst jedem,
            welche Korrekturen dieser Installation noch fehlen. --}}
       @auth
@@ -86,31 +84,24 @@
   <a href="/dashboard" class="tab {{ request()->is('dashboard') ? 'tab-active' : '' }}">
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
     </svg>
-    Übersicht
+    Heute
   </a>
 
-  <a href="/notes" class="tab {{ request()->is('notes*') ? 'tab-active' : '' }}">
+  <a href="/decks" class="tab {{ request()->is('decks*') ? 'tab-active' : '' }}">
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/>
+      <rect x="4" y="7" width="14" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/>
     </svg>
-    Notizen
+    Stapel
   </a>
 
-  @if ($user?->isAdmin())
-    <a href="/admin/users" class="tab {{ request()->is('admin/users*') ? 'tab-active' : '' }}">
-      <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="8" r="3.2"/><path d="M5.5 20v-1a6.5 6.5 0 0 1 13 0v1"/>
-      </svg>
-      Benutzer
-    </a>
-  @endif
-
-  <button type="button" class="tab" data-menu-toggle
+  <button type="button" class="tab relative" data-menu-toggle
           aria-expanded="false" aria-controls="main-menu" aria-label="Mehr anzeigen">
+    @if ($pendingUserCount > 0)
+      <span class="tab-badge" aria-label="{{ $pendingUserCount }} warten auf Freigabe">{{ $pendingUserCount }}</span>
+    @endif
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round" aria-hidden="true">
       <path d="M5 12h.01M12 12h.01M19 12h.01"/>
@@ -131,7 +122,7 @@
     <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-border-strong" aria-hidden="true"></div>
 
     <nav class="container-app flex max-h-[70dvh] flex-col gap-1 overflow-y-auto py-3">
-      <x-nav-links link-class="nav-link-mobile" />
+      <x-nav-links link-class="nav-link-mobile" :pending="$pendingUserCount" />
 
       <div class="my-2 border-t border-border"></div>
 
@@ -164,6 +155,60 @@
       : window.matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
     try { localStorage.setItem("theme", root.dataset.theme); } catch (_) {}
+  });
+
+  // --- Bottom sheets (components/sheet.blade.php) ---------------------------
+  // Open: data-open-sheet="id", or htmx swapping content into a closed sheet.
+  // Close: ×, Escape, backdrop tap, or the htmx event "sheet-close".
+  document.addEventListener("click", (e) => {
+    const opener = e.target.closest("[data-open-sheet]");
+    if (opener) {
+      // One sheet at a time: stacked sheets are confusing on a phone.
+      document.querySelectorAll("dialog.dialog-sheet[open]").forEach((d) => d.close());
+      document.getElementById(opener.dataset.openSheet)?.showModal();
+      return;
+    }
+    // A click on the <dialog> element itself is a click on its backdrop.
+    if (e.target instanceof HTMLDialogElement && e.target.classList.contains("dialog-sheet")) {
+      e.target.close();
+    }
+  });
+  document.body.addEventListener("htmx:afterSwap", (e) => {
+    const sheet = e.detail.target.closest?.("dialog.dialog-sheet");
+    if (sheet && !sheet.open) sheet.showModal();
+  });
+  document.body.addEventListener("sheet-close", () => {
+    document.querySelectorAll("dialog.dialog-sheet[open]").forEach((d) => d.close());
+  });
+  // Confirmation before destructive forms; text in data-confirm, never in onsubmit.
+  document.addEventListener("submit", (e) => {
+    const form = e.target.closest("form[data-confirm]");
+    if (form && !confirm(form.dataset.confirm)) e.preventDefault();
+  });
+  // A sheet can ask to be open right away (e.g. "add card" after creating a deck).
+  document.querySelectorAll("dialog.dialog-sheet[data-open-on-load]").forEach((d) => d.showModal());
+  // Enter in the front field jumps to the back field instead of submitting.
+  document.addEventListener("keydown", (e) => {
+    const input = e.target.closest?.("[data-enter-next]");
+    if (!input || e.key !== "Enter" || e.isComposing) return;
+    e.preventDefault();
+    const fields = [...input.form.querySelectorAll("input:not([type=hidden])")];
+    fields[fields.indexOf(input) + 1]?.focus();
+  });
+  // "+ weitere Bedeutung": clone the last input of the group.
+  document.addEventListener("click", (e) => {
+    const add = e.target.closest("[data-add-meaning]");
+    if (!add) return;
+    const group = document.getElementById(add.dataset.addMeaning);
+    const last = group?.querySelector("input:last-of-type");
+    if (!last) return;
+    const input = last.cloneNode();
+    input.value = "";
+    input.removeAttribute("id");
+    input.removeAttribute("autofocus");
+    input.removeAttribute("hx-get");
+    group.append(input);
+    input.focus();
   });
 
   // --- Menü der unteren Leiste --------------------------------------------

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ApiToken;
+use App\Services\DeckService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -11,28 +11,15 @@ class PageController extends Controller
 {
     public function landing(UserService $users): View
     {
-        return view('pages.landing', ['firstSetup' => $users->count() === 0]);
+        return view('pages.landing', ['firstSetup' => $users->isEmpty()]);
     }
 
-    public function dashboard(Request $request): View
+    public function dashboard(Request $request, DeckService $decks): View
     {
-        $user = $request->user();
-
         return view('pages.dashboard', [
-            'user' => $user,
-            'noteCount' => $user->notes()->count(),
-            // Nur Administratoren sehen die Tokens — fuer alle anderen null.
-            'tokenCount' => $user->isAdmin() ? ApiToken::whereNull('revoked_at')->count() : null,
+            'user' => $request->user(),
+            'decks' => $decks->mine($request->user()),
         ]);
-    }
-
-    /**
-     * Platzhalter, der zeigt, wie eine rollengeschuetzte Seite aussieht:
-     * Die Route steht in der Gruppe `role:moderator` — mehr ist nicht noetig.
-     */
-    public function moderation(): View
-    {
-        return view('pages.moderation');
     }
 
     /**

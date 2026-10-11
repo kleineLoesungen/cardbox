@@ -71,8 +71,9 @@ Migrationen nie ändern. UUID-Schlüssel, `foreignUuid(...)->constrained()`,
 **Changelog.** Nennenswerte Änderungen bekommen einen Eintrag in
 `CHANGELOG.md` — Migrationen als eigene `Migration:`-Zeile.
 
-**Benennung.** Bezeichner englisch, Kommentare, Oberflächentexte und
-Testnamen deutsch.
+**Benennung.** Bezeichner, Kommentare und PHPDoc englisch;
+Oberflächentexte, Doku, Changelog und Testnamen deutsch. Vorhandene deutsche
+Kommentare sind kein Befund, neue deutsche Kommentare schon.
 
 **Tests.** Neues Verhalten ohne Test ist ein Befund. Besonders: geänderte
 Berechtigungen, Grenzfälle, Fehlerpfade.

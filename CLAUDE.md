@@ -6,6 +6,22 @@ diesem Projekt gilt und wo die Fallstricke liegen.
 
 ---
 
+## Was Cardbox ist
+
+Ein Vokabel-Karteikasten (Leitner-System) für **Schülerinnen und Schüler ab 10
+Jahren und technisch unerfahrene Erwachsene**, benutzt fast ausschließlich
+**am Smartphone**. Neuaufbau von vocaBox. Was gebaut wird und warum, steht in
+`docs/specs/`. Vor allem [vokabelkarten.md](docs/specs/vokabelkarten.md) mit
+den **Leitlinien für Oberfläche und Bedienung**, die für jede neue Seite gelten:
+Daumenzone, eine Hauptaktion je Bildschirm, einfache Sprache („Stapel“, „Fach“,
+„Kann ich“ statt Fachbegriffen).
+
+Das Notizen-Beispiel (`Note`, `/notes`, Scopes `notes:*`) stammt aus der
+technischen Grundlage. Es dient den Rezepten in `docs/RECIPES.md` als Muster
+und ist kein Teil des Produkts.
+
+---
+
 ## Der Stack in einem Satz
 
 PHP 8.5 mit Laravel 13, serverseitig gerendertes HTML mit Blade,
@@ -47,7 +63,12 @@ Das Laravel-Ökosystem bietet für vieles fertige Pakete. Diese sind bewusst
   -spalten, Routen, Formularfelder, CSS-Klassen, `data`-Attribute:
   `NoteService::listForUser()`, `notes.user_id`, `name="title"`.
   So heißen sie auch in Laravel, und so rät man sie.
-* **Kommentare, Doku, Oberflächentexte, Testnamen deutsch.**
+* **Kommentare und PHPDoc englisch** — alles, was im Code selbst
+  dokumentiert: `// Check runs before Argon2 to keep locked attempts cheap.`
+  Bestehende deutsche Kommentare werden nicht in einem Rutsch übersetzt,
+  sondern beim Anfassen der jeweiligen Stelle.
+* **Projektsprache Deutsch** — Oberflächentexte, Fehlermeldungen, Doku unter
+  `docs/`, Spezifikationen, `CHANGELOG.md`, Commit-Nachrichten und Testnamen:
   `it('behandelt fremde Notizen wie nicht vorhandene', …)`.
 
 ---
@@ -136,7 +157,12 @@ Unterschied ist sicherheitsrelevant.
 
 Drei Fehlversuche sind frei, danach greift eine Sperre, die mit jedem weiteren
 Fehlversuch wächst (5 s → 15 s → 45 s → … → 15 min). Gezählt wird gleichzeitig
-pro Konto und pro IP-Adresse; siehe `app/Services/LoginThrottle.php`.
+pro Benutzername (`user:…`) und pro IP-Adresse; siehe `app/Services/LoginThrottle.php`.
+Konten haben **keine E-Mail-Adresse** — angemeldet wird nur mit Benutzername.
+
+Ein richtiges Passwort für ein gesperrtes oder noch nicht freigegebenes Konto
+zählt nicht als Fehlversuch; die Meldung dazu erscheint erst nach dem
+richtigen Passwort, damit sie nichts über fremde Konten verrät.
 
 Zwei Dinge dabei nicht kaputtmachen:
 
@@ -151,14 +177,22 @@ sonst kann sich jeder Client per `X-Forwarded-For` eine neue Identität geben.
 
 ---
 
-## Selbstregistrierung ist geschlossen
+## Registrierung braucht Freigabe
 
-`/register` funktioniert nur, solange die Installation **kein einziges Konto**
-hat — das ist die Ersteinrichtung, und dieses Konto wird Administrator. Danach
-legt der Administrator alle weiteren Konten unter `/admin/users` an.
+`/register` steht allen offen, aber ein neues Konto ist erst nutzbar, wenn ein
+Administrator es unter `/admin/users` **freigibt** (`users.approved_at`).
+Einzige Ausnahme: Das allererste Konto der Installation wird sofort
+freigegebener Administrator — sonst käme niemand an die Verwaltung.
 
-Die Prüfung steht im **Controller**, nicht nur im Template. Ein ausgeblendeter
-Link hält niemanden davon ab, das Formular von Hand abzuschicken.
+* Die Entscheidung „erstes Konto → Admin, sonst wartend" steht in
+  `UserService::register`, **nicht** im Controller oder Template. Ein von Hand
+  abgeschicktes Formular (`role=admin`) landet genauso in der Warteschlange.
+* `POST /register` ist auf 5 Anfragen pro IP und Stunde begrenzt.
+* Nicht freigegebene Konten werden nach 30 Tagen gelöscht — beim Aufruf der
+  Benutzerverwaltung, weil es im Container keinen Scheduler gibt.
+* `LogoutInactiveUsers` wirft gesperrte **und** nicht freigegebene Konten
+  bei der nächsten Anfrage hinaus.
+* Wer Konten anlegt (Admin), bekommt sie sofort freigegeben.
 
 ---
 
@@ -243,9 +277,12 @@ nichts, auch kein Netzzugriff.
 
 ## E-Mail
 
+Konten haben **keine E-Mail-Adresse**. Empfänger kommen aus der Konfiguration
+oder werden eingegeben (Testmail unter **System**).
+
 ```php
-Mail::to($user->email)->send(new WelcomeMail($user));                  // wartet
-defer(fn () => Mail::to($user->email)->send(new WelcomeMail($user)));   // nach der Antwort
+Mail::to($address)->send(new ReportMail($report));                  // wartet
+defer(fn () => Mail::to($address)->send(new ReportMail($report)));   // nach der Antwort
 ```
 
 * Jede Mail ist eine Klasse unter `app/Mail/` mit **HTML- und Textfassung**
@@ -280,7 +317,7 @@ Name, Kurzname und Farben kommen aus `APP_NAME`, `APP_SHORT_NAME`,
   rechnet in UTC.
 * **Nie Benutzereingaben in SQL-Strings einsetzen.** Query Builder oder
   Platzhalter (`DB::select('… WHERE x = ?', [$wert])`).
-* Tests laufen gegen die echte Postgres-Datenbank `starter_test`, nicht gegen SQLite.
+* Tests laufen gegen die echte Postgres-Datenbank `cardbox_test`, nicht gegen SQLite.
 
 ---
 
@@ -295,7 +332,7 @@ Nur semantische Tokens verwenden:
 
 Verfügbar sind `surface`, `surface-raised`, `surface-sunken`, `border`,
 `border-strong`, `content`, `muted`, `subtle`, `brand`, `brand-subtle`,
-`brand-content`, `success`, `warning`, `danger` — jeweils als `bg-`, `text-`
+`brand-content`, `success`, `warning`, `danger`, `danger-content` (Schrift auf `bg-danger`) — jeweils als `bg-`, `text-`
 und `border-`. Dazu `rounded-ui` für die einheitliche Eckenrundung.
 
 Wiederkehrendes Markup wird zu einer Klasse in `resources/css/components.css`
@@ -342,8 +379,7 @@ Icon-Farbe nach — siehe [docs/DESIGN.md](docs/DESIGN.md#1-der-schnellste-weg-e
 
 ## Werkzeuge in diesem Repository
 
-Unter `.claude/` liegt ein festes Vorgehen, das in jedem Projekt aus diesem
-Kit sofort da ist:
+Unter `.claude/` liegt ein festes Vorgehen:
 
 | Was | Wofür |
 |---|---|
@@ -375,7 +411,7 @@ lesen, statt ein eigenes Muster zu erfinden.
 - Fachlogik oder Validierung in Controller schreiben, statt sie in `app/Services/` zu legen.
 - Rollen- oder Scope-Prüfungen im Controller statt an der Route.
 - Einem Token eine Benutzeridentität andichten. Es gehört der Installation.
-- `/register` wieder öffnen, ohne die Prüfung im Controller mitzudenken.
+- Die Freigabe umgehen: Neue Konten nur über `UserService::register` bzw. `create` anlegen, nie direkt mit `User::create`.
 - Rohe Tailwind-Farben (`bg-blue-500`) statt semantischer Tokens.
 - Geheimnisse in den Quellcode. Alles kommt aus `.env` über `config/*.php`.
 - `env()` außerhalb von `config/`.

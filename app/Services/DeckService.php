@@ -1,0 +1,361 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\Language;
+use App\Models\Card;
+use App\Models\Deck;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Decks: visibility, ownership, following, copying, moderation.
+ *
+ * The rules (docs/specs/vokabelkarten.md, "Privat und geteilt"):
+ *
+ * * Visibility belongs to the deck. Own decks and shared decks are visible,
+ *   other people's private decks are not — they answer 404, for moderators
+ *   and admins too.
+ * * Only the owner changes a deck or its cards.
+ * * Other people's shared decks can be followed (read and learn) or copied.
+ *
+ * Two flavours, as everywhere in this project:
+ *
+ * * `…Owned` / `getVisible` — limited to what a user may see or change. For
+ *   the web UI.
+ * * `…Shared` — system-wide, but only ever on shared decks. For the
+ *   moderation routes (group `role:moderator`).
+ */
+class DeckService
+{
+    // -------------------------------------------------------------------------
+    // Reading
+    // -------------------------------------------------------------------------
+
+    /**
+     * "Meine Stapel": own decks plus shared decks of others the user follows.
+     * A followed deck that is no longer shared drops out silently.
+     *
+     * @return Collection<int, Deck>
+     */
+    public function mine(User $user): Collection
+    {
+        return Deck::query()
+            ->with('user')
+            ->withCount(['cards', 'followers'])
+            ->where(fn (Builder $q) => $q
+                ->where('user_id', $user->id)
+                ->orWhere(fn (Builder $q) => $q
+                    ->where('is_shared', true)
+                    ->whereHas('followers', fn (Builder $f) => $f->whereKey($user->id))))
+            ->orderByRaw('user_id = ? DESC', [$user->id])
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * "Entdecken": shared decks of other people.
+     *
+     * @return Collection<int, Deck>
+     */
+    public function discover(User $user, ?string $search = null, ?string $language = null): Collection
+    {
+        $search = trim((string) $search);
+        $language = Language::tryFrom((string) $language)?->value;
+
+        return Deck::query()
+            ->with('user')
+            ->withCount(['cards', 'followers'])
+            ->withExists(['followers as followed_by_me' => fn (Builder $f) => $f->whereKey($user->id)])
+            ->where('is_shared', true)
+            ->where('user_id', '!=', $user->id)
+            ->when($search !== '', function (Builder $q) use ($search) {
+                $pattern = '%'.addcslashes($search, '\\%_').'%';
+                $q->where(fn (Builder $q) => $q
+                    ->where('name', 'ilike', $pattern)
+                    ->orWhere('description', 'ilike', $pattern));
+            })
+            ->when($language !== null, fn (Builder $q) => $q->where(fn (Builder $q) => $q
+                ->where('front_language', $language)
+                ->orWhere('back_language', $language)))
+            ->orderBy('name')
+            ->limit(100)
+            ->get();
+    }
+
+    /**
+     * A deck the user may see: their own, or any shared one.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function getVisible(User $user, string $id): Deck
+    {
+        $this->ensureUuid($id);
+
+        return $this->visibleTo($user)->with('user')->findOrFail($id);
+    }
+
+    /**
+     * A deck the user owns. Other people's decks — shared or not — are 404.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function getOwned(User $user, string $id): Deck
+    {
+        $this->ensureUuid($id);
+
+        return $user->decks()->with('user')->findOrFail($id);
+    }
+
+    /**
+     * Decks whose cards the user may see: own decks and shared ones.
+     *
+     * @return Builder<Deck>
+     */
+    public function visibleTo(User $user): Builder
+    {
+        return Deck::query()->where(fn (Builder $q) => $q
+            ->where('user_id', $user->id)
+            ->orWhere('is_shared', true));
+    }
+
+    public function isFollowing(User $user, Deck $deck): bool
+    {
+        return DB::table('deck_follows')
+            ->where('user_id', $user->id)
+            ->where('deck_id', $deck->id)
+            ->exists();
+    }
+
+    public function followerCount(Deck $deck): int
+    {
+        return DB::table('deck_follows')->where('deck_id', $deck->id)->count();
+    }
+
+    /**
+     * What deleting this person's account takes with it — for the admin's
+     * confirmation.
+     *
+     * @return array{decks: int, shared: int, followers: int}
+     */
+    public function ownerSummary(User $user): array
+    {
+        return [
+            'decks' => $user->decks()->count(),
+            'shared' => $user->decks()->where('is_shared', true)->count(),
+            'followers' => DB::table('deck_follows')
+                ->whereIn('deck_id', $user->decks()->where('is_shared', true)->select('id'))
+                ->count(),
+        ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Own decks
+    // -------------------------------------------------------------------------
+
+    /**
+     * @param  array<string, mixed>  $input  name, description, front_language, back_language
+     *
+     * @throws ValidationException
+     */
+    public function create(User $user, array $input): Deck
+    {
+        $deck = new Deck($this->validate($input));
+        $deck->user_id = $user->id;
+        $deck->save();
+
+        return $deck;
+    }
+
+    /**
+     * Changing the languages leaves cards and progress untouched — cards hold
+     * plain text, the language only drives labels and read-aloud.
+     *
+     * @param  array<string, mixed>  $input
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function updateOwned(User $user, string $id, array $input): Deck
+    {
+        $deck = $this->getOwned($user, $id);
+        $deck->update($this->validate($input));
+
+        return $deck;
+    }
+
+    /** @throws ModelNotFoundException<Deck> */
+    public function setSharedOwned(User $user, string $id, bool $shared): Deck
+    {
+        $deck = $this->getOwned($user, $id);
+        $deck->forceFill(['is_shared' => $shared])->save();
+
+        return $deck;
+    }
+
+    /**
+     * Deletes the deck with all its cards, follows and everybody's progress.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function deleteOwned(User $user, string $id): void
+    {
+        $this->getOwned($user, $id)->delete();
+    }
+
+    // -------------------------------------------------------------------------
+    // Following and copying
+    // -------------------------------------------------------------------------
+
+    /**
+     * Follow a shared deck of somebody else. Following twice changes nothing.
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function follow(User $user, string $id): Deck
+    {
+        $deck = $this->getVisible($user, $id);
+
+        if ($deck->isOwnedBy($user)) {
+            throw ValidationException::withMessages(['deck' => 'Deinem eigenen Stapel kannst du nicht folgen.']);
+        }
+
+        $user->followedDecks()->syncWithoutDetaching([$deck->id]);
+
+        return $deck;
+    }
+
+    /**
+     * Stop following. Works by id even if the deck is no longer shared, so a
+     * hidden deck can be dropped too. Progress is kept for a later re-follow.
+     */
+    public function unfollow(User $user, string $id): void
+    {
+        if (Str::isUuid($id)) {
+            $user->followedDecks()->detach($id);
+        }
+    }
+
+    /**
+     * Copy a visible deck into a new private deck of the user, with copies of
+     * all cards. The copy is independent: later changes to the original do
+     * not reach it.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function copy(User $user, string $id): Deck
+    {
+        $original = $this->getVisible($user, $id);
+
+        return DB::transaction(function () use ($user, $original) {
+            $copy = new Deck([
+                'name' => $original->name,
+                'description' => $original->description,
+                'front_language' => $original->front_language,
+                'back_language' => $original->back_language,
+            ]);
+            $copy->user_id = $user->id;
+            $copy->copied_from_name = $original->name;
+            $copy->save();
+
+            $now = now();
+            $rows = $original->cards()->orderBy('created_at')->get()
+                ->map(fn (Card $card) => [
+                    'id' => (string) Str::uuid(),
+                    'deck_id' => $copy->id,
+                    'front' => json_encode($card->front, JSON_UNESCAPED_UNICODE),
+                    'back' => json_encode($card->back, JSON_UNESCAPED_UNICODE),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])
+                ->all();
+
+            foreach (array_chunk($rows, 500) as $chunk) {
+                Card::insert($chunk);
+            }
+
+            return $copy;
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Moderation — system-wide, but only on SHARED decks.
+    // Private decks of others stay invisible to moderators as well.
+    // -------------------------------------------------------------------------
+
+    /** @throws ModelNotFoundException<Deck> */
+    public function getShared(string $id): Deck
+    {
+        $this->ensureUuid($id);
+
+        return Deck::where('is_shared', true)->findOrFail($id);
+    }
+
+    /** @throws ModelNotFoundException<Deck> */
+    public function unshareShared(string $id): Deck
+    {
+        $deck = $this->getShared($id);
+        $deck->forceFill(['is_shared' => false])->save();
+
+        return $deck;
+    }
+
+    /** @throws ModelNotFoundException<Deck> */
+    public function deleteShared(string $id): void
+    {
+        $this->getShared($id)->delete();
+    }
+
+    // -------------------------------------------------------------------------
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array{name: string, description: string|null, front_language: string, back_language: string}
+     *
+     * @throws ValidationException
+     */
+    private function validate(array $input): array
+    {
+        // Only strings are trimmed; anything else (e.g. name[]=x) is left for
+        // the 'string' rule to reject with a proper message.
+        if (is_string($input['name'] ?? null)) {
+            $input['name'] = trim($input['name']);
+        }
+        if (is_string($input['description'] ?? null)) {
+            $input['description'] = trim($input['description']) === '' ? null : trim($input['description']);
+        }
+
+        /** @var array{name: string, description?: string|null, front_language: string, back_language: string} $data */
+        $data = Validator::make($input, [
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'front_language' => ['required', Rule::enum(Language::class)],
+            'back_language' => ['required', Rule::enum(Language::class), 'different:front_language'],
+        ], [
+            'back_language.different' => 'Vorne und hinten brauchen verschiedene Sprachen.',
+        ])->validate();
+
+        return [
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'front_language' => $data['front_language'],
+            'back_language' => $data['back_language'],
+        ];
+    }
+
+    /** Postgres rejects malformed UUIDs with an error — answer 404 instead of 500. */
+    private function ensureUuid(string $id): void
+    {
+        if (! Str::isUuid($id)) {
+            throw (new ModelNotFoundException)->setModel(Deck::class, [$id]);
+        }
+    }
+}

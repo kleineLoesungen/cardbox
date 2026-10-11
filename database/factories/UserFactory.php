@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<User>
@@ -22,10 +23,13 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'username' => 'u'.Str::lower(Str::random(12)),
             'password' => static::$password ??= Hash::make(self::PASSWORD),
             'role' => Role::User,
             'is_active' => true,
+            // Not fillable on purpose (only UserService sets it); factories
+            // create models unguarded, so this works here.
+            'approved_at' => now(),
         ];
     }
 
@@ -42,5 +46,11 @@ class UserFactory extends Factory
     public function inactive(): static
     {
         return $this->state(['is_active' => false]);
+    }
+
+    /** Self-registered account still waiting for approval. */
+    public function pending(): static
+    {
+        return $this->state(['approved_at' => null]);
     }
 }

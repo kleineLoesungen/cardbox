@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
@@ -21,15 +22,17 @@ use Illuminate\Support\Carbon;
  * stehen in App\Services\UserService, nicht hier.
  *
  * @property string $id
- * @property string $email
+ * @property string $username
  * @property string $name
  * @property string $password
  * @property Role $role
  * @property bool $is_active
+ * @property Carbon|null $approved_at
+ * @property string|null $approved_by
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role', 'is_active'])]
+#[Fillable(['name', 'username', 'password', 'role', 'is_active'])]
 #[Hidden(['password'])]
 class User extends Authenticatable
 {
@@ -45,25 +48,48 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'is_active' => 'boolean',
+            'approved_at' => 'datetime',
         ];
     }
 
     /**
-     * E-Mail-Adressen immer kleingeschrieben und ohne Leerraum speichern.
+     * Usernames are always stored lower-case and trimmed.
      *
      * @return Attribute<never, string>
      */
-    protected function email(): Attribute
+    protected function username(): Attribute
     {
         return Attribute::make(
             set: fn (string $value) => mb_strtolower(trim($value)),
         );
     }
 
+    /** @return HasMany<Deck, $this> */
+    public function decks(): HasMany
+    {
+        return $this->hasMany(Deck::class);
+    }
+
+    /**
+     * Shared decks of other people this user follows.
+     *
+     * @return BelongsToMany<Deck, $this>
+     */
+    public function followedDecks(): BelongsToMany
+    {
+        return $this->belongsToMany(Deck::class, 'deck_follows');
+    }
+
     /** @return HasMany<Note, $this> */
     public function notes(): HasMany
     {
         return $this->hasMany(Note::class);
+    }
+
+    /** Self-registered accounts stay unusable until an admin approves them. */
+    public function isApproved(): bool
+    {
+        return $this->approved_at !== null;
     }
 
     public function isAdmin(): bool

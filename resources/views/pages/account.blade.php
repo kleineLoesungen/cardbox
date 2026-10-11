@@ -29,10 +29,9 @@
       </div>
 
       <div class="field">
-        <label class="label" for="email">E-Mail</label>
-        <input class="input" type="email" id="email" name="email"
-               value="{{ old('email', $user->email) }}" required autocomplete="email">
-        <p class="hint">Wird auch zum Anmelden benutzt.</p>
+        <span class="label">Benutzername</span>
+        <p class="font-medium">{{ $user->username }}</p>
+        <p class="hint">Damit meldest du dich an. Ändern kann ihn eine Administratorin oder ein Administrator.</p>
       </div>
 
       <button type="submit" class="btn btn-primary">Speichern</button>

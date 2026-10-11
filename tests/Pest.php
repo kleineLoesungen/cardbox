@@ -9,7 +9,7 @@ use Tests\TestCase;
 | Testaufbau
 |--------------------------------------------------------------------------
 |
-| Feature-Tests laufen gegen die echte Postgres-Datenbank `starter_test`.
+| Feature-Tests laufen gegen die echte Postgres-Datenbank `cardbox_test`.
 | RefreshDatabase migriert einmal und setzt jeden Test in eine Transaktion,
 | die danach zurueckgerollt wird — jeder Test sieht eine leere Datenbank.
 |

@@ -22,10 +22,10 @@ setup:
 
 # --- Entwicklung -----------------------------------------------------------
 
-# Server starten (http://localhost:8000). Vorher wird das Stylesheet frisch gebaut.
+# Server starten (http://localhost:8001). Vorher wird das Stylesheet frisch gebaut.
 dev: css
     php artisan migrate
-    php artisan serve --port=8000
+    php artisan serve --port=8001
 
 # Stylesheet einmalig bauen.
 css:
@@ -45,16 +45,16 @@ migration name:
 db-up:
     docker compose up -d db
     @echo "Warte auf Postgres ..."
-    @until docker compose exec -T db pg_isready -U starter -q; do sleep 1; done
+    @until docker compose exec -T db pg_isready -U cardbox -q; do sleep 1; done
     @echo "Postgres bereit."
 
 db-down:
     docker compose down
 
-# Mailpit starten: faengt alle Mails ab, Ansicht unter http://localhost:59025
+# Mailpit starten: faengt alle Mails ab, Ansicht unter http://localhost:59026
 mail-up:
     docker compose up -d mail
-    @echo "Mailpit läuft: http://localhost:59025"
+    @echo "Mailpit läuft: http://localhost:59026"
 
 # ACHTUNG: loescht alle lokalen Daten und legt die Datenbank neu an.
 db-reset:
@@ -64,7 +64,7 @@ db-reset:
 
 # psql-Eingabeaufforderung oeffnen.
 db-shell:
-    docker compose exec db psql -U starter -d starter
+    docker compose exec db psql -U cardbox -d cardbox
 
 # --- Qualitaet -------------------------------------------------------------
 
@@ -96,7 +96,7 @@ views:
 
 # Abbild bauen.
 build:
-    docker build -t starter-php:latest .
+    docker build -t cardbox:latest .
 
 # Vollstaendig im Container starten (Anwendung + Datenbank + Mailpit).
 up:

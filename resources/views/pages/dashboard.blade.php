@@ -1,54 +1,32 @@
+{{--
+  "Heute" — start page after sign-in. Stage 1 shows the decks; the
+  learning overview (due cards, streak) follows in stage 2.
+--}}
 @extends('layouts.app')
-@section('title', 'Übersicht')
+@section('title', 'Heute')
 
 @section('main')
-<div class="mb-6">
+<div class="mx-auto max-w-md">
   <h1 class="text-2xl font-semibold tracking-tight">Hallo, {{ $user->name }}</h1>
-  <p class="mt-1 text-sm text-muted">
-    Angemeldet als <span class="badge badge-brand">{{ $user->role->label() }}</span>
-  </p>
-</div>
+  <p class="mt-1 mb-6 text-sm text-muted">Schön, dass du da bist.</p>
 
-<div class="grid gap-4 sm:grid-cols-3">
-  <a href="/notes" class="card transition-shadow hover:shadow-md">
-    <div class="card-body">
-      <p class="text-3xl font-semibold tabular-nums">{{ $noteCount }}</p>
-      <p class="mt-1 text-sm text-muted">Notizen</p>
+  @if ($decks->isEmpty())
+    <div class="empty">
+      <p class="empty-title">Los geht's mit deinem ersten Stapel</p>
+      <p class="empty-hint">Ein Stapel sammelt Karten mit Wörtern – vorne zum Beispiel Deutsch, hinten Englisch.</p>
+      <a href="/decks?new=1" class="btn btn-primary btn-lg">Eigenen Stapel anlegen</a>
+      <a href="/decks?tab=discover" class="btn btn-secondary btn-lg">Geteilte Stapel entdecken</a>
     </div>
-  </a>
-
-  @if ($tokenCount !== null)
-    <a href="/admin/tokens" class="card transition-shadow hover:shadow-md">
-      <div class="card-body">
-        <p class="text-3xl font-semibold tabular-nums">{{ $tokenCount }}</p>
-        <p class="mt-1 text-sm text-muted">App-Tokens</p>
-      </div>
-    </a>
   @else
-    <a href="/account" class="card transition-shadow hover:shadow-md">
-      <div class="card-body">
-        <p class="text-3xl font-semibold">{{ $user->initials() }}</p>
-        <p class="mt-1 text-sm text-muted">Mein Konto</p>
-      </div>
-    </a>
-  @endif
-
-  <a href="/styleguide" class="card transition-shadow hover:shadow-md">
-    <div class="card-body">
-      <p class="text-3xl font-semibold">◐</p>
-      <p class="mt-1 text-sm text-muted">Styleguide</p>
+    <div class="mb-2 flex items-center justify-between">
+      <h2 class="text-base font-semibold">Meine Stapel</h2>
+      <a href="/decks" class="text-sm text-brand hover:underline">Alle</a>
     </div>
-  </a>
-</div>
-
-<div class="card mt-8">
-  <div class="card-header"><h2 class="card-title">Nächste Schritte</h2></div>
-  <div class="card-body">
-    <ol class="list-inside list-decimal space-y-2 text-sm text-muted">
-      <li>Erscheinungsbild anpassen in <code class="code">resources/css/theme.css</code></li>
-      <li>Eigene Ressource nach dem Muster von <code class="code">app/Services/NoteService.php</code> anlegen</li>
-      <li>Eigenes Passwort unter <a href="/account" class="text-brand hover:underline">Mein Konto</a> ändern</li>
-    </ol>
-  </div>
+    <ul class="list">
+      @foreach ($decks as $deck)
+        <x-deck-row :deck="$deck" />
+      @endforeach
+    </ul>
+  @endif
 </div>
 @endsection

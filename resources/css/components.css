@@ -63,7 +63,7 @@
   .btn-primary   { @apply bg-brand text-brand-content hover:bg-brand-hover; }
   .btn-secondary { @apply border border-border bg-surface-raised text-content hover:bg-surface-sunken; }
   .btn-ghost     { @apply text-muted hover:bg-surface-sunken hover:text-content; }
-  .btn-danger    { @apply bg-danger text-white hover:opacity-90; }
+  .btn-danger    { @apply bg-danger text-danger-content hover:opacity-90; }
 
   .btn-sm   { @apply h-8 px-3 text-xs; }
   .btn-lg   { @apply h-12 px-6 text-base; }
@@ -76,9 +76,10 @@
 
   .label { @apply text-sm font-medium text-content; }
 
+  /* 16px on phones: iOS zooms into any input with smaller text. */
   .input, .textarea, .select {
     @apply w-full rounded-ui border border-border bg-surface-raised
-           px-3 text-sm text-content placeholder:text-subtle
+           px-3 text-base sm:text-sm text-content placeholder:text-subtle
            transition-colors
            focus:border-brand focus:outline-none
            disabled:cursor-not-allowed disabled:opacity-60;
@@ -86,6 +87,9 @@
   }
 
   .textarea { @apply py-2; height: auto; min-height: 6rem; }
+
+  /* Large entry field, e.g. the two sides when adding a card. */
+  .input-lg { @apply h-13 text-lg; }
 
   .hint  { @apply text-xs text-muted; }
   .error { @apply text-xs font-medium text-danger; }
@@ -178,6 +182,12 @@
 
   .tab-active { @apply text-brand; }
 
+  /* Small counter on a tab, e.g. waiting registrations. */
+  .tab-badge {
+    @apply absolute top-1 left-1/2 ml-2 min-w-5 rounded-full bg-danger px-1.5
+           text-center text-[0.625rem] leading-5 font-semibold text-danger-content;
+  }
+
   /* Das aufgeklappte Menue faehrt von unten herein, ueber die Leiste. */
   .sheet {
     @apply fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-border
@@ -228,9 +238,13 @@
 
   /* --- Meldungen (Toasts) ----------------------------------------------- */
 
+  /* Above the bottom tab bar on phones, so a toast never hides a tab. */
   .toast-region {
-    @apply pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col
+    @apply pointer-events-none fixed inset-x-0 z-50 flex flex-col
            items-center gap-2 px-4;
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+
+    @media (width >= 64rem) { bottom: 1rem; }
   }
   .toast {
     @apply pointer-events-auto flex items-center gap-3 rounded-ui border
@@ -285,3 +299,79 @@
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* =========================================================================
+   Cardbox — phone-first building blocks (docs/specs/vokabelkarten.md)
+   ========================================================================= */
+@layer components {
+
+  /* --- Bottom sheet on a native <dialog> ------------------------------- */
+  /*
+    <dialog> brings focus trapping, Escape and a backdrop for free. Styled as
+    a sheet that slides in from the bottom, full width on phones, centred
+    card on wide screens. Opened via data-open-sheet / htmx (layouts/app).
+  */
+  .dialog-sheet {
+    @apply m-0 mt-auto w-full max-w-none rounded-t-2xl border-t border-border
+           bg-surface-raised p-0 text-content shadow-lg
+           sm:mx-auto sm:mb-auto sm:max-w-md sm:rounded-2xl sm:border;
+    max-height: 92dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .dialog-sheet[open] { animation: sheet-in 180ms ease-out; }
+  .dialog-sheet::backdrop { background: oklch(0 0 0 / 0.45); }
+
+  .dialog-sheet-header {
+    @apply sticky top-0 z-10 flex items-center gap-2 border-b border-border
+           bg-surface-raised px-4 py-3;
+  }
+  .dialog-sheet-title { @apply flex-1 text-base font-semibold; }
+  .dialog-sheet-body  { @apply px-4 py-4; }
+
+  /* --- Floating action button above the tab bar ------------------------ */
+  .fab {
+    @apply fixed right-4 z-30 inline-flex h-14 items-center gap-2 rounded-full
+           bg-brand px-5 text-base font-semibold text-brand-content shadow-lg
+           transition-transform active:scale-95;
+    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+
+    @media (width >= 64rem) { bottom: 2rem; }
+  }
+
+  /* --- Segmented control ("Meine | Entdecken") ------------------------- */
+  .segmented {
+    @apply grid grid-flow-col auto-cols-fr gap-1 rounded-ui bg-surface-sunken p-1;
+  }
+  .segmented > * {
+    @apply flex min-h-11 items-center justify-center rounded-ui px-3 text-sm
+           font-medium text-muted transition-colors;
+  }
+  .segmented > .is-active { @apply bg-surface-raised text-content shadow-sm; }
+
+  /* --- Tappable list rows ---------------------------------------------- */
+  .list {
+    @apply divide-y divide-border overflow-hidden rounded-ui border border-border
+           bg-surface-raised;
+  }
+  /* An empty list (only whitespace inside) draws no frame. */
+  .list:not(:has(> *)) { @apply hidden; }
+
+  .list-row {
+    @apply flex min-h-14 w-full min-w-0 items-center gap-3 px-4 py-3 text-left
+           transition-colors;
+  }
+  a.list-row:hover, button.list-row:hover { @apply bg-surface-sunken; }
+
+  /* Card row: front | back, each side may wrap. */
+  .card-row-sides {
+    @apply grid min-w-0 flex-1 grid-cols-2 gap-3;
+  }
+  .card-row-sides > * { @apply min-w-0 break-words; }
+
+  /* Big action buttons in a sheet menu. */
+  .sheet-action {
+    @apply flex min-h-12 w-full items-center rounded-ui px-3 text-left text-base
+           font-medium text-content transition-colors hover:bg-surface-sunken;
+  }
+  .sheet-action-danger { @apply text-danger; }
+}

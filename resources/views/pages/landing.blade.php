@@ -20,21 +20,23 @@
     </div>
   </header>
 
-  <main class="container-app flex flex-1 flex-col items-center justify-center gap-6 py-20 text-center">
-    <h1 class="max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-      Startpunkt für Webanwendungen in PHP
+  <main class="container-app flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
+    <h1 class="max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+      Vokabeln lernen mit dem Karteikasten
     </h1>
-    <p class="max-w-xl text-balance text-muted">
-      Laravel, Blade und htmx auf einer externen Postgres-Datenbank.
-      Anmeldung, Rollen und App-Tokens sind bereits eingebaut.
+    <p class="max-w-md text-balance text-muted">
+      Karten anlegen oder von anderen übernehmen, jeden Tag ein paar Minuten
+      üben – der Karteikasten merkt sich, was du schon kannst.
     </p>
-    <div class="flex flex-wrap justify-center gap-3">
+    <div class="flex w-full max-w-xs flex-col gap-3">
       @if ($firstSetup)
-        <a href="/register" class="btn btn-primary btn-lg">Ersten Administrator anlegen</a>
+        <a href="/register" class="btn btn-primary btn-lg btn-block">Ersten Administrator anlegen</a>
       @else
-        <a href="/login" class="btn btn-primary btn-lg">Anmelden</a>
+        <a href="/login" class="btn btn-primary btn-lg btn-block">Anmelden</a>
+        @guest
+          <a href="/register" class="btn btn-secondary btn-lg btn-block">Konto anlegen</a>
+        @endguest
       @endif
-      <a href="/styleguide" class="btn btn-secondary btn-lg">Styleguide ansehen</a>
     </div>
   </main>
 </div>

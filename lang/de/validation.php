@@ -51,21 +51,36 @@ return [
     'url' => ':Attribute muss eine gültige Adresse sein.',
     'uuid' => ':Attribute muss eine gültige UUID sein.',
 
-    'custom' => [],
+    'custom' => [
+        'username' => [
+            'regex' => 'Der Benutzername darf nur Kleinbuchstaben (a–z), Ziffern, Punkt, Bindestrich und Unterstrich enthalten und muss mit einem Buchstaben beginnen, z. B. lena.m',
+        ],
+    ],
 
     'attributes' => [
+        'back' => 'Rückseite',
+        'back.*' => 'Bedeutung hinten',
+        'back_language' => 'Sprache hinten',
         'body' => 'Text',
         'current_password' => 'Aktuelles Passwort',
+        'description' => 'Beschreibung',
         'email' => 'E-Mail-Adresse',
         'expires_in_days' => 'Gültigkeit',
+        'file' => 'Datei',
+        'front' => 'Vorderseite',
+        'front.*' => 'Bedeutung vorne',
+        'front_language' => 'Sprache vorne',
         'name' => 'Name',
         'new_password' => 'Neues Passwort',
         'password' => 'Passwort',
+        'password_confirmation' => 'Passwort-Wiederholung',
         'role' => 'Rolle',
         'scopes' => 'Berechtigungen',
+        'text' => 'Liste',
         'title' => 'Titel',
         'to' => 'Empfänger',
         'user_id' => 'Benutzer',
+        'username' => 'Benutzername',
     ],
 
 ];

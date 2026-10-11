@@ -30,24 +30,25 @@ Diese Liste durchgehen:
 - [ ] `LOG_LEVEL=info` — `debug` protokolliert deutlich mehr.
 - [ ] Neuer Eintrag in `CHANGELOG.md` mit dem Datum dieser Veröffentlichung.
       Die oberste Überschrift ist die Version, die die Instanz anzeigt.
-- [ ] Erstes Konto anlegen und prüfen, dass es Administrator ist.
+- [ ] Erstes Konto über `/register` anlegen und prüfen, dass es Administrator ist.
+      Alle weiteren Registrierungen warten danach auf Freigabe unter **Benutzer**.
 
 ---
 
 ## Container starten
 
 ```bash
-docker build -t starter-php:latest .
+docker build -t cardbox:latest .
 
 docker run -d \
-  --name starter-php \
+  --name cardbox \
   -p 8000:8000 \
-  --env-file /etc/starter-php/env \
+  --env-file /etc/cardbox/env \
   --restart unless-stopped \
-  starter-php:latest
+  cardbox:latest
 ```
 
-Mit einer Umgebungsdatei `/etc/starter-php/env` (Rechte `600`):
+Mit einer Umgebungsdatei `/etc/cardbox/env` (Rechte `600`):
 
 ```ini
 APP_NAME=Vereinsportal
@@ -57,8 +58,8 @@ TRUST_PROXY=true
 SESSION_SECURE_COOKIE=true
 DB_HOST=db.example.com
 DB_PORT=5432
-DB_DATABASE=starter
-DB_USERNAME=starter
+DB_DATABASE=cardbox
+DB_USERNAME=cardbox
 DB_PASSWORD=…
 DB_SSLMODE=require
 MAIL_MAILER=smtp
@@ -268,14 +269,14 @@ curl -fsS https://app.example.com/api/v1/health
 **Konsole im laufenden Container:**
 
 ```bash
-docker exec -it starter-php php artisan tinker
+docker exec -it cardbox php artisan tinker
 ```
 
 **Sicherung** — die Anwendung selbst hält keinen Zustand, es genügt die
 Datenbank:
 
 ```bash
-pg_dump "postgres://starter:…@db.example.com/starter" --format=custom --file=sicherung-$(date +%F).dump
+pg_dump "postgres://cardbox:…@db.example.com/cardbox" --format=custom --file=sicherung-$(date +%F).dump
 ```
 
 Wiederherstellen mit `pg_restore`. Mindestens einmal geübt haben.
@@ -285,9 +286,9 @@ Wiederherstellen mit `pg_restore`. Mindestens einmal geübt haben.
 ## Aktualisieren
 
 ```bash
-docker build -t starter-php:neu .
-docker stop starter-php && docker rm starter-php
-docker run -d --name starter-php … starter-php:neu
+docker build -t cardbox:neu .
+docker stop cardbox && docker rm cardbox
+docker run -d --name cardbox … cardbox:neu
 ```
 
 Migrationen laufen beim Start automatisch. Bei mehreren Instanzen erst eine

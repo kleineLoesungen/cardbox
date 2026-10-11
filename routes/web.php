@@ -5,6 +5,10 @@ use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\Admin\TokenController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DeckCardController;
+use App\Http\Controllers\DeckController;
+use App\Http\Controllers\DeckImportController;
+use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PwaController;
@@ -41,10 +45,15 @@ Route::get('/offline', [PwaController::class, 'offline']);
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    // Nur fuer die Ersteinrichtung: greift, solange es kein Konto gibt.
+    // Open to everyone. The first account becomes admin, every later one
+    // waits for approval (UserService::register). Rate-limited per IP.
     Route::get('/register', [AuthController::class, 'showRegister']);
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,60');
 });
+
+// Random memorable password for registration and the admin forms. Returns no
+// data, hence public; throttled so it cannot be used to burn CPU.
+Route::post('/password-suggestion', [AuthController::class, 'suggestPassword'])->middleware('throttle:30,1');
 
 // --- Angemeldet --------------------------------------------------------------
 
@@ -57,6 +66,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/account', [AccountController::class, 'updateProfile']);
     Route::post('/account/password', [AccountController::class, 'updatePassword']);
 
+    // Decks and cards. Ownership and visibility are checked in DeckService /
+    // CardService: other people's private decks answer 404.
+    Route::get('/decks', [DeckController::class, 'index']);
+    Route::post('/decks', [DeckController::class, 'store']);
+    Route::whereUuid(['deck', 'card'])->prefix('/decks/{deck}')->group(function () {
+        Route::get('/', [DeckController::class, 'show']);
+        Route::post('/', [DeckController::class, 'update']);
+        Route::post('/share', [DeckController::class, 'share']);
+        Route::post('/delete', [DeckController::class, 'destroy']);
+        Route::post('/follow', [DeckController::class, 'follow']);
+        Route::post('/unfollow', [DeckController::class, 'unfollow']);
+        Route::post('/copy', [DeckController::class, 'copy']);
+
+        Route::post('/cards', [DeckCardController::class, 'store']);
+        Route::get('/cards/{card}/edit', [DeckCardController::class, 'edit']);
+        Route::post('/cards/{card}', [DeckCardController::class, 'update']);
+        Route::post('/cards/{card}/delete', [DeckCardController::class, 'destroy']);
+        Route::get('/front-check', [DeckCardController::class, 'frontCheck']);
+        Route::get('/adopt', [DeckCardController::class, 'search']);
+        Route::post('/adopt/{card}', [DeckCardController::class, 'adopt']);
+
+        Route::get('/import', [DeckImportController::class, 'show']);
+        // Throttled: each request parses up to 1 MB of text.
+        Route::post('/import/preview', [DeckImportController::class, 'preview'])->middleware('throttle:20,1');
+        Route::post('/import', [DeckImportController::class, 'store'])->middleware('throttle:20,1');
+    });
+
     Route::get('/notes', [NoteController::class, 'index']);
     Route::post('/notes', [NoteController::class, 'store']);
     Route::delete('/notes/{note}', [NoteController::class, 'destroy'])->whereUuid('note');
@@ -65,7 +101,10 @@ Route::middleware('auth')->group(function () {
 // --- Ab Moderator ------------------------------------------------------------
 
 Route::middleware(['auth', 'role:moderator'])->group(function () {
-    Route::get('/moderation', [PageController::class, 'moderation']);
+    // Shared decks only; moderators end sharing or delete, never edit.
+    Route::get('/moderation', [ModerationDeckController::class, 'index']);
+    Route::post('/moderation/decks/{deck}/unshare', [ModerationDeckController::class, 'unshare'])->whereUuid('deck');
+    Route::post('/moderation/decks/{deck}/delete', [ModerationDeckController::class, 'destroy'])->whereUuid('deck');
 });
 
 // --- Nur Administrator -------------------------------------------------------
@@ -73,6 +112,9 @@ Route::middleware(['auth', 'role:moderator'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/suggest-username', [UserController::class, 'suggestUsername']);
+    Route::post('/users/{user}/approve', [UserController::class, 'approve'])->whereUuid('user');
+    Route::post('/users/{user}/reject', [UserController::class, 'reject'])->whereUuid('user');
     Route::get('/users/{user}', [UserController::class, 'show'])->whereUuid('user');
     Route::post('/users/{user}', [UserController::class, 'update'])->whereUuid('user');
     Route::post('/users/{user}/password', [UserController::class, 'updatePassword'])->whereUuid('user');

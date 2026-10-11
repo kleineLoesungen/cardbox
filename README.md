@@ -1,213 +1,191 @@
-# Starter — Webanwendungen in PHP
+# Cardbox — Vokabeln lernen mit dem Karteikasten
 
-Startpunkt für Webanwendungen mit **Laravel 13**, **Blade**, **htmx** und
-**Tailwind CSS v4** auf einer **externen PostgreSQL**-Datenbank, ausgeliefert
-als **Container** (FrankenPHP).
+Cardbox ist ein digitaler Karteikasten fürs **Smartphone**. Man legt Stapel mit
+Vokabelkarten an oder übernimmt geteilte Stapel, und die App fragt jeden Tag die
+Karten ab, die gerade dran sind. Was sitzt, wandert ein Fach weiter und kommt
+seltener. Was nicht sitzt, kommt bald wieder.
 
-Anmeldung, Rollen, App-Tokens und ein anpassbares Design sind bereits eingebaut.
-Gemacht für die Arbeit mit KI-Assistenten: klare Regeln in [CLAUDE.md](CLAUDE.md),
-fertige Rezepte, ein strenges `just check` — und kein Node.
+Gedacht für **Schülerinnen und Schüler ab 10 Jahren** und für **Erwachsene ohne
+viel Technikerfahrung**:
+- große Knöpfe im Daumenbereich
+- einfache Sprache
+- eine Hauptaktion pro Bildschirm
 
-Das Gegenstück in Rust: [kleineLoesungen/vibe-starter-rust](https://github.com/kleineLoesungen/vibe-starter-rust).
-Gleiche Oberfläche, gleiche Konzepte, gleiche Doku-Struktur.
+Cardbox ist der Neuaufbau von
+[vocaBox](https://github.com/kleineLoesungen/vocaBox), jetzt mit PHP, Laravel und
+htmx statt Nuxt.
 
 ---
 
-## In fünf Minuten laufen
+## Stand
 
-Voraussetzungen: PHP ≥ 8.3 mit `pdo_pgsql`, [Composer](https://getcomposer.org),
-Docker, [just](https://github.com/casey/just) (`brew install just`).
+| Bereich | Stand | Spezifikation |
+|---|---|---|
+| Konten: Anmeldung mit Benutzername, Registrierung mit Freigabe | ✅ fertig | [konten-ohne-email.md](docs/specs/konten-ohne-email.md) |
+| Stapel und Karten: anlegen, Liste einfügen, folgen, kopieren | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
+| Lernen: Karteikasten, Lernrunde, freies Üben, Lernserie | 🔜 Stufe 2 | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
+| Feinschliff: Lernplan, Hilfe, Vorlesen, Wischgesten | 🔜 Stufe 3 | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
+
+Gelernt wird ab Stufe 2. Bis dahin zeigt „Heute“ die eigenen und gefolgten
+Stapel.
+
+---
+
+## So funktioniert es
+
+**Konten.** Jede Person kann sich unter `/register` ein Konto anlegen und braucht
+dafür nur einen Namen, einen Benutzernamen und ein Passwort, keine E-Mail-Adresse.
+Nutzbar wird das Konto erst, wenn eine Administratorin oder ein Administrator es
+unter **Benutzer** freigibt. Administratoren können Konten auch direkt anlegen.
+Ein Knopf schlägt merkbare Passwörter vor, z. B. `Wolke-Tiger-Apfel-47`.
+
+**Stapel.** Ein Stapel hat eine Sprache vorne und eine hinten, z. B. Deutsch →
+Englisch. Er ist entweder privat oder mit allen geteilt. Für einen geteilten
+Stapel einer anderen Person gibt es zwei Wege:
+- **Folgen:** lernen ja, ändern nein. Korrekturen der Besitzerin kommen sofort an.
+- **Kopieren:** Man bekommt eine eigene Fassung zum Ändern, der Lernstand wird
+  mitgenommen.
+
+**Lernen.** Der Karteikasten hat fünf Fächer, die Abstände sind 1, 2, 4 und 7 Tage.
+- Gewusst: Die Karte rückt ein Fach weiter.
+- Nicht gewusst: Die Karte geht zurück in Fach 1 und kommt am Ende der Runde
+  noch einmal.
+
+Gelernt wird in beide Richtungen getrennt. „Freies Üben“ fragt zufällige Karten
+ab, ohne dass etwas gezählt wird.
+
+**Rollen.**
+
+| Rolle | darf |
+|---|---|
+| Benutzer | eigene Stapel, geteilte Stapel folgen und kopieren, lernen |
+| Moderator | zusätzlich bei fremden geteilten Stapeln das Teilen beenden oder sie löschen |
+| Administrator | zusätzlich Konten freigeben, anlegen, sperren und löschen, App-Tokens, System |
+
+---
+
+## Betreiben
+
+Cardbox läuft als Container (FrankenPHP) und nutzt eine **externe
+PostgreSQL**. Ablauf, Sicherheitseinstellungen und Sicherung stehen in
+[docs/DEPLOY.md](docs/DEPLOY.md). Für ein geführtes Ausrollen gibt es den Befehl
+`/deploy` (siehe unten).
+
+Nach dem ersten Start `/register` öffnen. **Das erste Konto wird
+Administrator** und ist sofort nutzbar. Alle weiteren Registrierungen warten
+danach unter **Benutzer** auf Freigabe.
+
+Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md). Die oberste
+Überschrift ist die Version, die die Anwendung unter **System** anzeigt. Wer
+neue Versionen angezeigt bekommen möchte, trägt in `.env` ein:
+
+```
+UPDATE_CHECK_URL=https://raw.githubusercontent.com/kleineLoesungen/cardbox/main/CHANGELOG.md
+```
+
+---
+
+## Entwickeln
+
+Voraussetzungen:
+- PHP ≥ 8.3 mit `pdo_pgsql`
+- [Composer](https://getcomposer.org)
+- Docker
+- [just](https://github.com/casey/just) (`brew install just`)
+
+**Kein Node.**
 
 ```bash
 just setup    # Composer, Tailwind, .env, Postgres, Mailpit, Migrationen, Stylesheet
-just dev      # Server starten
+just dev      # Server auf http://localhost:8001
 ```
 
-Dann [http://localhost:8000](http://localhost:8000) öffnen und die
-**Ersteinrichtung** durchlaufen.
-
-> **Das erste Konto wird Administrator** — sonst käme niemand an die
-> Benutzerverwaltung heran. Danach ist die Selbstregistrierung geschlossen:
-> alle weiteren Konten legt der Administrator unter **Benutzer** an.
-
-Ohne `just` geht es auch von Hand:
+Mit Beispieldaten:
 
 ```bash
-composer install
-./scripts/get-tailwind.sh
-cp .env.example .env && php artisan key:generate
-docker compose up -d db mail
-php artisan migrate
-.bin/tailwindcss -i resources/css/app.css -o public/css/app.css
-php artisan serve --port=8000
+php artisan db:seed
 ```
 
-Beispieldaten (drei Konten, ein paar Notizen): `php artisan db:seed`.
+Das legt die Konten `anna` (Admin), `moritz` (Moderator), `bea` (Benutzer) und
+`neu.nutzer` (wartet auf Freigabe) an, alle mit dem Passwort
+`richtig-langes-passwort`. Dazu kommen ein geteilter Stapel von `anna` und ein
+privater von `bea`.
 
----
-
-## Eigenes Projekt aus dem Kit
-
-Das Kit selbst bleibt unverändert. Für jede Anwendung eine eigene Kopie:
-
-```bash
-git clone <pfad-oder-url-zum-kit> vereinsportal
-cd vereinsportal
-./scripts/new-project.sh vereinsportal "Vereinsportal"
-just setup
-just check
-```
-
-Das Skript benennt alles um, was „starter" heißt, und wählt freie Ports.
-**Direkt nach dem Klonen ausführen, vor jedem `just`-Befehl:** Bis dahin heißt
-der Klon noch „starter-php" und würde die Container des Kits benutzen — ein
-`just db-reset` löschte dann dessen Datenbank.
-**Nicht auslassen**, auch wenn nur ein Projekt geplant ist: Zwei Projekte mit
-demselben Namen teilen sich unbemerkt Container und Datenbank — das zweite
-überschreibt die Daten des ersten.
-
-Die Ports stehen danach in `.env` und `compose.yaml`; das Skript nennt sie am
-Ende. Zeigt `git remote -v` noch auf das Kit: `git remote remove origin`.
-
----
-
-## Was drin ist
-
-| Bereich | Umsetzung |
+| Dienst | Adresse |
 |---|---|
-| HTTP | Laravel 13, lokal `artisan serve`, im Container FrankenPHP |
-| HTML | Blade — `just views` kompiliert alle Templates und findet Syntaxfehler |
-| Interaktivität | htmx 2 — Teilaktualisierungen ohne eigenes JavaScript |
-| Aussehen | Tailwind v4 als Standalone-Binary, komplett über Design-Tokens steuerbar |
-| Datenbank | PostgreSQL, Eloquent, UUIDs als Schlüssel, Migrationen beim Containerstart |
-| Anmeldung | Session-Cookie, Sitzungen in Postgres |
-| Passwörter | Argon2id |
-| Rollen | `user` · `moderator` · `admin`, erzwungen an der Route, bewacht von einem Test |
-| Benutzer | Anlegen, bearbeiten, sperren, löschen, Passwort zurücksetzen |
-| Eigenes Konto | Name, E-Mail und Passwort selbst ändern |
-| API | JSON unter `/api/v1` für Maschinen, Zugriff über Scopes |
-| CSRF | Laravel: `Sec-Fetch-Site` plus Token als Rückfallebene |
-| Mobil | unter 1024 px Navigationsleiste unten, „Mehr"-Blatt, kein waagerechtes Scrollen |
-| Anmeldeschutz | 3 Versuche frei, danach wachsende Sperre pro Konto und IP |
-| Zeitangaben | in UTC gespeichert, in der Ortszeit des Betrachters angezeigt |
-| Installierbar | PWA mit Manifest, Icons und Offline-Seite; Name und Farben per Umgebung |
-| E-Mail | SMTP, lokal Mailpit, Testmail unter **System** |
-| Container | Mehrstufiges Dockerfile, FrankenPHP, unprivilegierter Benutzer |
-| Version | `CHANGELOG.md` ist die Version; Anzeige unter **System**, Hinweis auf neuere Versionen |
-| Qualität | Pint, Larastan (Stufe 6), Strict Mode für Eloquent |
-| Tests | 134 Pest-Tests gegen eine echte Postgres |
+| Anwendung | http://localhost:8001 |
+| Postgres | `localhost:56433`, Datenbank `cardbox`, Tests in `cardbox_test` |
+| Mailpit | http://localhost:59026 |
+| Styleguide | http://localhost:8001/styleguide |
 
----
-
-## Wo was liegt
-
-```
-app/
-├── Services/              ← FACHLOGIK UND VALIDIERUNG. Kennt weder Request noch View.
-│   ├── NoteService.php      Beispielressource zum Kopieren
-│   ├── UserService.php      Benutzer, letzter Administrator, Passwörter
-│   ├── ApiTokenService.php  Ausstellen, Prüfen, Widerrufen
-│   └── LoginThrottle.php    Bremse gegen Passwort-Raten
-│
-├── Models/                Daten und Beziehungen (User, Note, ApiToken, Setting)
-├── Enums/
-│   ├── Role.php             Rollen und ihre Rangfolge
-│   └── Scope.php            Was ein App-Token darf
-│   └── UpdateCheck.php      Abgleich mit dem Changelog im Repository
-├── Auth/TokenFormat.php   Aufbau und Prüfung der App-Tokens
-├── Support/               Branding (Name, Farben), Changelog (Version)
-├── Mail/                  Eine Klasse je Mail
-│
-└── Http/
-    ├── Controllers/         ← HTML-Routen (Session-Cookie). Dünn.
-    │   ├── Admin/             Benutzer, Tokens, System — nur Administratoren
-    │   └── Api/V1/            ← JSON-Routen (Bearer-Token, Scopes). Dünn.
-    ├── Middleware/          role:…, scope:…, gesperrte Konten abmelden, Proxy
-    └── Resources/           JSON-Form von Notiz und Benutzer
-
-routes/
-├── web.php                ← Wer darf was? Die GRUPPE entscheidet.
-└── api.php                ← Welcher Scope? Steht an der Route.
-
-CHANGELOG.md               ← die Version der Anwendung, von Hand gepflegt
-bootstrap/app.php          Middleware, Fehlerbehandlung für API und htmx
-config/                    Die einzige Stelle, an der env() gelesen wird
-
-resources/
-├── views/
-│   ├── layouts/             Grundgerüst und angemeldeter Rahmen
-│   ├── pages/               eine Datei je Seite
-│   ├── admin/               Verwaltungsseiten
-│   ├── partials/            htmx-Fragmente
-│   ├── components/          <x-datetime>, <x-note-item>, <x-nav-links> …
-│   ├── mail/                HTML-Mails, nur Inline-Styles
-│   └── errors/              Fehlerseiten
-├── css/theme.css          ← HIER das Aussehen ändern
-├── css/components.css       Komponentenklassen (.btn, .card, …)
-└── icons/                   Quelle der App-Icons (SVG)
-
-public/icons/              erzeugte PNG-Icons — nach Änderung ./scripts/icons.sh
-database/migrations/       Migrationen
-tests/                     Unit/ und Feature/ (Pest)
-docs/                      Ausführliche Dokumentation
-docs/specs/                Spezifikationen, die vor dem Code entstanden sind
-.claude/                   Festes Vorgehen für KI-Assistenten (siehe unten)
-```
-
----
-
-## Weiterlesen
-
-| Datei | Inhalt |
-|---|---|
-| [docs/RECIPES.md](docs/RECIPES.md) | **Hier anfangen.** Wie füge ich eine Seite, eine Ressource, eine Rolle hinzu? |
-| [docs/DESIGN.md](docs/DESIGN.md) | Design-Guide: Farben, Abstände, Komponenten anpassen |
-| [docs/API.md](docs/API.md) | JSON-Schnittstelle und App-Tokens |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Warum es so aufgebaut ist, wie es aufgebaut ist |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Produktivbetrieb, Sicherheitseinstellungen |
-| [CLAUDE.md](CLAUDE.md) | Regeln für KI-Assistenten in diesem Projekt |
-| [docs/specs/](docs/specs/) | Spezifikationen: was vor dem Code entschieden wurde |
-
-Der **Styleguide** unter [/styleguide](http://localhost:8000/styleguide) zeigt jede
-Komponente im echten Zustand — mit Reglern zum Ausprobieren von Farbe und Rundung.
-
----
-
-## Arbeiten mit KI-Assistenten
-
-Das Kit bringt ein festes Vorgehen mit, das in jedem abgeleiteten Projekt ab
-dem ersten Commit vorhanden ist:
-
-| Datei | Wirkung |
-|---|---|
-| `CLAUDE.md` | gilt immer: Regeln, Fallstricke, Stack |
-| `.claude/skills/spec/` | `/spec` — erst Spezifikation, dann Code |
-| `.claude/skills/deploy/` | `/deploy` — fester Ablauf fürs Ausrollen |
-| `.claude/agents/` | Subagents `code-reviewer` und `security-reviewer` |
-| `.claude/hooks/pre-bash.sh` | führt vor jedem Commit `just check` aus und weist datenlöschende Befehle ab |
-
-Der Hook ist das Sicherheitsnetz anstelle einer CI: Ein roter `just check`
-verhindert den Commit, und die Meldung sagt, was zu tun ist — auch im
-häufigsten Fall „Datenbank läuft nicht".
-
----
-
-## Häufige Befehle
+### Häufige Befehle
 
 ```bash
 just dev          # Server starten (baut das Stylesheet vorher)
 just css-watch    # Stylesheet beobachten (zweites Terminal)
 just test         # Tests
-just check        # Formatierung + Larastan + Templates + Tests
+just check        # Formatierung + Larastan + Templates + Tests — vor jedem Commit
 just fmt          # Formatierung automatisch richten
 just db-shell     # psql öffnen
-just mail-up      # Mailpit starten, Mails ansehen unter http://localhost:59025
-just db-reset     # Datenbank verwerfen und neu anlegen
 just up           # alles im Container starten
-php artisan tinker          # PHP-Konsole mit geladener Anwendung
 php artisan route:list      # alle Routen samt Middleware
 ```
 
+`just check` ist die einzige Prüfung, es gibt keine CI. Ein Hook führt den Befehl
+vor jedem `git commit` aus und bricht bei einem roten Ergebnis ab.
+
+### Technik
+
+| Bereich | Umsetzung |
+|---|---|
+| Server | PHP 8.5, Laravel 13, lokal `artisan serve`, im Container FrankenPHP |
+| Oberfläche | Blade, htmx 2.0.10, Tailwind v4 (Standalone-Binary) über Design-Tokens |
+| Datenbank | PostgreSQL, Eloquent, UUIDs, Migrationen beim Containerstart |
+| Anmeldung | Session-Cookie, Argon2id, Anmeldebremse pro Benutzername und IP |
+| Rechte | Rollen an der Route, von `RouteProtectionTest` bewacht |
+| API | JSON unter `/api/v1` für Maschinen, Zugriff über Scopes ([docs/API.md](docs/API.md)) |
+| App | PWA (installierbar), Navigation unten im Daumenbereich |
+| Qualität | Pint, Larastan Stufe 6, Strict Mode, Pest-Tests gegen echte Postgres |
+
+### Wo was liegt
+
+```
+app/Services/          Fachlogik und Validierung — kennt weder Request noch View
+                       (DeckService, CardService, CardImportService, UserService …)
+app/Http/Controllers/  dünne HTML-Controller; Api/V1/ für JSON
+app/Models/            Daten und Beziehungen, keine Regeln
+routes/web.php         wer was darf, entscheidet die Routengruppe
+resources/views/       Blade: pages/, partials/ (htmx), components/, admin/
+resources/css/         theme.css (Farben, Rundung) und components.css
+database/migrations/   nur neue Dateien, nie bestehende ändern
+tests/                 Pest: Unit/ und Feature/
+docs/                  ausführliche Doku, docs/specs/ für Spezifikationen
+```
+
+### Weiterlesen
+
+| Datei | Inhalt |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | Regeln für dieses Projekt — für Menschen und KI-Assistenten |
+| [docs/specs/](docs/specs/) | Spezifikationen: was vor dem Code entschieden wurde |
+| [docs/RECIPES.md](docs/RECIPES.md) | Schrittfolgen: Seite, Ressource, Feld, Rolle, E-Mail … |
+| [docs/DESIGN.md](docs/DESIGN.md) | Farben, Komponenten, schmale Bildschirme, Barrierefreiheit |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Warum es so aufgebaut ist |
+| [docs/API.md](docs/API.md) | JSON-Schnittstelle und App-Tokens |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Produktivbetrieb und Sicherheit |
+
+### Arbeiten mit KI-Assistenten
+
+| Datei | Wirkung |
+|---|---|
+| `CLAUDE.md` | gilt immer: Stack, Schichtregeln, Fallstricke |
+| `/spec <Beschreibung>` | neue Funktion: erst Spezifikation nach `docs/specs/`, dann Code |
+| `/deploy <Ziel>` | Ausrollen nach festem Ablauf |
+| `.claude/agents/` | `code-reviewer` vor dem Commit, `security-reviewer` nach Änderungen an Anmeldung und Rechten |
+| `.claude/hooks/pre-bash.sh` | `just check` vor jedem Commit, weist datenlöschende Befehle ab |
+
+---
+
 ## Lizenz
 
-Vorlage zur freien Verwendung. Eigene Lizenz ergänzen.
+Noch keine Lizenz festgelegt.

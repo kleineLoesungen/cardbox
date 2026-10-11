@@ -38,5 +38,12 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
             'appVersion', Changelog::installedLabel(),
         ));
+
+        // Badge with waiting registrations — admins only, so nobody else
+        // pays for the query.
+        View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
+            'pendingUserCount',
+            auth()->user()?->isAdmin() ? app(UserService::class)->pendingCount() : 0,
+        ));
     }
 }

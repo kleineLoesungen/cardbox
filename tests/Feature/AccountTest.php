@@ -4,22 +4,24 @@ use App\Models\User;
 use Database\Factories\UserFactory;
 use Illuminate\Support\Facades\Hash;
 
-it('ändert Name und E-Mail', function () {
+it('ändert den Anzeigenamen', function () {
     $user = actingAsUser();
 
-    $this->from('/account')->post('/account', ['name' => 'Neuer Name', 'email' => 'NEU@example.com'])
+    $this->from('/account')->post('/account', ['name' => 'Neuer Name'])
         ->assertRedirect('/account')
         ->assertSessionHas('saved', 'profile');
 
-    expect($user->refresh())->name->toBe('Neuer Name')->email->toBe('neu@example.com');
+    expect($user->refresh()->name)->toBe('Neuer Name');
 });
 
-it('lehnt eine schon vergebene E-Mail ab — in der Fehlertasche des Profils', function () {
-    User::factory()->create(['email' => 'belegt@example.com']);
-    actingAsUser();
+it('lässt den eigenen Benutzernamen nicht ändern', function () {
+    $user = actingAsUser(['username' => 'bleibt']);
 
-    $this->from('/account')->post('/account', ['name' => 'X', 'email' => 'belegt@example.com'])
-        ->assertSessionHasErrorsIn('profile', ['email']);
+    $this->from('/account')->post('/account', ['name' => 'X', 'username' => 'anders'])
+        ->assertSessionHas('saved', 'profile');
+
+    expect($user->refresh()->username)->toBe('bleibt');
+    $this->get('/account')->assertSee('bleibt');
 });
 
 it('ändert das Passwort nur mit dem richtigen aktuellen Passwort', function () {

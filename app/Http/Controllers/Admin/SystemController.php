@@ -50,7 +50,7 @@ class SystemController extends Controller
             'secureCookie' => (bool) config('session.secure'),
             'trustProxy' => (bool) config('app.trust_proxy'),
             'debug' => (bool) config('app.debug'),
-            'testMailTo' => old('to', $request->user()->email),
+            'testMailTo' => old('to', ''),
         ]);
     }
 

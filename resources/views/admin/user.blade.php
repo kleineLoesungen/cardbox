@@ -11,7 +11,7 @@
   <a href="/admin/users" class="text-sm text-muted hover:text-content">← Alle Benutzer</a>
   <h1 class="mt-2 text-2xl font-semibold tracking-tight">{{ $edited->name }}</h1>
   <p class="mt-1 text-sm text-muted">
-    {{ $edited->email }} · angelegt am <x-date :value="$edited->created_at" />
+    {{ $edited->username }} · angelegt am <x-date :value="$edited->created_at" />
   </p>
 </div>
 
@@ -50,9 +50,12 @@
       </div>
 
       <div class="field">
-        <label class="label" for="email">E-Mail</label>
-        <input class="input" type="email" id="email" name="email"
-               value="{{ old('email', $edited->email) }}" required>
+        <label class="label" for="username">Benutzername</label>
+        <input class="input" type="text" id="username" name="username"
+               value="{{ old('username', $edited->username) }}" required
+               maxlength="{{ \App\Services\UserService::USERNAME_MAX_LENGTH }}"
+               autocapitalize="none" autocorrect="off" spellcheck="false">
+        <p class="hint">Zum Anmelden. Wer umbenannt wird, muss den neuen Namen erfahren.</p>
       </div>
 
       <div class="field">
@@ -90,15 +93,8 @@
       <div class="card-header"><h2 class="card-title">Passwort zurücksetzen</h2></div>
       <form class="card-body stack" method="post" action="/admin/users/{{ $edited->id }}/password">
         @csrf
-        <div class="field">
-          <label class="label" for="password">Neues Passwort</label>
-          <input class="input" type="password" id="password" name="password"
-                 required minlength="{{ \App\Services\UserService::MIN_PASSWORD_LENGTH }}" autocomplete="new-password">
-          <p class="hint">
-            Mindestens {{ \App\Services\UserService::MIN_PASSWORD_LENGTH }} Zeichen. Bestehende Anmeldungen
-            dieses Kontos bleiben aktiv, bis sie ablaufen.
-          </p>
-        </div>
+        @include('partials.password-fields')
+        <p class="hint">Bestehende Anmeldungen dieses Kontos bleiben aktiv, bis sie ablaufen.</p>
         <button type="submit" class="btn btn-secondary">Passwort setzen</button>
       </form>
     </div>
@@ -116,7 +112,7 @@
           <p class="hint">Das eigene Konto lässt sich nicht löschen.</p>
         @else
           <form method="post" action="/admin/users/{{ $edited->id }}/delete"
-                data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?">
+                data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?{{ $deckSummary['decks'] > 0 ? ' Dabei werden '.$deckSummary['decks'].' Stapel gelöscht' : '' }}{{ $deckSummary['followers'] > 0 ? ', denen insgesamt '.$deckSummary['followers'].' Personen folgen' : '' }}{{ $deckSummary['decks'] > 0 ? '.' : '' }}">
             @csrf
             <button type="submit" class="btn btn-danger">Konto löschen</button>
           </form>
@@ -126,14 +122,4 @@
   </div>
 </div>
 
-<script>
-  // Rueckfrage vor dem Loeschen. Der Text steht im data-Attribut und nicht in
-  // einem onsubmit="…": Dort muesste er zusaetzlich fuer JavaScript maskiert
-  // werden, und ein Apostroph im Namen braeche das Skript.
-  document.querySelectorAll("form[data-confirm]").forEach((form) => {
-    form.addEventListener("submit", (e) => {
-      if (!confirm(form.dataset.confirm)) e.preventDefault();
-    });
-  });
-</script>
 @endsection

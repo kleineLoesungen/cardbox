@@ -11,7 +11,7 @@
 | installiert wird nichts.
 |
 | Leer oder nicht gesetzt = abgeschaltet, kein Netzzugriff. Das ist die
-| Vorgabe; ein Projekt aus dem Kit traegt hier sein EIGENES Repository ein.
+| Vorgabe. Fuer Cardbox: .../kleineLoesungen/cardbox/main/CHANGELOG.md
 |
 */
 

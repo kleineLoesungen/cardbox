@@ -62,13 +62,14 @@ class LoginThrottle
     }
 
     /**
-     * Schluessel, unter denen ein Anmeldeversuch gezaehlt wird.
+     * Keys a login attempt is counted under: the normalised username and the
+     * client IP.
      *
      * @return list<string>
      */
-    public static function keys(string $email, ?string $ip): array
+    public static function keys(string $username, ?string $ip): array
     {
-        $keys = ['email:'.mb_strtolower(trim($email))];
+        $keys = ['user:'.UserService::normalizeUsername($username)];
         if ($ip !== null && $ip !== '') {
             $keys[] = 'ip:'.$ip;
         }

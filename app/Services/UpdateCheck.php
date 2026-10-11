@@ -21,9 +21,8 @@ use Throwable;
  *
  * Zwei Dinge halten das harmlos:
  *
- * * **Ohne `UPDATE_CHECK_URL` passiert nichts.** Das ist die Vorgabe im Kit —
- *   sonst würde jedes abgeleitete Projekt die Versionen des Kits anzeigen und
- *   ungefragt nach außen sprechen.
+ * * **Without `UPDATE_CHECK_URL` nothing happens.** That is the default, so
+ *   an installation never talks to the outside world unasked.
  * * **Ein Fehlschlag ist kein Fehler.** Keine Fehlerseite, kein Abbruch; der
  *   zuletzt bekannte Stand bleibt stehen und wird als veraltet gekennzeichnet.
  */
@@ -147,7 +146,7 @@ class UpdateCheck
         try {
             $response = Http::timeout(self::TIMEOUT)
                 ->connectTimeout(self::TIMEOUT)
-                ->withHeader('User-Agent', 'starter-update-check/'.(Changelog::installedVersion() ?? 'unbekannt'))
+                ->withHeader('User-Agent', 'cardbox-update-check/'.(Changelog::installedVersion() ?? 'unbekannt'))
                 ->withOptions([
                     // Umleitungen nur zu `https`, höchstens drei.
                     //

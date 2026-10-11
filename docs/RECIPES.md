@@ -584,11 +584,15 @@ Spamfilter werten reine HTML-Mails ab.
 **d) Versenden:**
 
 ```php
+// Konten haben keine E-Mail-Adresse — der Empfänger kommt aus der
+// Konfiguration oder einer Eingabe.
+$address = config('mail.from.address');
+
 // Wartet auf den Mailserver — Fehler kommen im Controller an.
-Mail::to($user->email)->send(new WelcomeMail($user));
+Mail::to($address)->send(new WelcomeMail($user));
 
 // Nach der Antwort — ein langsamer Mailserver hält keine Seite auf.
-defer(fn () => Mail::to($user->email)->send(new WelcomeMail($user)));
+defer(fn () => Mail::to($address)->send(new WelcomeMail($user)));
 ```
 
 | | wartet | Fehler | richtig für |
@@ -597,7 +601,7 @@ defer(fn () => Mail::to($user->email)->send(new WelcomeMail($user)));
 | `defer(fn () => …send(…))` | nein | nur im Log | Benachrichtigungen |
 
 **Ansehen beim Entwickeln:** `just mail-up` startet Mailpit. Es nimmt jede Mail
-an, verschickt nichts und zeigt alles unter <http://localhost:59025>.
+an, verschickt nichts und zeigt alles unter <http://localhost:59026>.
 
 **Testen:** `Mail::fake()`, dann `Mail::assertSent(WelcomeMail::class)` — Beispiel
 in `tests/Feature/SystemTest.php`.

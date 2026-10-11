@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Role;
 use App\Services\LoginThrottle;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
- * Anmelden, Ersteinrichtung, Abmelden.
+ * Sign in, registration (incl. first setup), sign out.
  *
  * Bewusst normale HTML-Formulare ohne htmx: Sie enden in einer Weiterleitung,
  * und dabei soll der Browser die Adresszeile aendern.
@@ -24,33 +23,44 @@ class AuthController extends Controller
 
     public function showLogin(): View
     {
-        return view('pages.login', ['firstSetup' => $this->isFirstSetup()]);
+        return view('pages.login', ['firstSetup' => $this->users->isEmpty()]);
     }
 
     public function login(Request $request, LoginThrottle $throttle): RedirectResponse
     {
-        $email = (string) $request->input('email');
-        $keys = LoginThrottle::keys($email, $request->ip());
+        $username = (string) $request->input('username');
+        $keys = LoginThrottle::keys($username, $request->ip());
 
         // Erst die Bremse, dann das Passwort: Ein gesperrter Versuch soll den
         // Server keine Argon2-Rechenzeit kosten. Und er zaehlt NICHT als
         // Fehlversuch — sonst verlaengert stures Weiterklicken die eigene Sperre.
         if (($seconds = $throttle->lockedFor($keys)) !== null) {
-            Log::warning('Anmeldung gesperrt', ['email' => $email, 'ip' => $request->ip()]);
+            Log::warning('Anmeldung gesperrt', ['username' => $username, 'ip' => $request->ip()]);
 
             throw ValidationException::withMessages([
-                'email' => 'Zu viele Fehlversuche. Bitte '.self::waitText($seconds).' erneut versuchen.',
+                'username' => 'Zu viele Fehlversuche. Bitte '.self::waitText($seconds).' erneut versuchen.',
             ])->status(429);
         }
 
-        $user = $this->users->findByCredentials($email, (string) $request->input('password'));
+        $user = $this->users->findByCredentials($username, (string) $request->input('password'));
 
-        if ($user === null || ! $user->is_active) {
+        if ($user === null) {
             $throttle->recordFailure($keys);
 
             throw ValidationException::withMessages([
-                'email' => $user === null ? 'E-Mail oder Passwort stimmt nicht.' : 'Dieses Konto ist gesperrt.',
+                'username' => 'Benutzername oder Passwort stimmt nicht.',
             ]);
+        }
+
+        // The password was right, so these are not guessing attempts and do
+        // not count against the throttle.
+        if (! $user->isApproved()) {
+            throw ValidationException::withMessages([
+                'username' => 'Dein Konto ist noch nicht freigegeben. Frag eine Administratorin oder einen Administrator.',
+            ]);
+        }
+        if (! $user->is_active) {
+            throw ValidationException::withMessages(['username' => 'Dieses Konto ist gesperrt.']);
         }
 
         $throttle->recordSuccess($keys);
@@ -67,28 +77,28 @@ class AuthController extends Controller
         return redirect()->intended('/dashboard');
     }
 
-    public function showRegister(): View|RedirectResponse
+    /** Registration form, or the confirmation after a successful registration. */
+    public function showRegister(Request $request): View
     {
-        if (! $this->isFirstSetup()) {
-            return redirect('/login');
+        if ($request->session()->has('registered')) {
+            return view('pages.registered', ['username' => (string) $request->session()->get('registered')]);
         }
 
-        return view('pages.register');
+        return view('pages.register', ['firstSetup' => $this->users->isEmpty()]);
     }
 
     public function register(Request $request): RedirectResponse
     {
-        // Die Selbstregistrierung existiert nur fuer die Ersteinrichtung.
-        //
-        // Wichtig: Diese Pruefung steht HIER und nicht nur im Template. Sonst
-        // liesse sich das Formular einfach von Hand abschicken.
-        if (! $this->isFirstSetup()) {
-            return redirect('/login');
-        }
+        // Whether the account becomes the first admin or has to wait for
+        // approval is decided in UserService::register — not here and not in
+        // the template, so a hand-crafted form changes nothing.
+        $user = $this->users->register($request->only('name', 'username', 'password', 'password_confirmation'));
 
-        // Das erste Konto wird Administrator — sonst kaeme niemand an die
-        // Benutzerverwaltung heran.
-        $user = $this->users->create($request->only('name', 'email', 'password'), Role::Admin);
+        if (! $user->isApproved()) {
+            Log::info('Registrierung wartet auf Freigabe', ['user_id' => $user->id]);
+
+            return redirect('/register')->with('registered', $user->username);
+        }
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -98,6 +108,18 @@ class AuthController extends Controller
         return redirect('/dashboard');
     }
 
+    /**
+     * htmx: fills the password field(s) with a memorable suggestion. Public
+     * on purpose (registration needs it); it returns random words, no data.
+     */
+    public function suggestPassword(Request $request): View
+    {
+        return view('partials.password-fields', [
+            'value' => $this->users->suggestPassword(),
+            'confirm' => $request->boolean('confirm'),
+        ]);
+    }
+
     public function logout(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
@@ -105,12 +127,6 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
-    }
-
-    /** `true`, solange die Installation noch kein einziges Konto hat. */
-    private function isFirstSetup(): bool
-    {
-        return $this->users->count() === 0;
     }
 
     /** Wartezeit so ausdruecken, wie ein Mensch sie liest. */

@@ -15,9 +15,10 @@
       <x-form-error />
 
       <div class="field">
-        <label class="label" for="email">E-Mail</label>
-        <input class="input @error('email') input-error @enderror" type="email" id="email" name="email"
-               value="{{ old('email') }}" required autocomplete="email" autofocus>
+        <label class="label" for="username">Benutzername</label>
+        <input class="input @error('username') input-error @enderror" type="text" id="username" name="username"
+               value="{{ old('username') }}" required autofocus
+               autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
       </div>
 
       <div class="field">
@@ -26,19 +27,21 @@
                required autocomplete="current-password">
       </div>
 
-      <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Anmelden</button>
     </form>
   </div>
 
-  @if ($firstSetup)
-    <p class="text-center text-sm text-muted">
+  <p class="text-center text-sm text-muted">
+    @if ($firstSetup)
       Noch kein Konto vorhanden.
       <a href="/register" class="font-medium text-brand hover:underline">Ersteinrichtung starten</a>
-    </p>
-  @else
-    <p class="text-center text-sm text-subtle">
-      Zugang bekommst du von einer Administratorin oder einem Administrator.
-    </p>
-  @endif
+    @else
+      Noch kein Konto?
+      <a href="/register" class="font-medium text-brand hover:underline">Konto anlegen</a>
+    @endif
+  </p>
+  <p class="text-center text-sm text-subtle">
+    Passwort vergessen? Eine Administratorin oder ein Administrator kann es neu setzen.
+  </p>
 </main>
 @endsection

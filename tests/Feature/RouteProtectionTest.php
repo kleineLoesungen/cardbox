@@ -21,6 +21,8 @@ const PUBLIC_ROUTES = [
     'POST login',
     'GET register',
     'POST register',
+    // Returns a random word password, no data — used on /register.
+    'POST password-suggestion',
     'GET api/v1/health',
 ];
 

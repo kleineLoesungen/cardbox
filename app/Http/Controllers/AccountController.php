@@ -10,7 +10,8 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
- * Eigenes Konto: Name, E-Mail und Passwort selbst aendern.
+ * Own account: change display name and password. The username is shown
+ * but only an administrator may change it.
  *
  * Zwei Formulare auf einer Seite — deshalb getrennte Fehler-Taschen
  * ("profile", "password"), sonst erschiene ein Fehler bei beiden.
@@ -27,7 +28,7 @@ class AccountController extends Controller
     public function updateProfile(Request $request): RedirectResponse
     {
         try {
-            $this->users->updateProfile($request->user(), $request->only('name', 'email'));
+            $this->users->updateProfile($request->user(), $request->only('name'));
         } catch (ValidationException $e) {
             throw $e->errorBag('profile');
         }
