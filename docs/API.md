@@ -151,6 +151,24 @@ Ohne Authentifizierung. Prüft auch die Datenbankverbindung.
 `503` mit `"status": "degraded"`, wenn die Datenbank nicht erreichbar ist.
 Für Loadbalancer und Container-Orchestrierung gedacht.
 
+### `POST /api/v1/deploy` — nur mit `DEPLOY_HOOK_TOKEN`
+
+Für `deploy.sh` auf Webspace ohne Kommandozeile
+([INSTALL-WEBSPACE.md](INSTALL-WEBSPACE.md)). Kein App-Token: Der Aufruf muss
+schon beim ersten Deploy mit leerer Datenbank funktionieren. Stattdessen
+`Authorization: Bearer <DEPLOY_HOOK_TOKEN>` aus der `.env` des Servers
+(mindestens 32 Zeichen). Ist es nicht gesetzt, falsch oder zu kurz, antwortet
+die Adresse mit **404**. Gedrosselt auf 10 Aufrufe pro Minute.
+
+Prüft PHP-Version, Erweiterungen, Argon2, Schreibrechte, `APP_KEY`,
+`APP_DEBUG` und die Datenbank. Nur wenn alles passt, laufen die Migrationen.
+
+```json
+{ "ok": true, "checks": { "php": { "ok": true, "detail": "8.5.0 (nötig: 8.4.1 oder neuer)" }, … }, "migrations": "INFO  Nothing to migrate." }
+```
+
+Bei einem ✗ in den Prüfungen oder einem Fehler: `500` mit `"ok": false`.
+
 ### `GET /api/v1/token`
 
 Kein Scope nötig, nur ein gültiges Token. Gibt Name, Berechtigungen und

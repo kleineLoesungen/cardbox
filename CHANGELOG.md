@@ -7,6 +7,19 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.11.4
+- Lernplan unter Mehr: Normal, Schnell (vor Prüfungen), Gründlich oder ein eigener Plan mit 2–10 Fächern und eigenen Abständen
+- Hilfe unter Mehr: So funktioniert der Karteikasten, Folgen oder kopieren, Listen einfügen, App auf den Startbildschirm
+- In der Lernrunde: Vorlesen (wenn das Gerät eine passende Stimme hat) und Wischen – rechts gewusst, links nochmal
+- Hilfe „Vorlesen funktioniert nicht?“: wie man auf iPhone, Android, Mac und Windows fehlende Stimmen lädt; die Lernrunde verlinkt dorthin, wenn eine Stimme fehlt
+- Rückfragen vor dem Löschen als eigenes Fenster mit klar benanntem Knopf statt der Browser-Rückfrage
+- „Zurück zur Liste“ in der Import-Vorschau behält den eingefügten Text
+- Installationsanleitung für einen eigenen Server in der README, mit fertiger Konfiguration in deploy/ (Cardbox, PostgreSQL, Caddy mit automatischem HTTPS)
+- Installationsanleitung ohne Container für nginx/Apache mit vorhandener PostgreSQL (docs/INSTALL-WEBSERVER.md) und Skript scripts/deploy-webserver.sh für Installation und Updates
+- Deploy auf Webspace nur mit FTP: ./deploy.sh mit .env.deploy baut, lädt per FTPS hoch und migriert über einen per DEPLOY_HOOK_TOKEN geschützten Aufruf (docs/INSTALL-WEBSPACE.md)
+- Mindestversion PHP 8.4.1 (vorher fälschlich 8.3 angegeben; die Abhängigkeiten brauchen 8.4.1)
+- Behoben: Auf einer leeren Datenbank startete der Container nicht (Migrationen brauchten eine Sperr-Tabelle, die erst durch die Migrationen entsteht)
+
 ## 2026.10.11.3
 - Lernen mit dem Karteikasten: Karten umdrehen, „Gewusst“ oder „Nochmal“, gewusste Karten rücken ein Fach weiter
 - Nicht gewusste Karten kommen am Ende der Runde noch einmal (höchstens dreimal)

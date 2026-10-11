@@ -2,6 +2,10 @@
 .env
 .env.*
 !.env.example
+# Patterns here only match at the root. deploy/ holds the server's own .env
+# with passwords and APP_KEY — it must never end up inside the image.
+**/.env
+deploy/
 .bin
 vendor
 node_modules

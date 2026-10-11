@@ -1,5 +1,13 @@
 # Produktivbetrieb
 
+> **Schritt-für-Schritt-Anleitungen:**
+> - mit Docker (Datenbank und HTTPS inklusive): [README](../README.md#installation-auf-einem-server), Dateien in [`deploy/`](../deploy/)
+> - ohne Container, mit vorhandener PostgreSQL: [INSTALL-WEBSERVER.md](INSTALL-WEBSERVER.md)
+> - Webspace nur mit FTP: [INSTALL-WEBSPACE.md](INSTALL-WEBSPACE.md) (`./deploy.sh`)
+>
+> Diese Seite ist die Referenz für alles darüber hinaus: eigene Datenbank,
+> eigener Proxy, mehrere Instanzen, alle Einstellungen.
+
 ---
 
 ## Vor dem ersten Ausrollen
@@ -86,12 +94,15 @@ damit auch die Datenbankverbindung, nicht nur den Prozess.
 
 `docker/entrypoint.sh`:
 
-1. `config:cache`, `route:cache`, `view:cache` — Konfiguration, Routen und
+1. `migrate --force --isolated` — Migrationen, mit Sperre gegen gleichzeitig
+   startende Instanzen. Die Sperre liegt in der Tabelle `cache_locks`, die es
+   auf einer **leeren** Datenbank noch nicht gibt. Beim allerersten Start
+   schlägt dieser Schritt deshalb fehl und läuft einmal ohne Sperre
+   (`CACHE_STORE=array`). Danach greift die Sperre.
+2. `login-attempts:prune` — alte Einträge der Anmeldebremse wegräumen.
+3. `config:cache`, `route:cache`, `view:cache` — Konfiguration, Routen und
    Templates vorkompilieren. Ab hier liefert `env()` außerhalb von `config/`
    nichts mehr.
-2. `migrate --force --isolated` — Migrationen, mit Sperre gegen gleichzeitig
-   startende Instanzen.
-3. `login-attempts:prune` — alte Einträge der Anmeldebremse wegräumen.
 4. FrankenPHP startet auf Port 8000.
 
 Scheitert ein Schritt — etwa weil die Datenbank nicht erreichbar ist oder eine

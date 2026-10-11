@@ -1,0 +1,7 @@
+# Uploaded by deploy.sh as .htaccess into the Cardbox folder on the web space.
+#
+# The domain must point to the public/ subfolder. If it points here instead,
+# deny everything — otherwise .env (passwords, APP_KEY) and the source code
+# could be downloaded. Visitors then see "403 Forbidden"; fix it in the
+# hosting panel by setting the document root to …/public.
+Require all denied

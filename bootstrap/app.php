@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\LogoutInactiveUsers;
+use App\Http\Middleware\RequireDeployToken;
 use App\Http\Middleware\RequireScope;
 use App\Http\Middleware\TrustProxies;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'api.token' => RequireScope::class,
             'scope' => RequireScope::class,
+            'deploy.token' => RequireDeployToken::class,
         ]);
 
         // Gesperrte Konten bei der naechsten Anfrage abmelden — an ALLEN Web-Routen.

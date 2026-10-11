@@ -1,0 +1,67 @@
+# Cardbox on one server: application, PostgreSQL and Caddy (HTTPS).
+#
+#   cd deploy
+#   cp .env.example .env    # fill in, see README "Installation auf einem Server"
+#   docker compose up -d --build
+#
+# For an existing database or your own reverse proxy see docs/DEPLOY.md.
+
+# Own project name, so it never shares containers or volumes with the
+# development setup (compose.yaml in the repository root, project "cardbox").
+name: cardbox-prod
+
+services:
+  app:
+    build:
+      context: ..
+    image: cardbox:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_URL: https://${CARDBOX_DOMAIN:?CARDBOX_DOMAIN fehlt in deploy/.env}
+      DB_HOST: db
+      DB_PORT: "5432"
+      # Only Caddy reaches the app (no published port), so its
+      # X-Forwarded-* headers can be trusted.
+      TRUST_PROXY: "true"
+      SESSION_SECURE_COOKIE: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-cardbox}
+      POSTGRES_USER: ${DB_USERNAME:-cardbox}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD fehlt in deploy/.env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-cardbox} -d ${DB_DATABASE:-cardbox}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CARDBOX_DOMAIN: ${CARDBOX_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here — keep this volume, or Let's Encrypt limits apply.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

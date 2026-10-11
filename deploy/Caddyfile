@@ -1,0 +1,7 @@
+# Caddy fetches and renews the HTTPS certificate for CARDBOX_DOMAIN on its
+# own (Let's Encrypt). The DNS entry must point to this server and ports 80
+# and 443 must be reachable from the internet.
+{$CARDBOX_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8000
+}

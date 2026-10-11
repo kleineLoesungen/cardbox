@@ -24,10 +24,10 @@ htmx statt Nuxt.
 | Konten: Anmeldung mit Benutzername, Registrierung mit Freigabe | ✅ fertig | [konten-ohne-email.md](docs/specs/konten-ohne-email.md) |
 | Stapel und Karten: anlegen, Liste einfügen, folgen, kopieren | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
 | Lernen: Karteikasten, Lernrunde, freies Üben, Lernserie | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
-| Feinschliff: Lernplan, Hilfe, Vorlesen, Wischgesten | 🔜 Stufe 3 | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
+| Feinschliff: Lernplan, Hilfe, Vorlesen, Wischgesten | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
 
-Als Nächstes kommt der Feinschliff: eigener Lernplan, Hilfeseite, Vorlesen
-und Wischgesten.
+Alle drei Stufen der Spezifikation sind umgesetzt. Offen ist ein Test auf
+echten Telefonen.
 
 ---
 
@@ -52,7 +52,10 @@ Stapel einer anderen Person gibt es zwei Wege:
   noch einmal.
 
 Gelernt wird in beide Richtungen getrennt. „Freies Üben“ fragt zufällige Karten
-ab, ohne dass etwas gezählt wird.
+ab, ohne dass etwas gezählt wird, auf Wunsch auch nur ein Fach. In der Runde
+kann man wischen (rechts gewusst, links nochmal) und sich die Karte vorlesen
+lassen. Unter **Mehr → Lernplan** wählt jede Person Normal, Schnell, Gründlich
+oder einen eigenen Plan. **Mehr → Hilfe** erklärt alles in einfachen Worten.
 
 **Rollen.**
 
@@ -64,31 +67,152 @@ ab, ohne dass etwas gezählt wird.
 
 ---
 
-## Betreiben
+## Installation auf einem Server
 
-Cardbox läuft als Container (FrankenPHP) und nutzt eine **externe
-PostgreSQL**. Ablauf, Sicherheitseinstellungen und Sicherung stehen in
-[docs/DEPLOY.md](docs/DEPLOY.md). Für ein geführtes Ausrollen gibt es den Befehl
+Zwei Wege:
+
+| Weg | Für wen | Anleitung |
+|---|---|---|
+| **A: mit Docker** | neuer Server, alles aus einer Hand (Datenbank und HTTPS inklusive) | gleich hier unten |
+| **B: Webserver ohne Container** | eigener Server mit SSH, nginx/Apache und PHP, **vorhandene PostgreSQL** | [docs/INSTALL-WEBSERVER.md](docs/INSTALL-WEBSERVER.md) |
+| **C: Webspace mit FTP** | gemieteter Webspace ohne Kommandozeile, PostgreSQL vom Hoster | [docs/INSTALL-WEBSPACE.md](docs/INSTALL-WEBSPACE.md) |
+
+Für B und C gibt es fertige Skripte, die Installation und Updates in einem
+Befehl erledigen:
+- **B:** `scripts/deploy-webserver.sh` läuft auf dem Server und prüft vorher die Voraussetzungen.
+- **C:** `./deploy.sh` läuft auf deinem Rechner, mit einmal ausgefüllter `.env.deploy`. Es baut, lädt per FTPS hoch und migriert die Datenbank.
+
+### Weg A: mit Docker
+
+Im Ordner [`deploy/`](deploy/) liegt eine fertige Konfiguration mit drei Diensten:
+- **Cardbox** selbst
+- **PostgreSQL** für die Daten
+- **Caddy**, der das HTTPS-Zertifikat automatisch holt und erneuert
+
+Zeitaufwand: etwa 15 Minuten, der erste Build dauert ein paar Minuten.
+
+### Was du brauchst
+
+- Einen Linux-Server, schon ein kleiner mit 1–2 GB RAM reicht.
+- [Docker Engine mit dem Compose-Plugin](https://docs.docker.com/engine/install/).
+  Prüfen: `docker compose version`.
+- Eine Adresse wie `cardbox.example.com`. Ihr DNS-Eintrag (A bzw. AAAA) muss auf
+  den Server zeigen.
+- Offene Ports **80** und **443**. Caddy braucht beide, um das Zertifikat zu holen.
+
+### 1. Code holen
+
+```bash
+git clone https://github.com/kleineLoesungen/cardbox.git
+cd cardbox/deploy
+```
+
+### 2. Einstellungen ausfüllen
+
+```bash
+cp .env.example .env
+chmod 600 .env
+```
+
+Dann `.env` öffnen (z. B. `nano .env`) und drei Werte eintragen:
+
+| Eintrag | Wert |
+|---|---|
+| `CARDBOX_DOMAIN` | deine Adresse, ohne `https://`, z. B. `cardbox.example.com` |
+| `APP_KEY` | Ausgabe von `echo "base64:$(openssl rand -base64 32)"` |
+| `DB_PASSWORD` | Ausgabe von `openssl rand -hex 24` |
+
+Alles Weitere hat sinnvolle Vorgaben und ist in der Datei erklärt (Name der
+App, Zeitzone, optionaler Update-Hinweis, optionale E-Mail).
+
+> **`APP_KEY` und `DB_PASSWORD` gut aufheben**, z. B. im Passwortmanager. Ein
+> neuer `APP_KEY` meldet alle ab. Ohne `DB_PASSWORD` kommt man nicht mehr an die
+> Datenbank heran.
+
+### 3. Starten
+
+```bash
+docker compose up -d --build
+```
+
+Beim ersten Start legt Cardbox die Tabellen selbst an. Prüfen, ob alles läuft:
+
+```bash
+docker compose ps
+```
+
+```bash
+curl https://cardbox.example.com/api/v1/health
+```
+
+`docker compose ps` zeigt bei `app` und `db` „healthy“. Die Adresse antwortet mit
+`{"status":"ok","database":"ok"}`.
+
+### 4. Erstes Konto anlegen
+
+`https://cardbox.example.com/register` öffnen. **Das erste Konto wird
+Administrator** und ist sofort nutzbar. Danach können sich alle unter
+`/register` selbst anmelden. Neue Konten warten unter **Mehr → Benutzer** auf
+Freigabe, oder du legst sie dort direkt an.
+
+### Aktualisieren
+
+Vorher in [CHANGELOG.md](CHANGELOG.md) nachlesen, was sich ändert, und eine
+Sicherung machen (siehe unten).
+
+```bash
+cd cardbox
+git pull
+cd deploy
+docker compose up -d --build
+```
+
+Neue Migrationen laufen beim Start automatisch. Die installierte Version steht
+unter **Mehr → System**.
+
+### Sicherung
+
+Alle Daten liegen in der Datenbank. Im Ordner `deploy/` eine Sicherung als
+Datei anlegen:
+
+```bash
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom' > sicherung-$(date +%F).dump
+```
+
+Zurückspielen (überschreibt den aktuellen Stand):
+
+```bash
+docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists' < sicherung-2026-10-11.dump
+```
+
+Die Sicherung am besten täglich per `cron` anlegen, auf einen anderen Rechner
+kopieren und das Zurückspielen einmal ausprobieren.
+
+### Wenn etwas klemmt
+
+| Problem | Lösung |
+|---|---|
+| Kein HTTPS, Zertifikatsfehler | Zeigt der DNS-Eintrag auf diesen Server? Sind 80 und 443 offen? `docker compose logs caddy` zeigt den Grund. |
+| `app` startet immer wieder neu | `docker compose logs app` lesen. Oft fehlt `APP_KEY` oder `DB_PASSWORD` in `.env`. |
+| Passwort vergessen | Eine Administratorin setzt es unter **Benutzer** neu. |
+| Einziger Administrator hat sein Passwort vergessen | `docker compose exec app php artisan tinker`, dann `App\Models\User::where('username', 'anna')->first()->update(['password' => 'ein-neues-langes-passwort']);` |
+| Logs ansehen | `docker compose logs -f app` |
+
+### Andere Aufbauten
+
+Ohne Container mit vorhandener PostgreSQL: [docs/INSTALL-WEBSERVER.md](docs/INSTALL-WEBSERVER.md).
+Container mit **bestehender PostgreSQL**, **eigenem Reverse-Proxy** (nginx,
+Traefik) oder mehreren Instanzen: [docs/DEPLOY.md](docs/DEPLOY.md). Dort stehen auch alle
+Umgebungsvariablen, die Sicherheits-Checkliste und der Update-Hinweis
+(`UPDATE_CHECK_URL`). Für ein geführtes Ausrollen mit KI-Assistent gibt es
 `/deploy` (siehe unten).
-
-Nach dem ersten Start `/register` öffnen. **Das erste Konto wird
-Administrator** und ist sofort nutzbar. Alle weiteren Registrierungen warten
-danach unter **Benutzer** auf Freigabe.
-
-Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md). Die oberste
-Überschrift ist die Version, die die Anwendung unter **System** anzeigt. Wer
-neue Versionen angezeigt bekommen möchte, trägt in `.env` ein:
-
-```
-UPDATE_CHECK_URL=https://raw.githubusercontent.com/kleineLoesungen/cardbox/main/CHANGELOG.md
-```
 
 ---
 
 ## Entwickeln
 
 Voraussetzungen:
-- PHP ≥ 8.3 mit `pdo_pgsql`
+- PHP ≥ 8.4 mit `pdo_pgsql`
 - [Composer](https://getcomposer.org)
 - Docker
 - [just](https://github.com/casey/just) (`brew install just`)
@@ -160,6 +284,8 @@ resources/css/         theme.css (Farben, Rundung) und components.css
 database/migrations/   nur neue Dateien, nie bestehende ändern
 tests/                 Pest: Unit/ und Feature/
 docs/                  ausführliche Doku, docs/specs/ für Spezifikationen
+deploy/                Server-Konfiguration: compose.yaml, Caddyfile, .env.example
+deploy.sh              Deploy auf Webspace per FTP (Einstellungen in .env.deploy)
 ```
 
 ### Weiterlesen
@@ -172,7 +298,9 @@ docs/                  ausführliche Doku, docs/specs/ für Spezifikationen
 | [docs/DESIGN.md](docs/DESIGN.md) | Farben, Komponenten, schmale Bildschirme, Barrierefreiheit |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Warum es so aufgebaut ist |
 | [docs/API.md](docs/API.md) | JSON-Schnittstelle und App-Tokens |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Produktivbetrieb und Sicherheit |
+| [docs/INSTALL-WEBSERVER.md](docs/INSTALL-WEBSERVER.md) | Installation ohne Container auf nginx/Apache mit vorhandener PostgreSQL |
+| [docs/INSTALL-WEBSPACE.md](docs/INSTALL-WEBSPACE.md) | Webspace nur mit FTP: `deploy.sh` und `.env.deploy` |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Produktivbetrieb im Detail: eigene Datenbank, Proxy, Sicherheit, alle Einstellungen |
 
 ### Arbeiten mit KI-Assistenten
 

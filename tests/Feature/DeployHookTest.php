@@ -1,0 +1,79 @@
+<?php
+
+use App\Services\DeployService;
+
+/** A token long enough to switch the hook on. */
+const HOOK_TOKEN = 'test-token-0123456789abcdef0123456789abcdef';
+
+it('gibt es nicht, solange kein Token eingerichtet ist', function () {
+    config(['deploy.hook_token' => null]);
+
+    $this->withToken(HOOK_TOKEN)->postJson('/api/v1/deploy')->assertNotFound();
+});
+
+it('gilt bei einem zu kurzen Token als ausgeschaltet', function () {
+    config(['deploy.hook_token' => 'kurz']);
+
+    $this->withToken('kurz')->postJson('/api/v1/deploy')->assertNotFound();
+});
+
+it('antwortet ohne oder mit falschem Token mit 404', function () {
+    config(['deploy.hook_token' => HOOK_TOKEN]);
+
+    $this->postJson('/api/v1/deploy')->assertNotFound();
+    $this->withToken(HOOK_TOKEN.'x')->postJson('/api/v1/deploy')->assertNotFound();
+    $this->getJson('/api/v1/deploy', ['Authorization' => 'Bearer '.HOOK_TOKEN])->assertStatus(405);
+});
+
+it('migriert mit dem richtigen Token und meldet die Prüfungen', function () {
+    config(['deploy.hook_token' => HOOK_TOKEN, 'app.debug' => false]);
+
+    $this->withToken(HOOK_TOKEN)->postJson('/api/v1/deploy')
+        ->assertOk()
+        ->assertJsonPath('ok', true)
+        ->assertJsonPath('checks.php.ok', true)
+        ->assertJsonPath('checks.ext-pdo_pgsql.ok', true)
+        ->assertJsonPath('checks.database.ok', true)
+        ->assertJsonPath('checks.argon2.ok', true)
+        ->assertJsonPath('checks.app-key.ok', true);
+});
+
+it('migriert nicht, wenn eine Prüfung fehlschlägt', function () {
+    config(['deploy.hook_token' => HOOK_TOKEN, 'app.debug' => true]);
+
+    $this->withToken(HOOK_TOKEN)->postJson('/api/v1/deploy')
+        ->assertStatus(500)
+        ->assertJsonPath('ok', false)
+        ->assertJsonPath('checks.app-debug.ok', false)
+        ->assertJsonPath('migrations', 'nicht ausgeführt – erst die Prüfungen beheben');
+});
+
+it('ist gegen Durchprobieren gedrosselt', function () {
+    config(['deploy.hook_token' => HOOK_TOKEN]);
+
+    foreach (range(1, 10) as $_) {
+        $this->postJson('/api/v1/deploy');
+    }
+
+    $this->postJson('/api/v1/deploy')->assertStatus(429);
+});
+
+it('lässt keinen zweiten Deploy gleichzeitig laufen', function () {
+    config(['deploy.hook_token' => HOOK_TOKEN, 'app.debug' => false]);
+
+    // Another connection holds the lock, like a deploy that is still running.
+    $holder = new PDO(
+        'pgsql:host='.config('database.connections.pgsql.host').';port='.config('database.connections.pgsql.port').';dbname='.config('database.connections.pgsql.database'),
+        config('database.connections.pgsql.username'),
+        config('database.connections.pgsql.password'),
+    );
+    $holder->query('SELECT pg_advisory_lock('.DeployService::LOCK_KEY.')');
+
+    try {
+        $this->withToken(HOOK_TOKEN)->postJson('/api/v1/deploy')
+            ->assertStatus(500)
+            ->assertJsonPath('migrations', 'Ein anderer Deploy läuft gerade. Kurz warten und erneut versuchen.');
+    } finally {
+        $holder->query('SELECT pg_advisory_unlock('.DeployService::LOCK_KEY.')');
+    }
+});

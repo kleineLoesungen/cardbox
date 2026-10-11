@@ -24,6 +24,9 @@ const PUBLIC_ROUTES = [
     // Returns a random word password, no data — used on /register.
     'POST password-suggestion',
     'GET api/v1/health',
+    // Guarded by DEPLOY_HOOK_TOKEN (middleware deploy.token), not by a login
+    // or app token — it has to run on the first deploy with an empty database.
+    'POST api/v1/deploy',
 ];
 
 /** @return array<string, Route> */
