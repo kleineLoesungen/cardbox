@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Direction;
 use App\Enums\StudyPlan;
 use App\Services\CardService;
+use App\Services\CardSuggestionService;
 use App\Services\DeckRunService;
 use App\Services\DeckService;
 use App\Services\LearningOverviewService;
@@ -23,6 +24,7 @@ class DeckController extends Controller
         private CardService $cards,
         private LearningOverviewService $overview,
         private DeckRunService $runs,
+        private CardSuggestionService $suggestions,
     ) {}
 
     /** "Meine" and "Entdecken" on one page, switched by ?tab=. */
@@ -80,6 +82,9 @@ class DeckController extends Controller
             'followerCount' => $this->decks->followerCount($model),
             'openAddSheet' => $isOwner && $request->boolean('new'),
             'changedOriginals' => $this->cards->pendingOriginalCount($user, $model),
+            'openSuggestions' => $this->suggestions->openCountForDeck($user, $model),
+            // Status of the viewer's own suggestions, shown at the cards.
+            'mySuggestions' => $isOwner ? [] : $this->suggestions->latestByUser($user, $cards),
         ]);
     }
 

@@ -7,6 +7,12 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.4
+- Fehler melden: Wer mit einem geteilten Stapel lernt, kann bei einer Karte einen Fehler melden oder eine Verbesserung vorschlagen (Art, neuer Text, Kommentar). Höchstens ein offener Vorschlag je Person und Karte
+- Die Besitzerin sieht offene Vorschläge am Stapel und unter Meine Stapel, übernimmt sie mit einem Tipp in die Karte oder lehnt sie ab. Wer vorgeschlagen hat, sieht den Stand an der Karte
+- Die Hilfe erklärt „Fehler melden“, Änderungen im Original, Hauptbedeutung und Hinweis
+- Migration: 2026_10_13_200000_create_card_suggestions_table.php
+
 ## 2026.10.13.3
 - Kopierte und übernommene Karten merken sich ihr Original. Ändert die Besitzerin das Original, zeigt der eigene Stapel „… Karten wurden im Original geändert“; je Karte lässt sich die Änderung übernehmen oder die eigene Fassung behalten, oder alle auf einmal übernehmen. Der Lernstand bleibt
 - Beim Lernen zeigt „geändert“, dass eine Karte seit dem letzten Lernen bearbeitet wurde

@@ -15,6 +15,11 @@
       @unless ($own)
         <span class="block truncate text-xs text-subtle">von {{ $deck->user->name }}</span>
       @endunless
+      @if ($own && ($deck->open_suggestions_count ?? 0) > 0)
+        <span class="block truncate text-xs font-medium text-brand">
+          {{ $deck->open_suggestions_count === 1 ? '1 Vorschlag' : $deck->open_suggestions_count.' Vorschläge' }}
+        </span>
+      @endif
       @if ($stats !== null && ($deck->cards_count ?? 0) > 0)
         <span class="meter meter-success mt-2" title="{{ $stats['mastered_percent'] }} % kann ich">
           <span style="width: {{ $stats['mastered_percent'] }}%"></span>

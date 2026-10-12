@@ -43,6 +43,15 @@
 
   <x-form-error />
 
+  @if ($openSuggestions > 0)
+    <a href="/decks/{{ $deck->id }}/suggestions" class="alert alert-info mb-4 flex items-center justify-between gap-3">
+      <span class="min-w-0">
+        {{ $openSuggestions === 1 ? '1 Vorschlag zu deinen Karten.' : $openSuggestions.' Vorschläge zu deinen Karten.' }}
+      </span>
+      <span class="shrink-0 font-medium text-brand">Ansehen ›</span>
+    </a>
+  @endif
+
   @if ($changedOriginals > 0)
     <a href="/decks/{{ $deck->id }}/origin" class="alert alert-info mb-4 flex items-center justify-between gap-3">
       <span class="min-w-0">
@@ -77,7 +86,8 @@
 
   <ul id="card-list" class="list">
     @foreach ($cards as $card)
-      <x-card-row :card="$card" :deck="$deck" :editable="$isOwner" />
+      <x-card-row :card="$card" :deck="$deck" :editable="$isOwner"
+                  :can-suggest="! $isOwner && $deck->is_shared" :suggestion="$mySuggestions[$card->id] ?? null" />
     @endforeach
   </ul>
 
@@ -112,6 +122,10 @@
   <x-sheet id="deck-edit" title="Stapel bearbeiten" :data-open-on-load="$errors->has('name') || $errors->has('back_language') || $errors->has('front_language') ? 'true' : null">
     @include('decks.partials.form', ['deck' => $deck, 'action' => "/decks/{$deck->id}", 'submit' => 'Speichern'])
   </x-sheet>
+@endif
+
+@if (! $isOwner && $deck->is_shared)
+  <x-sheet id="suggest-sheet" title="Fehler melden"></x-sheet>
 @endif
 
 {{-- "⋯" menu: what the viewer may do with this deck. --}}

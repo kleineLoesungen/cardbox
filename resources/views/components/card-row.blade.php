@@ -3,9 +3,10 @@
   further meanings as "+n".
 
   Own deck: tapping opens the edit sheet (#card-sheet). Other people's decks:
-  read only; tapping unfolds all meanings.
+  read only; tapping unfolds all meanings and, in shared decks, "Fehler
+  melden" (#suggest-sheet) or the status of the viewer's own suggestion.
 --}}
-@props(['card', 'deck', 'editable' => false])
+@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'suggestion' => null])
 @php($more = count($card->front) + count($card->back) - 2)
 <li id="card-{{ $card->id }}">
   @if ($editable)
@@ -36,6 +37,19 @@
         <div class="card-row-sides px-4 pb-3 text-sm">
           <span>{{ implode(', ', $card->front) }}</span>
           <span class="text-muted">{{ implode(', ', $card->back) }}</span>
+        </div>
+      @endif
+      @if ($canSuggest)
+        <div class="flex flex-wrap items-center gap-2 px-4 pb-3">
+          @if ($suggestion)
+            <span class="badge {{ $suggestion->status === \App\Enums\SuggestionStatus::Declined ? 'badge-neutral' : 'badge-brand' }}">{{ $suggestion->status->label() }}</span>
+          @endif
+          @if ($suggestion?->status !== \App\Enums\SuggestionStatus::Open)
+            <button type="button" class="btn btn-ghost btn-sm"
+                    hx-get="/decks/{{ $deck->id }}/cards/{{ $card->id }}/suggest" hx-target="#suggest-sheet-body">
+              Fehler melden
+            </button>
+          @endif
         </div>
       @endif
     </details>

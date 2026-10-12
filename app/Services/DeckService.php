@@ -51,7 +51,7 @@ class DeckService
     {
         return $this->mineQuery($user)
             ->with('user')
-            ->withCount(['cards', 'followers'])
+            ->withCount(['cards', 'followers', 'suggestions as open_suggestions_count' => fn (Builder $q) => $q->where('card_suggestions.status', 'open')])
             ->orderByRaw('user_id = ? DESC', [$user->id])
             ->orderBy('name')
             ->get();

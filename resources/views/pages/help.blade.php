@@ -124,7 +124,34 @@
     </p>
     <p class="text-muted">
       <strong>Kopieren</strong> gibt dir eine eigene Fassung, die du ändern
-      kannst. Dein bisheriger Lernstand kommt mit.
+      kannst. Dein bisheriger Lernstand kommt mit. Ändert die Person später
+      etwas am Original, zeigt dein Stapel das an – du entscheidest, ob du
+      es übernimmst.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Fehler gefunden?</h2>
+    <p class="text-muted">
+      Tippe in einem geteilten Stapel auf die Karte und dann auf
+      <strong>Fehler melden</strong>. Schreib, wie es richtig wäre. Die Person,
+      der der Stapel gehört, sieht deinen Vorschlag und kann die Karte für
+      alle ändern. Ob sie ihn übernommen hat, siehst du an der Karte.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Mehrere Bedeutungen und Hinweise</h2>
+    <p class="text-muted">
+      Ein Wort kann mehrere Bedeutungen haben. Die oberste ist die
+      <strong>Hauptbedeutung</strong>: Sie wird gefragt und vorgelesen, die
+      anderen stehen klein darunter. Mit ☆ beim Bearbeiten machst du eine
+      andere zur Hauptbedeutung.
+    </p>
+    <p class="text-muted">
+      Ein <strong>Hinweis</strong> wie „(Zug)“ hilft, ähnliche Wörter
+      auseinanderzuhalten. Er ist schon vor dem Umdrehen zu sehen – schreib
+      also nicht die Lösung hinein.
     </p>
   </section>
 

@@ -20,6 +20,9 @@ return [
     // Optional hint per card, shown under the question before flipping.
     'max_hint_length' => 100,
 
+    // "Fehler melden": length of the comment to the owner.
+    'max_suggestion_comment' => 300,
+
     // "Liste einfügen": lines per import and file size in kilobytes.
     'import_max_lines' => 1000,
     'import_max_kilobytes' => 1024,

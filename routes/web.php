@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\TokenController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CardOriginController;
+use App\Http\Controllers\CardSuggestionController;
 use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
@@ -115,6 +116,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/origin/take-all', [CardOriginController::class, 'takeAll']);
         Route::post('/cards/{card}/origin/take', [CardOriginController::class, 'take']);
         Route::post('/cards/{card}/origin/keep', [CardOriginController::class, 'keep']);
+
+        // "Fehler melden" on other people's shared cards; the owner decides.
+        Route::get('/cards/{card}/suggest', [CardSuggestionController::class, 'create']);
+        Route::post('/cards/{card}/suggest', [CardSuggestionController::class, 'store'])->middleware('throttle:20,60');
+        Route::get('/suggestions', [CardSuggestionController::class, 'index']);
+        Route::post('/suggestions/{suggestion}/accept', [CardSuggestionController::class, 'accept'])->whereUuid('suggestion');
+        Route::post('/suggestions/{suggestion}/decline', [CardSuggestionController::class, 'decline'])->whereUuid('suggestion');
 
         Route::get('/import', [DeckImportController::class, 'show']);
         // Throttled: each request parses up to 1 MB of text.

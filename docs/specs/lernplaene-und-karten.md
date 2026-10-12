@@ -1,6 +1,6 @@
 # Lernpläne je Stapel und bessere Karten
 
-Status: **freigegeben** · Stufe 1 (Durchgänge) ✅ · Stufe 2 (Hauptbedeutung, Hinweis) ✅ · Stufe 3 (Herkunft, „geändert“) ✅ · Stufe 4 offen
+Status: **umgesetzt** · Stufe 1 (Durchgänge) ✅ · Stufe 2 (Hauptbedeutung, Hinweis) ✅ · Stufe 3 (Herkunft, „geändert“) ✅ · Stufe 4 (Vorschläge) ✅
 
 Fasst zwei Wünsche zusammen:
 
@@ -219,7 +219,8 @@ Der **erste Eintrag** einer Seite ist die Hauptbedeutung. Das Schema bleibt.
 - In der Stapelansicht ein Hinweis **„2 Vorschläge“**. Ein Zähler steht auch
   auf der Stapelkarte unter Meine Stapel.
 - Die Liste zeigt je Vorschlag die Karte jetzt, den Vorschlag (Änderungen
-  hervorgehoben), Art, Kommentar und den **Benutzernamen** des Absenders.
+  hervorgehoben), Art, Kommentar und den **Anzeigenamen** des Absenders
+  (wie überall in Cardbox nie den Benutzernamen).
   Dazu **„Übernehmen“** und **„Ablehnen“**.
   - Übernehmen schreibt die vorgeschlagenen Seiten in die Karte, geprüft wie
     beim Bearbeiten. Ein reiner Kommentar ohne Text ist nur „Erledigt“.
@@ -315,7 +316,7 @@ benutzt. `cards` bekommt:
 | `source_card_id` | uuid, nullable, **kein** Fremdschlüssel, Index | B3 |
 | `source_updated_at` | timestampTz, nullable | B3, Stand des Originals beim Kopieren bzw. Übernehmen |
 
-### Migration `2026_10_13_200000_create_card_suggestions_table.php` (Stufe 4)
+### Migration `2026_10_13_200000_create_card_suggestions_table.php` (Stufe 4) ✅
 
 | Spalte | Typ | |
 |---|---|---|
@@ -501,12 +502,34 @@ Changelog-Eintrag.
      `last_reviewed_at` der Karte in den Durchgängen der Runde. Neue Karten
      und Freies Üben zeigen es nie.
    - Tests: `tests/Feature/CardOriginTest.php`.
-4. **Vorschläge** (B5).
+4. **Vorschläge** (B5) ✅. Umgesetzt wie beschrieben, mit diesen
+   Präzisierungen:
+   - „Fehler melden“ steht in der aufgeklappten Kartenzeile eines fremden
+     geteilten Stapels. Das Blatt schickt per htmx; die Zeile zeigt danach
+     „Vorschlag offen“.
+   - Eine Seite, die beim Vorschlag nicht geändert wurde, zählt nicht als
+     neuer Text (`proposed_front`/`proposed_back` bleiben `null`).
+   - Die Liste der Besitzerin ist eine eigene Seite
+     (`/decks/{deck}/suggestions`). Sie führt zurück zum Stapel, wenn
+     nichts mehr offen ist.
+   - Entschiedene Vorschläge sind über die Route nicht mehr erreichbar (404).
+   - Tests: `tests/Feature/CardSuggestionTest.php`.
 
 Issue #2 wird mit dem Commit der Stufe 4 geschlossen („Closes #2“). Stufen 2
 und 3 verweisen mit „Teil von #2“ darauf.
 
 ---
+
+## Migrationen dieser Spezifikation
+
+In dieser Reihenfolge, alle rückwärts lauffähig (`down()`):
+
+| Stufe | Migration | Was sie tut |
+|---|---|---|
+| 1 | `2026_10_13_000000_create_deck_runs_table.php` | Tabelle `deck_runs`; `card_progress.deck_run_id`; **übernimmt vorhandenen Lernstand** in je einen Durchgang pro Person und Stapel mit dem damaligen Standard. `down()` führt Durchgänge verlustbehaftet zusammen |
+| 2 | `2026_10_13_100000_add_hint_to_cards_table.php` | `cards.hint` |
+| 3 | `2026_10_13_150000_add_source_to_cards_table.php` | `cards.source_card_id`, `cards.source_updated_at`. Bereits vorhandene Kopien bekommen keine Herkunft (sie wurde früher nicht gespeichert) |
+| 4 | `2026_10_13_200000_create_card_suggestions_table.php` | Tabelle `card_suggestions` mit Teilindex „ein offener Vorschlag je Person und Karte“ |
 
 ## Annahmen und Risiken
 
@@ -533,9 +556,11 @@ und 3 verweisen mit „Teil von #2“ darauf.
   Einträgen prüfen.
 - **Hinweis vor dem Umdrehen** kann die Antwort verraten, wenn jemand die
   Lösung hineinschreibt. Das fängt nur der Formulartext ab.
-- **Vorschläge zeigen den Benutzernamen** des Absenders, sonst nichts von
-  ihm. Das ist neu: Bisher erfährt eine Besitzerin nicht, wer ihrem Stapel
-  folgt. Die Alternative wäre ein anonymer Vorschlag. Dann fehlt aber jede
+- **Vorschläge zeigen den Anzeigenamen** des Absenders, sonst nichts von
+  ihm – wie Cardbox fremde Personen überall nur mit Anzeigenamen zeigt,
+  nie mit Benutzernamen (bei der Umsetzung korrigiert; der Entwurf nannte
+  den Benutzernamen). Das ist neu: Bisher erfährt eine Besitzerin nicht,
+  wer ihrem Stapel folgt. Die Alternative wäre ein anonymer Vorschlag. Dann fehlt aber jede
   Hemmschwelle gegen Unfug. Eine Meldung von Missbrauch gibt es bewusst
   nicht.
 - **`source_card_id` ohne Fremdschlüssel** ist gewollt (Issue #2): Das

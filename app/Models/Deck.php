@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -31,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $updated_at
  * @property-read int|null $cards_count
  * @property-read int|null $followers_count
+ * @property-read int|null $open_suggestions_count
  */
 #[Fillable(['name', 'description', 'front_language', 'back_language'])]
 class Deck extends Model
@@ -53,6 +55,12 @@ class Deck extends Model
     public function cards(): HasMany
     {
         return $this->hasMany(Card::class);
+    }
+
+    /** @return HasManyThrough<CardSuggestion, Card, $this> */
+    public function suggestions(): HasManyThrough
+    {
+        return $this->hasManyThrough(CardSuggestion::class, Card::class);
     }
 
     /** @return BelongsToMany<User, $this> */
