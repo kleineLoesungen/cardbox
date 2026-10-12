@@ -196,6 +196,7 @@ Willst du nur die `.env` auf dem Server ändern: `.env.production` anpassen und
 | ✗ bei `writable-…` | im FTP-Programm `storage/` und `bootstrap/cache/` beschreibbar machen (Rechte 775) |
 | 403 auf der ganzen Seite | Der Server hat kein `mod_rewrite`; dann sperrt die `.htaccess` alles. Den Hoster fragen oder die Domain auf `…/public` stellen |
 | Startseite geht, Links landen auf der Hauptdomain bzw. 404 | Cardbox liegt in einem Unterpfad (`example.com/cardbox`). Eine Subdomain auf `public_html/cardbox` anlegen und als `APP_URL` und `DEPLOY_URL` eintragen |
+| Testmail unter **System**: „535 Incorrect authentication data“ | Der Mailserver lehnt Benutzer oder Passwort ab. Häufigste Ursache: Das Passwort enthält `#` und steht ohne Anführungszeichen in `.env.production` – Laravel liest dann nur den Teil davor. Richtig: `MAIL_PASSWORD='…'` (seit 2026.10.13.5 bricht `deploy.sh` in diesem Fall ab). Sonst: `MAIL_USERNAME` ist die volle Adresse, das Passwort ist das des Postfachs (nicht das des Kundenmenüs), und das Postfach muss ein echtes Postfach sein, keine Weiterleitung |
 | Anmeldung klappt nie | Läuft die Seite über HTTPS? Mit `SESSION_SECURE_COOKIE=true` setzen Browser das Cookie nur über HTTPS |
 | Fehlerseite | Log unter `<FTP_DIR>/storage/logs/` per FTP herunterladen |
 

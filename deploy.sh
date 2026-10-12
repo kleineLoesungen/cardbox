@@ -75,6 +75,8 @@ if [[ -f "$DEPLOY_ENV_FILE" ]]; then
         || fehler "$DEPLOY_ENV_FILE: APP_KEY fehlt (erzeugen: echo \"base64:\$(openssl rand -base64 32)\")."
     grep -q '^APP_ENV=production' "$DEPLOY_ENV_FILE" || fehler "$DEPLOY_ENV_FILE: APP_ENV=production fehlt."
     grep -q '^APP_DEBUG=false' "$DEPLOY_ENV_FILE" || fehler "$DEPLOY_ENV_FILE: APP_DEBUG=false fehlt."
+    # An unquoted "#" cuts a password short without any error on the server.
+    php scripts/check-env.php "$DEPLOY_ENV_FILE" || fehler "$DEPLOY_ENV_FILE: Werte korrigieren (siehe oben)."
     # Compared in bash: the token must not appear in a process's argv.
     [[ "$(grep -m1 '^DEPLOY_HOOK_TOKEN=' "$DEPLOY_ENV_FILE")" == "DEPLOY_HOOK_TOKEN=${DEPLOY_HOOK_TOKEN}" ]] \
         || fehler "$DEPLOY_ENV_FILE: DEPLOY_HOOK_TOKEN muss derselbe Wert sein wie in .env.deploy."

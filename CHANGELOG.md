@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.5
+- Deploy (FTP und Webserver) prüft die .env vor dem Ausrollen: Werte mit # oder Leerzeichen ohne Anführungszeichen, die Laravel abgeschnitten lesen würde, brechen mit dem Namen des Eintrags ab. Typischer Fall: ein Mail-Passwort mit #, das zu „535 Incorrect authentication data“ führt
+
 ## 2026.10.13.4
 - Fehler melden: Wer mit einem geteilten Stapel lernt, kann bei einer Karte einen Fehler melden oder eine Verbesserung vorschlagen (Art, neuer Text, Kommentar). Höchstens ein offener Vorschlag je Person und Karte
 - Die Besitzerin sieht offene Vorschläge am Stapel und unter Meine Stapel, übernimmt sie mit einem Tipp in die Karte oder lehnt sie ab. Wer vorgeschlagen hat, sieht den Stand an der Karte

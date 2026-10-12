@@ -45,6 +45,9 @@ grep -q '^APP_DEBUG=false' .env || fehler "In .env muss APP_DEBUG=false stehen."
 schritt "PHP-Abhängigkeiten installieren (ohne Entwicklungswerkzeuge)"
 composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
+# An unquoted "#" cuts a password short without any error later on.
+php scripts/check-env.php .env || fehler ".env: Werte korrigieren (siehe oben)."
+
 schritt "Stylesheet bauen"
 ./scripts/get-tailwind.sh
 .bin/tailwindcss -i resources/css/app.css -o public/css/app.css --minify
