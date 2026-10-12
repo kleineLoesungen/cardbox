@@ -79,6 +79,7 @@ class DeckController extends Controller
             'isFollowing' => ! $isOwner && $this->decks->isFollowing($user, $model),
             'followerCount' => $this->decks->followerCount($model),
             'openAddSheet' => $isOwner && $request->boolean('new'),
+            'changedOriginals' => $this->cards->pendingOriginalCount($user, $model),
         ]);
     }
 

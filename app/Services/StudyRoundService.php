@@ -10,6 +10,7 @@ use App\Models\DeckRun;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -186,8 +187,12 @@ class StudyRoundService
      * vanished meanwhile (deleted, deck no longer shared, run reset) are
      * skipped silently.
      *
+     * `changed`: the card was edited after the person last answered it in
+     * these runs (docs/specs/lernplaene-und-karten.md, B4). New cards and
+     * free practice never count as changed.
+     *
      * @param  Round  $round
-     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, runs: list<DeckRun>}|null}
+     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, runs: list<DeckRun>, changed: bool}|null}
      */
     public function current(User $user, array $round): array
     {
@@ -210,7 +215,13 @@ class StudyRoundService
             }
 
             if ($card !== null && ($round['mode'] !== 'learn' || $runs !== [])) {
-                return [$round, ['card' => $card, 'direction' => Direction::from($item['direction']), 'repeat' => $item['repeat'], 'runs' => $runs]];
+                return [$round, [
+                    'card' => $card,
+                    'direction' => Direction::from($item['direction']),
+                    'repeat' => $item['repeat'],
+                    'runs' => $runs,
+                    'changed' => $this->changedSinceReview($card, $item['direction'], $runs),
+                ]];
             }
 
             array_shift($round['queue']);
@@ -276,6 +287,26 @@ class StudyRoundService
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Whether the card was edited after its last answer in any of the runs.
+     *
+     * @param  list<DeckRun>  $runs
+     */
+    private function changedSinceReview(Card $card, string $direction, array $runs): bool
+    {
+        if ($runs === []) {
+            return false;
+        }
+
+        $last = CardProgress::query()
+            ->whereIn('deck_run_id', array_map(fn (DeckRun $run) => $run->id, $runs))
+            ->where('card_id', $card->id)
+            ->where('direction', $direction)
+            ->max('last_reviewed_at');
+
+        return $last !== null && $card->updated_at->greaterThan(Carbon::parse((string) $last));
+    }
 
     /**
      * Progress rows that are due today (box 1 … N−1, due date reached).

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\Admin\TokenController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CardOriginController;
 use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
@@ -108,6 +109,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/front-check', [DeckCardController::class, 'frontCheck']);
         Route::get('/adopt', [DeckCardController::class, 'search']);
         Route::post('/adopt/{card}', [DeckCardController::class, 'adopt']);
+
+        // Changes in the originals of copied cards (owner of the copy only).
+        Route::get('/origin', [CardOriginController::class, 'index']);
+        Route::post('/origin/take-all', [CardOriginController::class, 'takeAll']);
+        Route::post('/cards/{card}/origin/take', [CardOriginController::class, 'take']);
+        Route::post('/cards/{card}/origin/keep', [CardOriginController::class, 'keep']);
 
         Route::get('/import', [DeckImportController::class, 'show']);
         // Throttled: each request parses up to 1 MB of text.

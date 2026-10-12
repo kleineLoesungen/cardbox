@@ -43,6 +43,15 @@
 
   <x-form-error />
 
+  @if ($changedOriginals > 0)
+    <a href="/decks/{{ $deck->id }}/origin" class="alert alert-info mb-4 flex items-center justify-between gap-3">
+      <span class="min-w-0">
+        {{ $changedOriginals === 1 ? '1 Karte wurde im Original geändert.' : $changedOriginals.' Karten wurden im Original geändert.' }}
+      </span>
+      <span class="shrink-0 font-medium text-brand">Ansehen ›</span>
+    </a>
+  @endif
+
   {{-- Somebody else's deck the viewer does not follow yet: the two ways to use it. --}}
   @if (! $isOwner && ! $isFollowing)
     <div class="card mb-4">

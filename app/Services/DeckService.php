@@ -258,7 +258,8 @@ class DeckService
     /**
      * Copy a visible deck into a new private deck of the user, with copies of
      * all cards. The copy is independent: later changes to the original do
-     * not reach it. The user's own runs and their progress are copied along,
+     * not reach it by themselves, but each card remembers its original, so
+     * the owner is offered them (CardService::pendingOriginalUpdates). The user's own runs and their progress are copied along,
      * so following first and copying later does not start from scratch.
      *
      * @throws ModelNotFoundException<Deck>
@@ -290,6 +291,8 @@ class DeckService
                         'front' => json_encode($card->front, JSON_UNESCAPED_UNICODE),
                         'back' => json_encode($card->back, JSON_UNESCAPED_UNICODE),
                         'hint' => $card->hint,
+                        'source_card_id' => $card->id,
+                        'source_updated_at' => $card->updated_at,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];

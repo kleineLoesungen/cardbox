@@ -21,6 +21,8 @@ use Illuminate\Support\Carbon;
  * @property list<string> $front
  * @property list<string> $back
  * @property string|null $hint short context like "(Zug)", shown before flipping
+ * @property string|null $source_card_id original this card was copied from (no foreign key)
+ * @property Carbon|null $source_updated_at the original's updated_at when copied or last synced
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -32,7 +34,7 @@ class Card extends Model
 
     protected function casts(): array
     {
-        return ['front' => 'array', 'back' => 'array'];
+        return ['front' => 'array', 'back' => 'array', 'source_updated_at' => 'datetime'];
     }
 
     /** @return BelongsTo<Deck, $this> */

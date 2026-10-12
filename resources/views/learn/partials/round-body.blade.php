@@ -3,7 +3,7 @@
   Swapped as a whole by htmx after each answer (target #round).
 
   @param array      $round     state from StudyRoundService
-  @param array|null $current   ['card' => Card, 'direction' => Direction, 'repeat' => bool]
+  @param array|null $current   ['card' => Card, 'direction' => Direction, 'repeat' => bool, 'changed' => bool, …]
   @param int        $position  number of the card that is up
   @param int        $streak    days in a row (end screen only)
 --}}
@@ -44,6 +44,10 @@
     @endif
     @if ($current['repeat'])
       <span class="badge badge-neutral">Wiederholung</span>
+    @endif
+    @if ($current['changed'])
+      {{-- Edited by the owner since this person last answered it; progress stays. --}}
+      <span class="badge badge-brand">geändert</span>
     @endif
   </div>
 

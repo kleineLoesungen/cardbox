@@ -1,6 +1,6 @@
 # Lernpläne je Stapel und bessere Karten
 
-Status: **freigegeben** · Stufe 1 (Durchgänge) ✅ · Stufe 2 (Hauptbedeutung, Hinweis) ✅ · Stufen 3–4 offen
+Status: **freigegeben** · Stufe 1 (Durchgänge) ✅ · Stufe 2 (Hauptbedeutung, Hinweis) ✅ · Stufe 3 (Herkunft, „geändert“) ✅ · Stufe 4 offen
 
 Fasst zwei Wünsche zusammen:
 
@@ -305,7 +305,7 @@ dokumentiert.
 
 `cards.hint`: string(100), nullable (B2).
 
-### Migration `2026_10_13_150000_add_source_to_cards_table.php` (Stufe 3)
+### Migration `2026_10_13_150000_add_source_to_cards_table.php` (Stufe 3) ✅
 
 Getrennt von Stufe 2, damit jeder Commit nur Spalten anlegt, die er
 benutzt. `cards` bekommt:
@@ -488,7 +488,19 @@ Changelog-Eintrag.
    - Auf der Rückseite der Lernkarte steht der Hinweis klein hinter der
      Frage.
    - Tests: `tests/Feature/CardMeaningTest.php`.
-3. **Herkunft und „geändert“** (B3, B4).
+3. **Herkunft und „geändert“** (B3, B4) ✅. Umgesetzt wie beschrieben, mit
+   diesen Präzisierungen:
+   - „Änderungen im Original“ ist eine eigene Seite
+     (`/decks/{deck}/origin`) statt eines Blatts. Je Karte stehen zwei
+     Zeilen untereinander, „Deine“ und „Neu“, mit zwei Knöpfen. Das passt
+     auf dem Telefon besser als in ein Blatt. Sind alle erledigt, führt die
+     Seite zurück zum Stapel.
+   - „Behalten“ setzt nur die Stand-Marke; die eigene Karte gilt danach
+     nicht als geändert (kein neues `updated_at`).
+   - „geändert“ vergleicht `cards.updated_at` mit dem letzten
+     `last_reviewed_at` der Karte in den Durchgängen der Runde. Neue Karten
+     und Freies Üben zeigen es nie.
+   - Tests: `tests/Feature/CardOriginTest.php`.
 4. **Vorschläge** (B5).
 
 Issue #2 wird mit dem Commit der Stufe 4 geschlossen („Closes #2“). Stufen 2

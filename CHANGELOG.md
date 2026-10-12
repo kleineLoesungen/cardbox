@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.3
+- Kopierte und übernommene Karten merken sich ihr Original. Ändert die Besitzerin das Original, zeigt der eigene Stapel „… Karten wurden im Original geändert“; je Karte lässt sich die Änderung übernehmen oder die eigene Fassung behalten, oder alle auf einmal übernehmen. Der Lernstand bleibt
+- Beim Lernen zeigt „geändert“, dass eine Karte seit dem letzten Lernen bearbeitet wurde
+- Migration: 2026_10_13_150000_add_source_to_cards_table.php
+
 ## 2026.10.13.2
 - Hauptbedeutung: Die erste Bedeutung einer Kartenseite ist die Hauptbedeutung. Auf der Lernkarte steht sie groß, weitere klein als „auch: …“; Vorlesen liest nur die Hauptbedeutung
 - Beim Bearbeiten einer Karte rückt ☆ eine andere Bedeutung nach oben und macht sie zur Hauptbedeutung

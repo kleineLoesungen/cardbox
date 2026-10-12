@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -177,10 +178,158 @@ class CardService
             'hint' => $source->hint,
         ]);
         $copy->deck_id = $target->id;
+        // Never user input, so not fillable.
+        $copy->forceFill(['source_card_id' => $source->id, 'source_updated_at' => $source->updated_at]);
         $copy->save();
         $copy->setRelation('deck', $target);
 
         return $copy;
+    }
+
+    // -------------------------------------------------------------------------
+    // Originals of copied cards (docs/specs/lernplaene-und-karten.md, B3).
+    // Only for the owner of the copy, and only while the original is still
+    // visible to them. A deleted or private original simply offers nothing.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Cards of an own deck whose original changed since it was copied or
+     * last synced, with the original's content in the copy's orientation.
+     *
+     * @return list<array{card: Card, front: list<string>, back: list<string>, hint: string|null}>
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function pendingOriginalUpdates(User $user, string $deckId): array
+    {
+        $deck = $this->decks->getOwned($user, $deckId);
+
+        $cards = $this->changedOriginalsQuery($user, $deck)->orderBy('cards.created_at')->get();
+        $originals = Card::with('deck')->whereIn('id', $cards->pluck('source_card_id'))->get()->keyBy('id');
+
+        $result = [];
+        foreach ($cards as $card) {
+            $original = $originals->get($card->source_card_id);
+            if ($original !== null) {
+                $card->setRelation('deck', $deck);
+                $result[] = ['card' => $card, ...$this->contentFor($deck, $original)];
+            }
+        }
+
+        return $result;
+    }
+
+    /** How many cards of an own deck have a changed original. */
+    public function pendingOriginalCount(User $user, Deck $deck): int
+    {
+        return $deck->isOwnedBy($user) ? $this->changedOriginalsQuery($user, $deck)->count() : 0;
+    }
+
+    /**
+     * "Übernehmen": the copy gets the original's sides and hint. Progress
+     * stays — it belongs to the card, not to its text.
+     *
+     * @throws ModelNotFoundException<Deck|Card>
+     */
+    public function takeOriginal(User $user, string $deckId, string $cardId): Card
+    {
+        [$card, $original] = $this->withVisibleOriginal($user, $deckId, $cardId);
+
+        $card->fill($this->contentFor($card->deck, $original));
+        $card->forceFill(['source_updated_at' => $original->updated_at])->save();
+
+        return $card;
+    }
+
+    /**
+     * "Behalten": the copy stays as it is; the notice is gone until the
+     * original changes again.
+     *
+     * @throws ModelNotFoundException<Deck|Card>
+     */
+    public function keepMine(User $user, string $deckId, string $cardId): Card
+    {
+        [$card, $original] = $this->withVisibleOriginal($user, $deckId, $cardId);
+
+        // Only the sync mark; the copy's own updated_at stays untouched.
+        $card->timestamps = false;
+        $card->forceFill(['source_updated_at' => $original->updated_at])->save();
+
+        return $card;
+    }
+
+    /**
+     * "Alle übernehmen".
+     *
+     * @return int number of cards updated
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function takeAllOriginals(User $user, string $deckId): int
+    {
+        $pending = $this->pendingOriginalUpdates($user, $deckId);
+
+        DB::transaction(function () use ($user, $deckId, $pending) {
+            foreach ($pending as $entry) {
+                $this->takeOriginal($user, $deckId, $entry['card']->id);
+            }
+        });
+
+        return count($pending);
+    }
+
+    /**
+     * Own cards whose visible original is newer than the last sync.
+     *
+     * @return Builder<Card>
+     */
+    private function changedOriginalsQuery(User $user, Deck $deck): Builder
+    {
+        return $deck->cards()->getQuery()
+            ->select('cards.*')
+            ->join('cards as originals', 'originals.id', '=', 'cards.source_card_id')
+            ->whereIn('originals.deck_id', $this->decks->visibleTo($user)->select('id'))
+            ->where(fn (Builder $q) => $q
+                ->whereNull('cards.source_updated_at')
+                ->orWhereColumn('originals.updated_at', '>', 'cards.source_updated_at'));
+    }
+
+    /**
+     * An own card and its original, which must still be visible.
+     *
+     * @return array{0: Card, 1: Card}
+     *
+     * @throws ModelNotFoundException<Deck|Card>
+     */
+    private function withVisibleOriginal(User $user, string $deckId, string $cardId): array
+    {
+        $card = $this->getOwned($user, $deckId, $cardId);
+
+        $original = $card->source_card_id === null ? null : Card::with('deck')
+            ->whereIn('deck_id', $this->decks->visibleTo($user)->select('id'))
+            ->find($card->source_card_id);
+        if ($original === null) {
+            throw (new ModelNotFoundException)->setModel(Card::class, [$cardId]);
+        }
+
+        return [$card, $original];
+    }
+
+    /**
+     * The original's content as it fits the copy's deck: sides swapped when
+     * the languages are the other way round (as when adopting).
+     *
+     * @return array{front: list<string>, back: list<string>, hint: string|null}
+     */
+    private function contentFor(Deck $target, Card $original): array
+    {
+        $swap = $original->deck->front_language !== $target->front_language;
+
+        return [
+            'front' => $swap ? $original->back : $original->front,
+            'back' => $swap ? $original->front : $original->back,
+            'hint' => $original->hint,
+        ];
     }
 
     /**
