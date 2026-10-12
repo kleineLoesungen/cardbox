@@ -70,6 +70,7 @@ return [
         'email' => 'E-Mail-Adresse',
         'expires_in_days' => 'Gültigkeit',
         'file' => 'Datei',
+        'hint' => 'Hinweis',
         'front' => 'Vorderseite',
         'front.*' => 'Bedeutung vorne',
         'front_language' => 'Sprache vorne',

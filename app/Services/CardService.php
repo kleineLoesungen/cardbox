@@ -24,7 +24,7 @@ class CardService
     public function __construct(private DeckService $decks) {}
 
     /**
-     * @param  array<string, mixed>  $input  front[], back[]
+     * @param  array<string, mixed>  $input  front[], back[], hint
      *
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck>
@@ -174,6 +174,7 @@ class CardService
         $copy = new Card([
             'front' => $swap ? $source->back : $source->front,
             'back' => $swap ? $source->front : $source->back,
+            'hint' => $source->hint,
         ]);
         $copy->deck_id = $target->id;
         $copy->save();
@@ -224,27 +225,37 @@ class CardService
     }
 
     /**
+     * The order of the meanings is kept: the first one of a side is its main
+     * meaning. An empty hint is stored as null.
+     *
      * @param  array<string, mixed>  $input
-     * @return array{front: list<string>, back: list<string>}
+     * @return array{front: list<string>, back: list<string>, hint: string|null}
      *
      * @throws ValidationException
      */
     private function validate(array $input): array
     {
+        $hint = $input['hint'] ?? null;
         $data = [
             'front' => self::normalizeSide($input['front'] ?? []),
             'back' => self::normalizeSide($input['back'] ?? []),
+            // Anything but text (an array, say) stays as it is and fails "string".
+            'hint' => is_string($hint) ? (trim($hint) === '' ? null : trim($hint)) : $hint,
         ];
 
         $max = (int) config('learning.max_meanings');
         $length = (int) config('learning.max_meaning_length');
+        $hintLength = (int) config('learning.max_hint_length');
 
         Validator::make($data, [
             'front' => ['required', 'array', "max:{$max}"],
             'front.*' => ['string', "max:{$length}"],
             'back' => ['required', 'array', "max:{$max}"],
             'back.*' => ['string', "max:{$length}"],
+            'hint' => ['nullable', 'string', "max:{$hintLength}"],
         ], [
+            'hint.string' => 'Der Hinweis muss ein Text sein.',
+            'hint.max' => "Der Hinweis darf höchstens {$hintLength} Zeichen haben.",
             'front.required' => 'Vorne fehlt noch ein Wort.',
             'back.required' => 'Hinten fehlt noch ein Wort.',
             'front.max' => "Höchstens {$max} Bedeutungen je Seite.",
@@ -253,7 +264,7 @@ class CardService
             'back.*.max' => "Eine Bedeutung darf höchstens {$length} Zeichen haben.",
         ])->validate();
 
-        return $data;
+        return ['front' => $data['front'], 'back' => $data['back'], 'hint' => is_string($data['hint']) ? $data['hint'] : null];
     }
 
     private function ensureUuid(string $id): void

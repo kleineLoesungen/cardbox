@@ -118,7 +118,8 @@ describe('Rückfragen und Lernrunde', function () {
         $this->post('/learn/round', ['deck' => $deck->id]);
         $this->get('/learn/round')
             ->assertSee('data-question="Haus" data-question-lang="de"', false)
-            ->assertSee('data-answer="house, home" data-answer-lang="en"', false);
+            // Main meaning only (lernplaene-und-karten.md, B1).
+            ->assertSee('data-answer="house" data-answer-lang="en"', false);
 
         $this->post('/learn/round', ['deck' => $rechnen->id]);
         $this->get('/learn/round')->assertSee('data-question-lang=""', false);

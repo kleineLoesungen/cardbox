@@ -54,26 +54,32 @@
       <div class="flashcard-face">
         <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $qLang?->label() }}</p>
         <p class="flashcard-text {{ $size }}" lang="{{ $qLang?->tag() }}">{{ $question[0] ?? '' }}</p>
+        @if ($card->hint)
+          <p class="text-sm text-muted">{{ $card->hint }}</p>
+        @endif
       </div>
       {{-- Hidden from screen readers until flipped (flip() removes aria-hidden). --}}
       <div class="flashcard-face flashcard-back" aria-hidden="true" data-back>
-        <p class="text-sm text-muted" lang="{{ $qLang?->tag() }}">{{ $question[0] ?? '' }}</p>
+        <p class="text-sm text-muted" lang="{{ $qLang?->tag() }}">{{ $question[0] ?? '' }}@if ($card->hint) {{ $card->hint }}@endif</p>
         <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $aLang?->label() }}</p>
-        @foreach ($answer as $i => $meaning)
-          <p class="flashcard-text {{ $i === 0 ? $size : 'text-xl' }}" lang="{{ $aLang?->tag() }}">{{ $meaning }}</p>
-        @endforeach
+        {{-- Main meaning large, alternatives small as "auch: …". --}}
+        <p class="flashcard-text {{ $size }}" lang="{{ $aLang?->tag() }}">{{ $answer[0] ?? '' }}</p>
+        @if (count($answer) > 1)
+          <p class="text-base text-muted">auch: <span lang="{{ $aLang?->tag() }}">{{ implode(', ', \App\Models\Card::alternatives($answer)) }}</span></p>
+        @endif
       </div>
     </div>
 
     {{--
-      Read aloud: the question before flipping, the answer after. Hidden
+      Read aloud: the question before flipping, the answer after — main
+      meanings only, alternatives would sound like one long word. Hidden
       until the script finds a voice for the language; never shown for
       "Aufgabe"/"Ergebnis", which have no language tag.
     --}}
     <div class="mt-3 flex min-h-11 justify-center">
       <button type="button" class="btn btn-ghost" data-speak hidden
               data-question="{{ $question[0] ?? '' }}" data-question-lang="{{ $qLang?->tag() }}"
-              data-answer="{{ implode(', ', $answer) }}" data-answer-lang="{{ $aLang?->tag() }}">
+              data-answer="{{ $answer[0] ?? '' }}" data-answer-lang="{{ $aLang?->tag() }}">
         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>

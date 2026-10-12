@@ -1,4 +1,8 @@
-{{-- Edit form inside the #card-sheet; loaded via htmx when a card row is tapped. --}}
+{{--
+  Edit form inside the #card-sheet; loaded via htmx when a card row is
+  tapped. The order of the inputs is the order of the meanings: the first
+  one is the main meaning (☆ moves another one up, see layouts/app).
+--}}
 @php($frontTag = \App\Enums\Language::tryFrom($deck->front_language)?->tag())
 @php($backTag = \App\Enums\Language::tryFrom($deck->back_language)?->tag())
 <div class="stack">
@@ -8,8 +12,7 @@
       <span class="label">{{ $deck->frontLabel() }}</span>
       <div class="stack gap-2" id="edit-front-group">
         @foreach ($card->front as $i => $meaning)
-          <input class="input input-lg" type="text" name="front[]" value="{{ $meaning }}" lang="{{ $frontTag }}"
-                 aria-label="{{ $deck->frontLabel() }} {{ $i + 1 }}" autocomplete="off">
+          @include('partials.meaning-row', ['name' => 'front[]', 'value' => $meaning, 'lang' => $frontTag, 'label' => $deck->frontLabel(), 'main' => $i === 0])
         @endforeach
       </div>
       <button type="button" class="btn btn-ghost btn-sm self-start" data-add-meaning="edit-front-group">+ weitere Bedeutung</button>
@@ -19,13 +22,14 @@
       <span class="label">{{ $deck->backLabel() }}</span>
       <div class="stack gap-2" id="edit-back-group">
         @foreach ($card->back as $i => $meaning)
-          <input class="input input-lg" type="text" name="back[]" value="{{ $meaning }}" lang="{{ $backTag }}"
-                 aria-label="{{ $deck->backLabel() }} {{ $i + 1 }}" autocomplete="off">
+          @include('partials.meaning-row', ['name' => 'back[]', 'value' => $meaning, 'lang' => $backTag, 'label' => $deck->backLabel(), 'main' => $i === 0])
         @endforeach
       </div>
       <button type="button" class="btn btn-ghost btn-sm self-start" data-add-meaning="edit-back-group">+ weitere Bedeutung</button>
-      <p class="hint">Ein Feld leeren, um eine Bedeutung zu entfernen.</p>
+      <p class="hint">Die oberste Bedeutung ist die Hauptbedeutung. ☆ rückt eine andere nach oben. Ein Feld leeren, um eine Bedeutung zu entfernen.</p>
     </div>
+
+    @include('partials.card-hint-field', ['id' => 'edit-hint', 'value' => $card->hint])
 
     <button type="submit" class="btn btn-primary btn-lg btn-block">Speichern</button>
   </form>

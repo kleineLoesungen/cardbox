@@ -1,5 +1,6 @@
 {{--
-  One card in a deck's list: front | back.
+  One card in a deck's list: main meanings front (with the hint) | back,
+  further meanings as "+n".
 
   Own deck: tapping opens the edit sheet (#card-sheet). Other people's decks:
   read only; tapping unfolds all meanings.
@@ -13,7 +14,7 @@
             hx-target="#card-sheet-body"
             aria-label="Karte {{ $card->frontText() }} bearbeiten">
       <span class="card-row-sides">
-        <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}</span>
+        <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif</span>
         <span class="text-muted" lang="{{ \App\Enums\Language::tryFrom($deck->back_language)?->tag() }}">
           {{ $card->backText() }}
           @if ($more > 0)<span class="badge badge-neutral ml-1">+{{ $more }}</span>@endif
@@ -24,7 +25,7 @@
     <details class="group">
       <summary class="list-row cursor-pointer list-none">
         <span class="card-row-sides">
-          <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}</span>
+          <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif</span>
           <span class="text-muted" lang="{{ \App\Enums\Language::tryFrom($deck->back_language)?->tag() }}">
             {{ $card->backText() }}
             @if ($more > 0)<span class="badge badge-neutral ml-1">+{{ $more }}</span>@endif

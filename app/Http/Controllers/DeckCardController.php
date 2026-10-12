@@ -20,7 +20,7 @@ class DeckCardController extends Controller
     /** Saves a card and answers with a fresh form plus the new row (out of band). */
     public function store(Request $request, string $deck): View
     {
-        $card = $this->cards->createOwned($request->user(), $deck, $request->only('front', 'back'));
+        $card = $this->cards->createOwned($request->user(), $deck, $request->only('front', 'back', 'hint'));
 
         return view('partials.card-created', [
             'deck' => $card->deck,
@@ -42,7 +42,7 @@ class DeckCardController extends Controller
 
     public function update(Request $request, string $deck, string $card): Response
     {
-        $model = $this->cards->updateOwned($request->user(), $deck, $card, $request->only('front', 'back'));
+        $model = $this->cards->updateOwned($request->user(), $deck, $card, $request->only('front', 'back', 'hint'));
 
         return response()
             ->view('partials.card-updated', ['deck' => $model->deck, 'card' => $model])

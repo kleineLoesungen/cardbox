@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A card: one or more meanings on the front, one or more on the back.
+ * A card: one or more meanings on the front, one or more on the back. The
+ * first meaning of a side is its main meaning; the others are alternatives.
  *
  * Belongs to exactly one deck; the languages are the deck's.
  *
@@ -19,10 +20,11 @@ use Illuminate\Support\Carbon;
  * @property string $deck_id
  * @property list<string> $front
  * @property list<string> $back
+ * @property string|null $hint short context like "(Zug)", shown before flipping
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
-#[Fillable(['front', 'back'])]
+#[Fillable(['front', 'back', 'hint'])]
 class Card extends Model
 {
     /** @use HasFactory<CardFactory> */
@@ -47,5 +49,16 @@ class Card extends Model
     public function backText(): string
     {
         return $this->back[0] ?? '';
+    }
+
+    /**
+     * Meanings after the main one, for "auch: …".
+     *
+     * @param  list<string>  $side
+     * @return list<string>
+     */
+    public static function alternatives(array $side): array
+    {
+        return array_slice($side, 1);
     }
 }

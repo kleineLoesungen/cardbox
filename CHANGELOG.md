@@ -7,6 +7,12 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.2
+- Hauptbedeutung: Die erste Bedeutung einer Kartenseite ist die Hauptbedeutung. Auf der Lernkarte steht sie groß, weitere klein als „auch: …“; Vorlesen liest nur die Hauptbedeutung
+- Beim Bearbeiten einer Karte rückt ☆ eine andere Bedeutung nach oben und macht sie zur Hauptbedeutung
+- Hinweis zur Karte (freiwillig, bis 100 Zeichen), z. B. „(Zug)“ oder „ugs.“: steht beim Lernen unter der Frage und in der Kartenliste; Kopieren und Übernehmen nehmen ihn mit
+- Migration: 2026_10_13_100000_add_hint_to_cards_table.php
+
 ## 2026.10.13
 - Lernplan je Stapel: Ein Stapel lässt sich mit einem anderen Lernplan starten (Normal, Schnell, Gründlich), z. B. „Schnell“ vor einer Arbeit, ohne den Standard unter Mehr → Lernplan zu ändern
 - Ein Stapel kann mit mehreren Plänen gleichzeitig laufen; jeder Plan hat seinen eigenen Lernstand. In der Stapelansicht schaltet eine Leiste zwischen ihnen um

@@ -37,6 +37,8 @@
     <button type="button" class="btn btn-ghost btn-sm self-start" data-add-meaning="add-back-group">+ weitere Bedeutung</button>
   </div>
 
+  @include('partials.card-hint-field', ['id' => 'add-hint', 'value' => null])
+
   <button type="submit" class="btn btn-primary btn-lg btn-block">Speichern &amp; nächste</button>
 
   <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">

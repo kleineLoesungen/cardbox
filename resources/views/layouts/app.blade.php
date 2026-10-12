@@ -232,20 +232,48 @@
     const fields = [...input.form.querySelectorAll("input:not([type=hidden])")];
     fields[fields.indexOf(input) + 1]?.focus();
   });
-  // "+ weitere Bedeutung": clone the last input of the group.
+  // Meaning rows of the edit form: the first is the main meaning, so its
+  // ☆ is hidden; labels say which one is the main meaning.
+  const syncMeaningRows = (group) => {
+    group.querySelectorAll("[data-meaning-row]").forEach((row, i) => {
+      row.querySelector("[data-make-main]").hidden = i === 0;
+      const input = row.querySelector("input");
+      input.setAttribute("aria-label", input.dataset.label + (i === 0 ? " (Hauptbedeutung)" : " " + (i + 1)));
+    });
+  };
+  document.querySelectorAll("[data-meaning-row]").forEach((row) => syncMeaningRows(row.parentElement));
+  document.body.addEventListener("htmx:afterSettle", (e) => {
+    e.target.querySelectorAll?.("[data-meaning-row]").forEach((row) => syncMeaningRows(row.parentElement));
+  });
+
+  // "+ weitere Bedeutung": clone the last row (edit form) or input (add form).
   document.addEventListener("click", (e) => {
     const add = e.target.closest("[data-add-meaning]");
     if (!add) return;
     const group = document.getElementById(add.dataset.addMeaning);
-    const last = group?.querySelector("input:last-of-type");
+    const rows = group?.querySelectorAll(":scope > [data-meaning-row]") ?? [];
+    const last = rows.length ? rows[rows.length - 1] : group?.querySelector(":scope > input:last-of-type");
     if (!last) return;
-    const input = last.cloneNode();
+    const copy = last.cloneNode(true);
+    const input = copy.matches("input") ? copy : copy.querySelector("input");
     input.value = "";
     input.removeAttribute("id");
     input.removeAttribute("autofocus");
     input.removeAttribute("hx-get");
-    group.append(input);
+    group.append(copy);
+    if (rows.length) syncMeaningRows(group);
     input.focus();
+  });
+
+  // ☆ "Als Hauptbedeutung": move the row to the top. Saving stays one step.
+  document.addEventListener("click", (e) => {
+    const button = e.target.closest("[data-make-main]");
+    if (!button) return;
+    const row = button.closest("[data-meaning-row]");
+    const group = row.parentElement;
+    group.prepend(row);
+    syncMeaningRows(group);
+    row.querySelector("input").focus();
   });
 
   // --- Menü der unteren Leiste --------------------------------------------

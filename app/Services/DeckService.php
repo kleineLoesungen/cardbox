@@ -289,6 +289,7 @@ class DeckService
                         'deck_id' => $copy->id,
                         'front' => json_encode($card->front, JSON_UNESCAPED_UNICODE),
                         'back' => json_encode($card->back, JSON_UNESCAPED_UNICODE),
+                        'hint' => $card->hint,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];

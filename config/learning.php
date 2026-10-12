@@ -17,6 +17,9 @@ return [
     'max_meanings' => 10,
     'max_meaning_length' => 500,
 
+    // Optional hint per card, shown under the question before flipping.
+    'max_hint_length' => 100,
+
     // "Liste einfügen": lines per import and file size in kilobytes.
     'import_max_lines' => 1000,
     'import_max_kilobytes' => 1024,

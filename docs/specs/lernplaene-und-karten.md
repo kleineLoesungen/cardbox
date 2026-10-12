@@ -1,6 +1,6 @@
 # Lernpläne je Stapel und bessere Karten
 
-Status: **freigegeben** · Stufe 1 (Durchgänge) ✅ umgesetzt · Stufen 2–4 offen
+Status: **freigegeben** · Stufe 1 (Durchgänge) ✅ · Stufe 2 (Hauptbedeutung, Hinweis) ✅ · Stufen 3–4 offen
 
 Fasst zwei Wünsche zusammen:
 
@@ -301,13 +301,17 @@ Benutzer sieht alles aus wie vorher.
 gewinnt der zuletzt gelernte. Das geht verlustbehaftet, ist aber
 dokumentiert.
 
-### Migration `2026_10_13_100000_add_hint_and_source_to_cards_table.php` (Stufe 2 und 3)
+### Migration `2026_10_13_100000_add_hint_to_cards_table.php` (Stufe 2) ✅
 
-`cards` bekommt:
+`cards.hint`: string(100), nullable (B2).
+
+### Migration `2026_10_13_150000_add_source_to_cards_table.php` (Stufe 3)
+
+Getrennt von Stufe 2, damit jeder Commit nur Spalten anlegt, die er
+benutzt. `cards` bekommt:
 
 | Spalte | Typ | |
 |---|---|---|
-| `hint` | string(100), nullable | B2 |
 | `source_card_id` | uuid, nullable, **kein** Fremdschlüssel, Index | B3 |
 | `source_updated_at` | timestampTz, nullable | B3, Stand des Originals beim Kopieren bzw. Übernehmen |
 
@@ -473,7 +477,17 @@ Changelog-Eintrag.
      sind ausgegraut („läuft schon“), der Standard trägt „Standard“.
    - Tests: `tests/Feature/DeckRunTest.php`. Die Datenübernahme ist mit
      `down()` und `up()` gegen Altdaten geprüft.
-2. **Hauptbedeutung und Hinweis** (B1, B2).
+2. **Hauptbedeutung und Hinweis** (B1, B2) ✅. Umgesetzt wie beschrieben:
+   - „Als Hauptbedeutung“ ist ein ☆-Knopf neben jeder weiteren Bedeutung
+     im Bearbeiten-Blatt. Er rückt die Zeile nach oben, gespeichert wird
+     mit „Speichern“. Ohne JavaScript bleibt die Reihenfolge der Felder
+     maßgeblich.
+   - Der Hinweis ist im Anlegen- und Bearbeiten-Blatt unter „+ Hinweis“
+     eingeklappt (offen, wenn einer gesetzt ist). So bleibt das schnelle
+     Anlegen vieler Karten unverändert.
+   - Auf der Rückseite der Lernkarte steht der Hinweis klein hinter der
+     Frage.
+   - Tests: `tests/Feature/CardMeaningTest.php`.
 3. **Herkunft und „geändert“** (B3, B4).
 4. **Vorschläge** (B5).
 
