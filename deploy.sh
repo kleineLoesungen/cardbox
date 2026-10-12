@@ -126,6 +126,15 @@ if [[ -f "$DEPLOY_ENV_FILE" ]]; then
     cp "$DEPLOY_ENV_FILE" "$BUILD/.env"
 fi
 
+# Probe file: fetched via DEPLOY_URL after the upload to prove that the
+# domain points at FTP_DIR. Lives in .well-known/, which the .htaccess serves
+# directly instead of handing it to Laravel.
+PROBE_NAME="cardbox-probe-$(php -r 'echo bin2hex(random_bytes(8));').txt"
+PROBE_DIR="$(mktemp -d)"
+echo "$PROBE_NAME" > "$PROBE_DIR/$PROBE_NAME"
+chmod a+r "$PROBE_DIR/$PROBE_NAME"
+trap 'rm -rf "$BUILD" "$PROBE_DIR"' EXIT
+
 # --- Upload -----------------------------------------------------------------
 
 schritt "Hochladen nach ${FTP_HOST}:${FTP_DIR} (FTPS: ${FTP_SSL})"
@@ -152,10 +161,34 @@ mirror --reverse --delete --parallel=4 \
     --exclude '^storage/framework/sessions/[^.]' \
     --exclude '^storage/framework/views/[^.]' \
     --exclude '^storage/framework/down$' \
+    --exclude '^\.well-known/' \
     "${BUILD}/" "${FTP_DIR}/"
 $( [[ -f "$BUILD/.env" ]] && printf 'put -O "%s" "%s/.env"\nchmod 600 "%s/.env"\n' "$FTP_DIR" "$BUILD" "$FTP_DIR" )
+mkdir -p -f "${FTP_DIR}/.well-known"
+put -O "${FTP_DIR}/.well-known" "${PROBE_DIR}/${PROBE_NAME}"
 bye
 FTPEOF
+
+schritt "Prüfen, ob ${DEPLOY_URL} auf ${FTP_DIR} zeigt"
+
+PROBE_BODY=$(curl -s --max-time 20 "${DEPLOY_URL}/.well-known/${PROBE_NAME}" || true)
+
+# Remove the probe again; a failure here is not worth aborting the deploy.
+lftp <<FTPEOF >/dev/null 2>&1 || true
+set ftp:ssl-force ${FTP_SSL}
+set ftp:ssl-protect-data ${FTP_SSL}
+open -u "${FTP_USER},${FTP_PASS}" -p ${FTP_PORT} "${FTP_HOST}"
+rm "${FTP_DIR}/.well-known/${PROBE_NAME}"
+bye
+FTPEOF
+
+if [[ "$PROBE_BODY" != "$PROBE_NAME" ]]; then
+    fehler "Die Domain zeigt nicht auf den Upload-Ordner. Hochgeladen wurde nach '${FTP_DIR}' (vom Startordner des FTP-Kontos aus), aber ${DEPLOY_URL}/.well-known/${PROBE_NAME} liefert die Datei nicht.
+  - Im Kundenmenü nachsehen, auf welchen Ordner die Domain zeigt, und FTP_DIR genau so setzen – relativ zu dem Ordner, den das FTP-Programm nach der Anmeldung zeigt.
+  - Startet das FTP-Konto schon in public_html, ist FTP_DIR=cards statt public_html/cards richtig.
+  - Neue Domains und Subdomains sind beim Hoster manchmal erst nach einigen Minuten aktiv."
+fi
+echo "✓ ${DEPLOY_URL} zeigt auf ${FTP_DIR}"
 
 # --- Migrate ----------------------------------------------------------------
 

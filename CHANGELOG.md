@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.12.4
+- Deploy per FTP prüft nach dem Hochladen, ob die Domain wirklich auf FTP_DIR zeigt, und sagt sonst, was zu tun ist
+- Deploy per FTP lässt den Ordner .well-known auf dem Server stehen (Let's-Encrypt-Prüfung des Hosters)
+
 ## 2026.10.12.3
 - Deploy per FTP: Das Token kommt auch bei Hostern an, die den Authorization-Header verwerfen (PHP über CGI/FastCGI). Bei 404 sagt deploy.sh, ob das Token nicht passt oder die Adresse Cardbox gar nicht erreicht
 
