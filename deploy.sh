@@ -167,12 +167,18 @@ STATUS=$(curl -sS -o "$RESULT" -w '%{http_code}' --max-time 120 --config - <<CUR
 url = "${DEPLOY_URL}/api/v1/deploy"
 request = "POST"
 header = "Authorization: Bearer ${DEPLOY_HOOK_TOKEN}"
+header = "X-Deploy-Token: ${DEPLOY_HOOK_TOKEN}"
 header = "Accept: application/json"
 CURLEOF
 ) || fehler "Server nicht erreichbar unter ${DEPLOY_URL}."
 
 if [[ "$STATUS" == "404" ]]; then
-    fehler "Deploy-Hook antwortet 404: DEPLOY_HOOK_TOKEN fehlt in der .env auf dem Server oder ist anders als in .env.deploy."
+    # Cardbox answers a refused token with its own JSON 404. Anything else
+    # means the address does not reach Cardbox at all.
+    if grep -q '"not_found"' "$RESULT"; then
+        fehler "Deploy-Hook antwortet 404: Cardbox läuft, aber das Token passt nicht. DEPLOY_HOOK_TOKEN in .env.production und .env.deploy vergleichen."
+    fi
+    fehler "${DEPLOY_URL}/api/v1/deploy antwortet 404, aber nicht von Cardbox. Zeigt die Domain auf ${FTP_DIR}? Stimmt DEPLOY_URL? Antwort des Servers: $(head -c 300 "$RESULT")"
 fi
 
 php -r '

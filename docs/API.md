@@ -157,7 +157,9 @@ Für `deploy.sh` auf Webspace ohne Kommandozeile
 ([INSTALL-WEBSPACE.md](INSTALL-WEBSPACE.md)). Kein App-Token: Der Aufruf muss
 schon beim ersten Deploy mit leerer Datenbank funktionieren. Stattdessen
 `Authorization: Bearer <DEPLOY_HOOK_TOKEN>` aus der `.env` des Servers
-(mindestens 32 Zeichen). Ist es nicht gesetzt, falsch oder zu kurz, antwortet
+(mindestens 32 Zeichen), gleichwertig `X-Deploy-Token: <DEPLOY_HOOK_TOKEN>`.
+Den zweiten Header gibt es, weil viele Webspaces PHP über CGI/FastCGI
+betreiben und `Authorization` unterwegs verlieren. `deploy.sh` schickt beide. Ist es nicht gesetzt, falsch oder zu kurz, antwortet
 die Adresse mit **404**. Gedrosselt auf 10 Aufrufe pro Minute.
 
 Prüft PHP-Version, Erweiterungen, Argon2, Schreibrechte, `APP_KEY`,

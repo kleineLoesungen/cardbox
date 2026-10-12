@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.12.3
+- Deploy per FTP: Das Token kommt auch bei Hostern an, die den Authorization-Header verwerfen (PHP über CGI/FastCGI). Bei 404 sagt deploy.sh, ob das Token nicht passt oder die Adresse Cardbox gar nicht erreicht
+
 ## 2026.10.12.2
 - Webspace: Die Domain darf jetzt direkt auf den Upload-Ordner zeigen (z. B. public_html/cardbox), wie es Hoster mit nur public_html verlangen. Eine .htaccess dort reicht alle Anfragen an public/ weiter; .env und Code bleiben unerreichbar
 - FTP_DIR in .env.deploy muss jetzt gesetzt sein, Vorlage: public_html/cardbox

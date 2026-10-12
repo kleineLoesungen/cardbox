@@ -12,6 +12,10 @@ use Symfony\Component\HttpFoundation\Response;
  * The hook is not an app token: it has to work on the very first deploy,
  * when the database is still empty and nobody could have issued one.
  *
+ * The token comes as "Authorization: Bearer …" or as "X-Deploy-Token: …".
+ * Many web spaces run PHP via CGI/FastCGI and drop the Authorization header
+ * on the way; a custom header always arrives. deploy.sh sends both.
+ *
  * Every failure answers 404 — switched off, no token, wrong token — so the
  * response does not reveal whether the hook exists on this installation.
  */
@@ -23,7 +27,7 @@ class RequireDeployToken
     public function handle(Request $request, Closure $next): Response
     {
         $expected = config('deploy.hook_token');
-        $presented = $request->bearerToken();
+        $presented = $request->bearerToken() ?: $request->header('X-Deploy-Token');
 
         if (! is_string($expected) || strlen($expected) < self::MIN_LENGTH
             || ! is_string($presented) || ! hash_equals($expected, $presented)) {

@@ -21,9 +21,19 @@ it('gilt bei einem zu kurzen Token als ausgeschaltet', function () {
 it('antwortet ohne oder mit falschem Token mit 404', function () {
     config(['deploy.hook_token' => HOOK_TOKEN]);
 
-    $this->postJson('/api/v1/deploy')->assertNotFound();
+    // deploy.sh tells a refused token from a wrong address by this code.
+    $this->postJson('/api/v1/deploy')->assertNotFound()->assertJsonPath('error.code', 'not_found');
     $this->withToken(HOOK_TOKEN.'x')->postJson('/api/v1/deploy')->assertNotFound();
     $this->getJson('/api/v1/deploy', ['Authorization' => 'Bearer '.HOOK_TOKEN])->assertStatus(405);
+});
+
+it('nimmt das Token auch im Header X-Deploy-Token an', function () {
+    config(['deploy.hook_token' => HOOK_TOKEN, 'app.debug' => false]);
+
+    $this->postJson('/api/v1/deploy', [], ['X-Deploy-Token' => HOOK_TOKEN.'x'])->assertNotFound();
+    $this->postJson('/api/v1/deploy', [], ['X-Deploy-Token' => HOOK_TOKEN])
+        ->assertOk()
+        ->assertJsonPath('ok', true);
 });
 
 it('migriert mit dem richtigen Token und meldet die Prüfungen', function () {

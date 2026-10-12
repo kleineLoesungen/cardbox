@@ -187,7 +187,8 @@ Willst du nur die `.env` auf dem Server ändern: `.env.production` anpassen und
 | „Hochladen fehlgeschlagen“ mit Zertifikatsfehler | Das FTPS-Zertifikat lautet oft auf den Servernamen des Hosters (z. B. `s123.hoster.de`), nicht auf deine Domain. Diesen Namen als `FTP_HOST` eintragen. |
 | „Hochladen fehlgeschlagen“, Hoster kann gar kein FTPS | Besser den Hoster wechseln oder um FTPS bitten. Notfalls `FTP_SSL=false` – **dann reisen FTP-Passwort und die ganze `.env` samt `APP_KEY` und Datenbank-Passwort unverschlüsselt durchs Netz.** |
 | „… ist abrufbar!“ | Der Server beachtet die `.htaccess` in `FTP_DIR` nicht. Sofort die Domain auf `…/public` stellen oder die Dateien per FTP löschen, dann `APP_KEY`, Datenbank-Passwort und `DEPLOY_HOOK_TOKEN` erneuern. |
-| „Deploy-Hook antwortet 404“ | `DEPLOY_HOOK_TOKEN` in `.env.production` und `.env.deploy` gleich? Mindestens 32 Zeichen? |
+| „Deploy-Hook antwortet 404: Cardbox läuft, aber das Token passt nicht“ | `DEPLOY_HOOK_TOKEN` in `.env.production` und `.env.deploy` gleich? Mindestens 32 Zeichen? |
+| „… antwortet 404, aber nicht von Cardbox“ | Die Adresse erreicht Cardbox nicht: Zielordner der Domain = `FTP_DIR`? `DEPLOY_URL` richtig geschrieben? Ist die Subdomain beim Hoster schon aktiv? |
 | ✗ bei `php` oder `ext-…` | im Kundenmenü PHP 8.4+ wählen bzw. Erweiterungen einschalten |
 | ✗ bei `database` | Zugangsdaten in `.env.production`. Liegt die Datenbank woanders, `DB_SSLMODE=require` probieren |
 | ✗ bei `database-schema` | `DB_SCHEMA` ist kein gültiger Name, oder das Schema fehlt und das Datenbankkonto darf keins anlegen – dann im Kundenmenü anlegen bzw. den Hoster fragen |
