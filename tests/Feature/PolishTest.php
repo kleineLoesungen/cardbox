@@ -3,6 +3,7 @@
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\User;
+use App\Services\DeckRunService;
 use App\Services\LeitnerService;
 use Illuminate\Support\Facades\DB;
 
@@ -96,6 +97,8 @@ describe('Rückfragen und Lernrunde', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();
         $card = Card::factory()->for($deck)->create();
+        // "Zurücksetzen" only exists once the deck has been started.
+        app(DeckRunService::class)->forStandard($ich, $deck);
 
         $this->get("/decks/{$deck->id}")
             ->assertSee('data-confirm-action="Stapel löschen"', false)

@@ -27,7 +27,8 @@
 <div class="mx-auto max-w-md">
   <h1 class="text-2xl font-semibold tracking-tight">Lernplan</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
-    Wie oft Karten wiederkommen. Gilt für alle deine Stapel. Dein Lernstand bleibt erhalten.
+    Wie oft Karten wiederkommen. Gilt für Stapel, die du neu startest – begonnene behalten ihren Plan.
+    Einen einzelnen Stapel kannst du in der Stapelansicht mit einem anderen Plan starten.
   </p>
 
   <x-form-error />

@@ -13,8 +13,8 @@ use Illuminate\Validation\ValidationException;
  * The person's learning plan ("Lernplan"): one of the presets or a custom
  * plan with 2–10 boxes and an interval of 1–365 days per box.
  *
- * Changing the plan rewrites no progress. Cards in a box ≥ N simply count
- * as mastered (LeitnerService).
+ * This is the standard for decks started from now on. Running deck runs
+ * keep the plan they were started with (DeckRunService).
  */
 class LearningSettingsService
 {

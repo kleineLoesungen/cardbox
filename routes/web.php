@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
+use App\Http\Controllers\DeckRunController;
 use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
@@ -94,7 +95,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/follow', [DeckController::class, 'follow']);
         Route::post('/unfollow', [DeckController::class, 'unfollow']);
         Route::post('/copy', [DeckController::class, 'copy']);
-        Route::post('/reset', [DeckController::class, 'reset']);
+        // Deck runs: a deck learned with one plan. There is deliberately no
+        // route that changes a run's plan — reset and start again instead.
+        Route::post('/runs', [DeckRunController::class, 'store']);
+        Route::post('/runs/{run}/reset', [DeckRunController::class, 'reset'])->whereUuid('run');
         Route::get('/box/{box}', [DeckController::class, 'box'])->where('box', '[0-9]{1,2}');
 
         Route::post('/cards', [DeckCardController::class, 'store']);

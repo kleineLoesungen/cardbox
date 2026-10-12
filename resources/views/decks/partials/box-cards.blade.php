@@ -2,6 +2,7 @@
   Cards in one box (sheet behind the box tiles), with "practise these".
 
   @param string $deckId
+  @param string $runId
   @param \App\Enums\Direction $direction
   @param int $boxCount  number of the "Kann ich" box
   @param int $box
@@ -18,6 +19,7 @@
     <input type="hidden" name="deck" value="{{ $deckId }}">
     <input type="hidden" name="direction" value="{{ $direction->value }}">
     <input type="hidden" name="box" value="{{ $box }}">
+    <input type="hidden" name="run" value="{{ $runId }}">
     <button type="submit" class="btn btn-primary btn-lg btn-block">
       {{ count($entries) === 1 ? 'Diese Karte üben' : 'Diese '.count($entries).' Karten üben' }}
     </button>

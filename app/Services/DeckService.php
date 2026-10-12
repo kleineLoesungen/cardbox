@@ -6,6 +6,7 @@ use App\Enums\Language;
 use App\Models\Card;
 use App\Models\CardProgress;
 use App\Models\Deck;
+use App\Models\DeckRun;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -257,8 +258,8 @@ class DeckService
     /**
      * Copy a visible deck into a new private deck of the user, with copies of
      * all cards. The copy is independent: later changes to the original do
-     * not reach it. The user's own progress on the cards is copied along, so
-     * following first and copying later does not start from scratch.
+     * not reach it. The user's own runs and their progress are copied along,
+     * so following first and copying later does not start from scratch.
      *
      * @throws ModelNotFoundException<Deck>
      */
@@ -298,14 +299,25 @@ class DeckService
                 Card::insert($chunk);
             }
 
-            // Only the copying person's progress — never anybody else's.
+            // Only the copying person's runs and progress — never anybody else's.
+            $newRuns = [];
+            foreach (DeckRun::where('user_id', $user->id)->where('deck_id', $original->id)->get() as $run) {
+                $newRuns[$run->id] = DeckRun::create([
+                    'user_id' => $user->id,
+                    'deck_id' => $copy->id,
+                    'plan' => $run->plan,
+                    'box_count' => $run->box_count,
+                    'day_gaps' => $run->day_gaps,
+                ])->id;
+            }
+
             $progress = CardProgress::query()
-                ->where('user_id', $user->id)
-                ->whereIn('card_id', array_keys($newIds))
+                ->whereIn('deck_run_id', array_keys($newRuns))
                 ->get()
                 ->map(fn (CardProgress $p) => [
                     'id' => (string) Str::uuid(),
                     'user_id' => $user->id,
+                    'deck_run_id' => $newRuns[$p->deck_run_id],
                     'card_id' => $newIds[$p->card_id],
                     'direction' => $p->direction->value,
                     'box' => $p->box,

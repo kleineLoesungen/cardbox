@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Where one card stands for one person in one direction.
+ * Where one card stands in one run (person + deck + plan) and direction.
  *
  * The rules that move it between boxes live in App\Services\LeitnerService.
  *
  * @property string $id
  * @property string $user_id
+ * @property string $deck_run_id
  * @property string $card_id
  * @property Direction $direction
  * @property int $box
@@ -26,7 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
-#[Fillable(['user_id', 'card_id', 'direction', 'box', 'due_on', 'last_reviewed_at', 'review_count', 'correct_count'])]
+#[Fillable(['user_id', 'deck_run_id', 'card_id', 'direction', 'box', 'due_on', 'last_reviewed_at', 'review_count', 'correct_count'])]
 class CardProgress extends Model
 {
     use HasUuids;
@@ -41,6 +42,12 @@ class CardProgress extends Model
             'due_on' => 'date',
             'last_reviewed_at' => 'datetime',
         ];
+    }
+
+    /** @return BelongsTo<DeckRun, $this> */
+    public function run(): BelongsTo
+    {
+        return $this->belongsTo(DeckRun::class, 'deck_run_id');
     }
 
     /** @return BelongsTo<Card, $this> */

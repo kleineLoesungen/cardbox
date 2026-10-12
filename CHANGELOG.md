@@ -7,6 +7,15 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13
+- Lernplan je Stapel: Ein Stapel lässt sich mit einem anderen Lernplan starten (Normal, Schnell, Gründlich), z. B. „Schnell“ vor einer Arbeit, ohne den Standard unter Mehr → Lernplan zu ändern
+- Ein Stapel kann mit mehreren Plänen gleichzeitig laufen; jeder Plan hat seinen eigenen Lernstand. In der Stapelansicht schaltet eine Leiste zwischen ihnen um
+- Der Lernplan eines begonnenen Stapels bleibt fest. Ein geänderter Standard gilt nur für neu gestartete Stapel
+- „Fortschritt zurücksetzen“ löscht den Lernstand des gewählten Plans; danach lässt sich der Stapel neu starten, auch mit anderem Plan
+- „Los geht's“ fragt eine Karte, die in zwei Plänen fällig ist, nur einmal; die Antwort zählt für beide
+- Vorhandener Lernstand wird beim Update übernommen: je begonnenem Stapel ein Plan mit dem bisherigen Standard
+- Migration: 2026_10_13_000000_create_deck_runs_table.php
+
 ## 2026.10.12.5
 - Deploy per FTP: Der erste Deploy auf eine leere Datenbank scheiterte mit einem Serverfehler, weil die Drosselung des Deploy-Aufrufs eine Tabelle brauchte, die erst die Migration anlegt. Die Drosselung zählt jetzt in Dateien unter storage/
 - deploy.sh zeigt Fehlermeldungen des Servers an und sagt, wo das Log liegt

@@ -6,10 +6,12 @@ use App\Enums\Direction;
 use App\Models\Card;
 use App\Models\CardProgress;
 use App\Models\Deck;
+use App\Models\DeckRun;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -19,33 +21,47 @@ use Illuminate\Validation\ValidationException;
  * The round state is a plain array. This service never touches the session;
  * the controller stores the array and hands it back on the next request.
  *
- * @phpstan-type RoundItem array{card: string, direction: string, repeat: bool}
+ * Every learn item carries the runs its answer counts for: one run when
+ * learning on the deck page, all runs in which the card is due for "Los
+ * geht's" (docs/specs/lernplaene-und-karten.md, A5). Practice items have
+ * none; nothing is saved there.
+ *
+ * @phpstan-type RoundItem array{card: string, direction: string, repeat: bool, runs?: list<string>}
  * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, promoted: int, repeats: array<string, int>}
  */
 class StudyRoundService
 {
-    public function __construct(private DeckService $decks, private LeitnerService $leitner) {}
+    public function __construct(
+        private DeckService $decks,
+        private LeitnerService $leitner,
+        private DeckRunService $runs,
+    ) {}
 
     /**
      * Learning one deck in one direction: due cards first, then new ones.
-     * Learning somebody else's shared deck follows it, so it shows up under
-     * "Meine Stapel".
+     * Without a run id the deck's oldest run is used — the one the deck page
+     * shows first — and only a deck without any run starts one with the
+     * standard plan. Learning somebody else's shared deck follows it,
+     * so it shows up under "Meine Stapel".
      *
      * @return Round
      *
-     * @throws ModelNotFoundException<Deck>
+     * @throws ModelNotFoundException<Deck|DeckRun>
      */
-    public function startForDeck(User $user, string $deckId, Direction $direction): array
+    public function startForDeck(User $user, string $deckId, Direction $direction, ?string $runId = null): array
     {
         $deck = $this->decks->getVisible($user, $deckId);
+        $run = $runId !== null && $runId !== ''
+            ? $this->runs->getOwned($user, $deck->id, $runId)
+            : ($this->runs->listOwned($user, $deck)->first() ?? $this->runs->forStandard($user, $deck));
         if (! $deck->isOwnedBy($user)) {
             $user->followedDecks()->syncWithoutDetaching([$deck->id]);
         }
 
         $limit = (int) config('learning.round_size');
         $due = $this->dueQuery($user)
+            ->where('card_progress.deck_run_id', $run->id)
             ->where('card_progress.direction', $direction->value)
-            ->where('cards.deck_id', $deck->id)
             ->orderBy('card_progress.due_on')
             ->limit($limit)
             ->pluck('card_progress.card_id')
@@ -55,34 +71,47 @@ class StudyRoundService
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('card_progress')
                 ->whereColumn('card_progress.card_id', 'cards.id')
-                ->where('card_progress.user_id', $user->id)
+                ->where('card_progress.deck_run_id', $run->id)
                 ->where('card_progress.direction', $direction->value))
             ->orderBy('created_at')
             ->limit($limit - count($due))
             ->pluck('id')
             ->all();
 
-        $items = array_map(fn (string $id) => ['card' => $id, 'direction' => $direction->value, 'repeat' => false], [...$due, ...$new]);
+        $items = array_map(
+            fn (string $id) => ['card' => $id, 'direction' => $direction->value, 'repeat' => false, 'runs' => [$run->id]],
+            [...$due, ...$new],
+        );
 
         return $this->newRound('learn', $deck->id, $items);
     }
 
     /**
      * "Los geht's": due cards from all of the person's decks (own and
-     * followed shared ones), oldest due date first. New cards are started
-     * deliberately inside a deck, not here.
+     * followed shared ones) and all their runs, oldest due date first. A
+     * card due in two runs comes up once; the answer counts for both. New
+     * cards are started deliberately inside a deck, not here.
      *
      * @return Round
      */
     public function startToday(User $user): array
     {
         $items = $this->dueQuery($user)
+            ->toBase()
             ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
-            ->orderBy('card_progress.due_on')
+            ->groupBy('card_progress.card_id', 'card_progress.direction')
+            ->select('card_progress.card_id', 'card_progress.direction')
+            ->selectRaw("string_agg(card_progress.deck_run_id::text, ',' ORDER BY deck_runs.created_at, deck_runs.id) AS runs")
+            ->orderByRaw('min(card_progress.due_on)')
             ->orderBy('card_progress.card_id')
             ->limit((int) config('learning.round_size'))
-            ->get(['card_progress.card_id', 'card_progress.direction'])
-            ->map(fn (CardProgress $row) => ['card' => $row->card_id, 'direction' => $row->direction->value, 'repeat' => false])
+            ->get()
+            ->map(fn (object $row) => [
+                'card' => (string) $row->card_id,
+                'direction' => (string) $row->direction,
+                'repeat' => false,
+                'runs' => explode(',', (string) $row->runs),
+            ])
             ->values()
             ->all();
 
@@ -96,13 +125,15 @@ class StudyRoundService
      * 0 = new (never answered), N = mastered ("Kann ich"). A box belongs to
      * one direction, so "mixed" does not combine with it.
      *
+     * A box belongs to a run: the given one, or else the deck's oldest.
+     *
      * @param  string  $mode  forward, backward or mixed
      * @return Round
      *
-     * @throws ModelNotFoundException<Deck>
+     * @throws ModelNotFoundException<Deck|DeckRun>
      * @throws ValidationException
      */
-    public function startPractice(User $user, string $deckId, string $mode, ?int $box = null): array
+    public function startPractice(User $user, string $deckId, string $mode, ?int $box = null, ?string $runId = null): array
     {
         if (! in_array($mode, ['forward', 'backward', 'mixed'], true)) {
             throw ValidationException::withMessages(['direction' => 'Bitte eine Richtung wählen.']);
@@ -112,20 +143,23 @@ class StudyRoundService
         $cards = $deck->cards();
 
         if ($box !== null) {
-            $boxCount = $this->leitner->plan($user)['box_count'];
-            if ($mode === 'mixed' || $box < 0 || $box > $boxCount) {
+            $run = $runId !== null && $runId !== ''
+                ? $this->runs->getOwned($user, $deck->id, $runId)
+                : $this->runs->listOwned($user, $deck)->first();
+            $boxCount = $run->box_count ?? 0;
+            if ($run === null || $mode === 'mixed' || $box < 0 || $box > $boxCount) {
                 throw ValidationException::withMessages(['box' => 'Dieses Fach gibt es nicht.']);
             }
 
             $progress = fn ($q) => $q->select(DB::raw(1))
                 ->from('card_progress')
                 ->whereColumn('card_progress.card_id', 'cards.id')
-                ->where('card_progress.user_id', $user->id)
+                ->where('card_progress.deck_run_id', $run->id)
                 ->where('card_progress.direction', $mode);
 
             match (true) {
                 $box === 0 => $cards->whereNotExists($progress),
-                // Boxes above N (plan shortened later) count as mastered.
+                // Boxes above N cannot happen (plans are fixed); count them as mastered anyway.
                 $box === $boxCount => $cards->whereExists(fn ($q) => $progress($q)->where('card_progress.box', '>=', $boxCount)),
                 default => $cards->whereExists(fn ($q) => $progress($q)->where('card_progress.box', $box)),
             };
@@ -149,11 +183,11 @@ class StudyRoundService
 
     /**
      * The card that is up, or null when the round is over. Cards that
-     * vanished meanwhile (deleted, deck no longer shared) are skipped
-     * silently.
+     * vanished meanwhile (deleted, deck no longer shared, run reset) are
+     * skipped silently.
      *
      * @param  Round  $round
-     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool}|null}
+     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, runs: list<DeckRun>}|null}
      */
     public function current(User $user, array $round): array
     {
@@ -163,8 +197,20 @@ class StudyRoundService
                 ->whereIn('deck_id', $this->decks->visibleTo($user)->select('id'))
                 ->find($item['card']);
 
-            if ($card !== null) {
-                return [$round, ['card' => $card, 'direction' => Direction::from($item['direction']), 'repeat' => $item['repeat']]];
+            $runs = [];
+            if ($card !== null && $round['mode'] === 'learn') {
+                $runs = DeckRun::query()
+                    ->whereIn('id', array_filter($item['runs'] ?? [], fn (string $id) => Str::isUuid($id)))
+                    ->where('user_id', $user->id)
+                    ->where('deck_id', $card->deck_id)
+                    ->orderBy('created_at')
+                    ->orderBy('id')
+                    ->get()
+                    ->all();
+            }
+
+            if ($card !== null && ($round['mode'] !== 'learn' || $runs !== [])) {
+                return [$round, ['card' => $card, 'direction' => Direction::from($item['direction']), 'repeat' => $item['repeat'], 'runs' => $runs]];
             }
 
             array_shift($round['queue']);
@@ -193,7 +239,7 @@ class StudyRoundService
             return $round;
         }
 
-        array_shift($round['queue']);
+        $item = array_shift($round['queue']);
         $round['step']++;
         $key = $cardId.'|'.$current['direction']->value;
 
@@ -202,7 +248,7 @@ class StudyRoundService
             $round['known'] += $known ? 1 : 0;
 
             if ($round['mode'] === 'learn') {
-                $move = $this->leitner->review($user, $current['card'], $current['direction'], $known);
+                $move = $this->leitner->review($user, $current['runs'], $current['card'], $current['direction'], $known);
                 // A new card that was not known also lands in box 1 — that is
                 // not moving up.
                 $round['promoted'] += $known && $move['to'] > $move['from'] ? 1 : 0;
@@ -213,7 +259,7 @@ class StudyRoundService
         // Repeats only help memorising; they never change the box.
         if (! $known && ($round['repeats'][$key] ?? 0) < (int) config('learning.round_repeats')) {
             $round['repeats'][$key] = ($round['repeats'][$key] ?? 0) + 1;
-            $round['queue'][] = ['card' => $cardId, 'direction' => $current['direction']->value, 'repeat' => true];
+            $round['queue'][] = ['card' => $cardId, 'direction' => $current['direction']->value, 'repeat' => true, 'runs' => $item['runs'] ?? []];
         }
 
         return $round;
@@ -238,12 +284,12 @@ class StudyRoundService
      */
     private function dueQuery(User $user): Builder
     {
-        $boxCount = $this->leitner->plan($user)['box_count'];
-
         return CardProgress::query()
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
+            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
             ->where('card_progress.user_id', $user->id)
-            ->whereBetween('card_progress.box', [1, $boxCount - 1])
+            ->where('card_progress.box', '>=', 1)
+            ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
             ->where('card_progress.due_on', '<=', $this->leitner->today()->toDateString());
     }
 

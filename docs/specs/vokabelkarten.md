@@ -153,8 +153,9 @@ Daraus folgt im Einzelnen:
 - Gezählt wird nur die **erste** Bewertung einer Karte in einer Runde.
 - „Heute" ist der Kalendertag in der Lern-Zeitzone (`LEARNING_TIMEZONE`,
   Standard `Europe/Berlin`), nicht UTC.
-- Wird N verkleinert, zählen Karten in Fach ≥ N als „Kann ich". Gespeichert
-  wird dabei nichts um.
+- N und die Abstände gehören zum **Durchgang** (Stapel + Lernplan) und
+  stehen ab dessen Start fest. Ein Stapel kann mit mehreren Plänen
+  gleichzeitig laufen. Details: [lernplaene-und-karten.md](lernplaene-und-karten.md).
 
 **Abweichung von vocaBox:** Dort wurden neue Karten nach „gewusst" und
 falsch beantwortete Karten auf *heute* gesetzt, und der erste Abstand wurde
@@ -354,7 +355,9 @@ ihn vorher zurück.
 - **„Eigener Plan"** klappt auf: Anzahl Fächer (2–10) mit „−"/„+" und je
   Fach ein Zahlfeld für die Tage (1–365). Darunter eine Vorschau als Kette
   „Fach 1 → 1 Tag → Fach 2 → 2 Tage → …".
-- Speichern mit Meldung. Gilt für alle Stapel der Person.
+- Speichern mit Meldung. Gilt als **Standard für neu gestartete Stapel**.
+  Begonnene behalten ihren Plan; einzelne Stapel lassen sich mit einer
+  anderen Vorgabe starten ([lernplaene-und-karten.md](lernplaene-und-karten.md)).
 
 ### Hilfe (`/help`, unter „Mehr")
 
@@ -419,7 +422,9 @@ UUID-Schlüssel, `timestampsTz()`, `foreignUuid(...)->constrained()->cascadeOnDe
   (`forward`/`backward`), `box` (smallint, 0), `due_on` (date),
   `last_reviewed_at` (nullable), `review_count`, `correct_count`,
   Zeitstempel; Primärschlüssel (`user_id`, `card_id`, `direction`); Index
-  (`user_id`, `due_on`).
+  (`user_id`, `due_on`). Seit `2026_10_13_000000_create_deck_runs_table.php`
+  zusätzlich `deck_run_id` (cascade), eindeutig (`deck_run_id`, `card_id`,
+  `direction`); siehe [lernplaene-und-karten.md](lernplaene-und-karten.md).
 - `learning_settings`: `user_id` (Primärschlüssel, cascade), `box_count`
   (smallint, 5), `day_gaps` (jsonb, `[1,2,4,7]`), Zeitstempel. Fehlt die
   Zeile, gilt „Normal".

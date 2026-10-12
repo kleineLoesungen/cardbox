@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Direction;
 use App\Models\Card;
 use App\Models\CardProgress;
+use App\Models\DeckRun;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +22,9 @@ use Illuminate\Support\Str;
  * * Not known: back to box 1, due in A_1 days. The round repeats it right
  *   away (StudyRoundService), without touching the progress again.
  * * "Today" is the calendar day in the learning time zone, not UTC.
- * * A smaller N later simply makes boxes ≥ N count as mastered; nothing is
- *   rewritten.
+ * * The plan (N and the intervals) belongs to the deck run and is fixed
+ *   when the run starts (docs/specs/lernplaene-und-karten.md). The person's
+ *   own plan is only the standard for new runs.
  */
 class LeitnerService
 {
@@ -35,7 +37,7 @@ class LeitnerService
     private array $plans = [];
 
     /**
-     * The person's plan, or the default plan.
+     * The person's standard plan for new runs, or the default plan.
      *
      * @return array{box_count: int, day_gaps: list<int>}
      */
@@ -74,49 +76,65 @@ class LeitnerService
     }
 
     /**
-     * Records one answer and moves the card between boxes.
+     * Records one answer and moves the card between boxes — in every given
+     * run, each by its own plan. "Los geht's" passes all runs in which the
+     * card is due; the deck page passes one. The answer counts once for the
+     * streak, however many runs it moves.
      *
-     * @return array{from: int, to: int}
+     * @param  list<DeckRun>  $runs  the person's runs of the card's deck
+     * @return array{from: int, to: int} the move in the first run
      */
-    public function review(User $user, Card $card, Direction $direction, bool $known): array
+    public function review(User $user, array $runs, Card $card, Direction $direction, bool $known): array
     {
-        $plan = $this->plan($user);
-        $boxCount = $plan['box_count'];
         $today = $this->today();
 
-        return DB::transaction(function () use ($user, $card, $direction, $known, $plan, $boxCount, $today) {
-            // Make sure the row exists before locking it: FOR UPDATE cannot
-            // lock a row that is not there, and two first answers at the same
-            // time would otherwise collide on the unique index.
-            DB::statement(
-                'INSERT INTO card_progress (id, user_id, card_id, direction, box, review_count, correct_count, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, 0, 0, 0, now(), now())
-                 ON CONFLICT (user_id, card_id, direction) DO NOTHING',
-                [(string) Str::uuid(), $user->id, $card->id, $direction->value],
-            );
-
-            $progress = CardProgress::query()
-                ->where('user_id', $user->id)
-                ->where('card_id', $card->id)
-                ->where('direction', $direction->value)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $from = min($progress->box, $boxCount);
-            $to = $known ? min($from + 1, $boxCount) : 1;
-
-            $progress->fill([
-                'box' => $to,
-                'due_on' => $to >= $boxCount ? null : $today->addDays($this->gap($plan['day_gaps'], $to))->toDateString(),
-                'last_reviewed_at' => now(),
-                'review_count' => $progress->review_count + 1,
-                'correct_count' => $progress->correct_count + ($known ? 1 : 0),
-            ])->save();
+        return DB::transaction(function () use ($user, $runs, $card, $direction, $known, $today) {
+            $first = null;
+            foreach ($runs as $run) {
+                $move = $this->reviewInRun($user, $run, $card, $direction, $known, $today);
+                $first ??= $move;
+            }
 
             $this->recordStudyDay($user, $known, $today);
 
-            return ['from' => $from, 'to' => $to];
+            return $first ?? ['from' => 0, 'to' => 0];
         });
+    }
+
+    /** @return array{from: int, to: int} */
+    private function reviewInRun(User $user, DeckRun $run, Card $card, Direction $direction, bool $known, CarbonImmutable $today): array
+    {
+        $boxCount = $run->box_count;
+
+        // Make sure the row exists before locking it: FOR UPDATE cannot lock
+        // a row that is not there, and two first answers at the same time
+        // would otherwise collide on the unique index.
+        DB::statement(
+            'INSERT INTO card_progress (id, user_id, deck_run_id, card_id, direction, box, review_count, correct_count, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 0, 0, 0, now(), now())
+             ON CONFLICT (deck_run_id, card_id, direction) DO NOTHING',
+            [(string) Str::uuid(), $user->id, $run->id, $card->id, $direction->value],
+        );
+
+        $progress = CardProgress::query()
+            ->where('deck_run_id', $run->id)
+            ->where('card_id', $card->id)
+            ->where('direction', $direction->value)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        $from = min($progress->box, $boxCount);
+        $to = $known ? min($from + 1, $boxCount) : 1;
+
+        $progress->fill([
+            'box' => $to,
+            'due_on' => $to >= $boxCount ? null : $today->addDays($this->gap($run->day_gaps, $to))->toDateString(),
+            'last_reviewed_at' => now(),
+            'review_count' => $progress->review_count + 1,
+            'correct_count' => $progress->correct_count + ($known ? 1 : 0),
+        ])->save();
+
+        return ['from' => $from, 'to' => $to];
     }
 
     /**

@@ -101,6 +101,21 @@
   </section>
 
   <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Einen Stapel anders lernen</h2>
+    <p class="text-muted">
+      Bald ist eine Arbeit? Öffne den Stapel und tippe auf <strong>Mit anderem
+      Lernplan starten</strong>, zum Beispiel <strong>Schnell</strong>. Dann
+      kommen die Karten öfter dran. Deine anderen Stapel bleiben, wie sie sind.
+    </p>
+    <p class="text-muted">
+      Du kannst einen Stapel auch mit zwei Plänen gleichzeitig lernen. Jeder
+      Plan hat seinen eigenen Lernstand. Ändern lässt sich der Plan eines
+      begonnenen Stapels nicht – dafür gibt es im Stapel-Menü
+      <strong>Fortschritt zurücksetzen</strong>, danach startest du neu.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Folgen oder kopieren?</h2>
     <p class="text-muted">
       Hat jemand einen Stapel mit allen geteilt, kannst du ihm <strong>folgen</strong>:

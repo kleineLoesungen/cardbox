@@ -4,19 +4,27 @@ use App\Enums\Direction;
 use App\Models\Card;
 use App\Models\CardProgress;
 use App\Models\Deck;
+use App\Models\DeckRun;
 use App\Models\User;
+use App\Services\DeckRunService;
 use App\Services\LeitnerService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 
-/** Progress row helper: box and days until due (relative to today in Berlin). */
-function progress(User $user, Card $card, int $box, ?int $dueInDays = 0, Direction $direction = Direction::Forward): CardProgress
+/**
+ * Progress row helper: box and days until due (relative to today in Berlin).
+ * Without a run it lands in the person's standard run of the card's deck,
+ * started on the spot with their current standard plan.
+ */
+function progress(User $user, Card $card, int $box, ?int $dueInDays = 0, Direction $direction = Direction::Forward, ?DeckRun $run = null): CardProgress
 {
     $today = app(LeitnerService::class)->today();
+    $run ??= app(DeckRunService::class)->forStandard($user, $card->deck);
 
     return CardProgress::create([
         'user_id' => $user->id,
+        'deck_run_id' => $run->id,
         'card_id' => $card->id,
         'direction' => $direction,
         'box' => $box,
@@ -26,10 +34,12 @@ function progress(User $user, Card $card, int $box, ?int $dueInDays = 0, Directi
     ]);
 }
 
-function progressOf(User $user, Card $card, Direction $direction = Direction::Forward): ?CardProgress
+function progressOf(User $user, Card $card, Direction $direction = Direction::Forward, ?DeckRun $run = null): ?CardProgress
 {
     return CardProgress::where('user_id', $user->id)->where('card_id', $card->id)
-        ->where('direction', $direction->value)->first();
+        ->where('direction', $direction->value)
+        ->when($run, fn ($q) => $q->where('deck_run_id', $run->id))
+        ->first();
 }
 
 /** Starts a round for a deck and returns the card ids in queue order. */
@@ -97,21 +107,27 @@ describe('Karteikasten', function () {
             ->and(progressOf($ich, $card)->due_on->toDateString())->toBe('2026-10-15');
     });
 
-    it('nutzt den eigenen Lernplan und zählt nach Verkleinerung höhere Fächer als gemeistert', function () {
+    it('nutzt den Lernplan des Durchgangs, auch wenn sich der Standard danach ändert', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();
         $card = Card::factory()->for($deck)->create();
-        $alt = Card::factory()->for($deck)->create();
-        progress($ich, $card, 1);
-        progress($ich, $alt, 4, 0);
+        $neu = Card::factory()->for($deck)->create();
         DB::table('learning_settings')->insert(['user_id' => $ich->id, 'box_count' => 3, 'day_gaps' => json_encode([3, 10])]);
+        progress($ich, $card, 1);
 
-        expect(startRound($deck))->toBe([$card->id]);
+        // Standard back to Normal: the running deck keeps 3 boxes, 3 · 10 days.
+        DB::table('learning_settings')->where('user_id', $ich->id)->update(['box_count' => 5, 'day_gaps' => json_encode([1, 2, 4, 7])]);
+        app(LeitnerService::class)->forgetPlan($ich);
+
+        expect(startRound($deck))->toBe([$card->id, $neu->id]);
         answer($card, true);
+        answer($neu, true);
 
         expect(progressOf($ich, $card)->box)->toBe(2)
-            ->and(progressOf($ich, $card)->due_on->toDateString())->toBe('2026-10-24');
-        $this->get("/decks/{$deck->id}")->assertSee('Kann ich: 1 Karte');
+            ->and(progressOf($ich, $card)->due_on->toDateString())->toBe('2026-10-24')
+            ->and(progressOf($ich, $neu)->due_on->toDateString())->toBe('2026-10-17')
+            ->and(DeckRun::where('user_id', $ich->id)->sole())->plan->toBe('custom')->box_count->toBe(3);
+        $this->get("/decks/{$deck->id}")->assertSee('Kann ich: 0 Karten')->assertSee('Mein Plan');
     });
 
     it('führt Fortschritt je Richtung getrennt', function () {
@@ -131,7 +147,8 @@ describe('Karteikasten', function () {
         $ich = actingAsUser();
         $card = Card::factory()->for(Deck::factory()->for($ich))->create();
         CardProgress::create([
-            'user_id' => $ich->id, 'card_id' => $card->id, 'direction' => Direction::Forward,
+            'user_id' => $ich->id, 'deck_run_id' => app(DeckRunService::class)->forStandard($ich, $card->deck)->id,
+            'card_id' => $card->id, 'direction' => Direction::Forward,
             'box' => 1, 'due_on' => '2026-10-15', 'review_count' => 1, 'correct_count' => 1,
         ]);
 
@@ -360,10 +377,12 @@ describe('Lernstand verwalten', function () {
         progress($ich, $sonst, 2);
         progress($andere, $card, 2);
 
-        $this->post("/decks/{$deck->id}/reset")->assertRedirect("/decks/{$deck->id}");
+        $run = DeckRun::where('user_id', $ich->id)->where('deck_id', $deck->id)->sole();
+        $this->post("/decks/{$deck->id}/runs/{$run->id}/reset")->assertRedirect("/decks/{$deck->id}");
 
         expect(CardProgress::where('user_id', $ich->id)->pluck('card_id')->all())->toBe([$sonst->id])
-            ->and(progressOf($andere, $card))->not->toBeNull();
+            ->and(progressOf($andere, $card))->not->toBeNull()
+            ->and(DeckRun::find($run->id))->toBeNull();
     });
 
     it('behält den Lernstand beim Entfolgen', function () {
@@ -424,7 +443,9 @@ describe('Grenzfälle', function () {
         $privat = Deck::factory()->create();
         Card::factory()->for($privat)->create();
 
-        $this->post("/decks/{$privat->id}/reset")->assertNotFound();
+        $run = DeckRun::create(['user_id' => $privat->user_id, 'deck_id' => $privat->id, 'plan' => 'normal', 'box_count' => 5, 'day_gaps' => [1, 2, 4, 7]]);
+        $this->post("/decks/{$privat->id}/runs/{$run->id}/reset")->assertNotFound();
+        expect(DeckRun::find($run->id))->not->toBeNull();
         $this->post('/learn/round', ['mode' => 'practice', 'deck' => $privat->id, 'direction' => 'forward'])->assertNotFound();
     });
 
@@ -513,14 +534,6 @@ describe('Freies Üben auf ein Fach', function () {
             ->and(practiseBox($deck, 'forward', '5'))->toBe([$kann->id])
             ->and(practiseBox($deck, 'forward', '0'))->toEqualCanonicalizing([$neu->id, $rueck->id])
             ->and(practiseBox($deck, 'backward', '2'))->toBe([$rueck->id]);
-    });
-
-    it('zählt Fächer über N als „Kann ich“, wenn der Lernplan verkleinert wurde', function () {
-        $ich = actingAsUser();
-        [$deck, , $zwei] = deckWithBoxes($ich);
-        DB::table('learning_settings')->insert(['user_id' => $ich->id, 'box_count' => 2, 'day_gaps' => json_encode([1])]);
-
-        expect(practiseBox($deck, 'forward', '2'))->toContain($zwei->id)->toHaveCount(2);
     });
 
     it('speichert beim Üben eines Fachs nichts', function () {

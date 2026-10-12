@@ -29,6 +29,8 @@ class StudyRoundController extends Controller
         $user = $request->user();
         $deck = $request->input('deck');
         $direction = $request->input('direction');
+        $run = $request->input('run');
+        $run = is_string($run) ? $run : null;
 
         $round = match (true) {
             $request->input('mode') === 'practice' => $this->rounds->startPractice(
@@ -36,8 +38,9 @@ class StudyRoundController extends Controller
                 is_string($deck) ? $deck : '',
                 is_string($direction) ? $direction : '',
                 $this->boxInput($request),
+                $run,
             ),
-            is_string($deck) && $deck !== '' => $this->rounds->startForDeck($user, $deck, Direction::tryFrom(is_string($direction) ? $direction : '') ?? Direction::Forward),
+            is_string($deck) && $deck !== '' => $this->rounds->startForDeck($user, $deck, Direction::tryFrom(is_string($direction) ? $direction : '') ?? Direction::Forward, $run),
             default => $this->rounds->startToday($user),
         };
 
