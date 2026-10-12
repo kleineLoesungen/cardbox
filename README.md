@@ -232,8 +232,18 @@ php artisan db:seed
 
 Das legt die Konten `anna` (Admin), `moritz` (Moderator), `bea` (Benutzer) und
 `neu.nutzer` (wartet auf Freigabe) an, alle mit dem Passwort
-`richtig-langes-passwort`. Dazu kommen ein geteilter Stapel von `anna` und ein
-privater von `bea`.
+`richtig-langes-passwort`. Die Beispieldaten zeigen jede Funktion einmal:
+
+| Konto | Was es zeigt |
+|---|---|
+| `bea` | „Englisch Unit 3“ mit zwei Lernplänen (Normal mit fälligen Karten, Schnell), Hauptbedeutungen und Hinweisen, 3 Tage Lernserie; folgt „Einmaleins“; Kopie von „Reisen“ mit einer Änderung im Original |
+| `anna` | geteilte Stapel „Reisen“ und „Einmaleins“; ein offener Vorschlag zu „Reisen“ |
+| `moritz` | folgt „Reisen“ und hat dort den Vorschlag gemacht |
+
+Der Seeder läuft nur auf einer leeren Datenbank; sind die Konten schon da, tut
+er nichts. Von vorn: `just db-reset && php artisan db:seed` (löscht alle
+lokalen Daten). `tests/Feature/DatabaseSeederTest.php` prüft, dass die
+Beispieldaten zur Anwendung passen.
 
 | Dienst | Adresse |
 |---|---|
