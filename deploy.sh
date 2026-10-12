@@ -217,12 +217,18 @@ fi
 php -r '
     $r = json_decode(file_get_contents($argv[1]), true);
     if (! is_array($r)) { fwrite(STDERR, "Unerwartete Antwort:\n".file_get_contents($argv[1])."\n"); exit(1); }
+    if (isset($r["error"])) {
+        // The hook itself failed before its checks (exception, HTTP 500).
+        fwrite(STDERR, "  ✗ Der Server meldet: ".($r["error"]["message"] ?? json_encode($r["error"]))."\n"
+            ."    Details stehen im Log auf dem Server: ".$argv[2]."/storage/logs/ (per FTP herunterladen).\n");
+        exit(1);
+    }
     foreach ($r["checks"] ?? [] as $name => $c) {
         printf("  %s %-24s %s\n", $c["ok"] ? "✓" : "✗", $name, $c["detail"]);
     }
     echo "\n", $r["migrations"] ?? "", "\n";
     exit(($r["ok"] ?? false) ? 0 : 1);
-' "$RESULT" || fehler "Der Server ist noch nicht bereit (siehe ✗ oben). Beheben und ./deploy.sh erneut ausführen."
+' "$RESULT" "$FTP_DIR" || fehler "Der Server ist noch nicht bereit (siehe ✗ oben). Beheben und ./deploy.sh erneut ausführen."
 
 # --- Smoke test -------------------------------------------------------------
 

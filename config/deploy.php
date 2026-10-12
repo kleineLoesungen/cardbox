@@ -16,4 +16,8 @@ return [
 
     'hook_token' => env('DEPLOY_HOOK_TOKEN'),
 
+    // Cache store for the hook's rate limit. Not the database: its cache
+    // table only exists after the first migration (ThrottleDeployHook).
+    'throttle_store' => env('DEPLOY_THROTTLE_STORE', 'file'),
+
 ];

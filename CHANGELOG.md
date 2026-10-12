@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.12.5
+- Deploy per FTP: Der erste Deploy auf eine leere Datenbank scheiterte mit einem Serverfehler, weil die Drosselung des Deploy-Aufrufs eine Tabelle brauchte, die erst die Migration anlegt. Die Drosselung zählt jetzt in Dateien unter storage/
+- deploy.sh zeigt Fehlermeldungen des Servers an und sagt, wo das Log liegt
+
 ## 2026.10.12.4
 - Deploy per FTP prüft nach dem Hochladen, ob die Domain wirklich auf FTP_DIR zeigt, und sagt sonst, was zu tun ist
 - Deploy per FTP lässt den Ordner .well-known auf dem Server stehen (Let's-Encrypt-Prüfung des Hosters)

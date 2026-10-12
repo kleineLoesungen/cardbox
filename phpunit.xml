@@ -24,6 +24,7 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <env name="DEPLOY_THROTTLE_STORE" value="array"/>
         <!--
           Echte Postgres statt SQLite: ILIKE, Check-Constraints und JSONB
           verhalten sich in SQLite anders. Ein Test, der gegen SQLite gruen

@@ -27,7 +27,7 @@ Route::get('/health', HealthController::class);
 // Deploy hook for web space without a shell (deploy.sh, docs/INSTALL-WEBSPACE.md).
 // Not an app token: it must work on the first deploy with an empty database.
 // Off (404) unless DEPLOY_HOOK_TOKEN is set; every wrong token is 404 too.
-Route::post('/deploy', DeployController::class)->middleware(['throttle:10,1', 'deploy.token']);
+Route::post('/deploy', DeployController::class)->middleware(['deploy.throttle:10,1', 'deploy.token']);
 
 Route::get('/token', TokenController::class)->middleware('api.token');
 

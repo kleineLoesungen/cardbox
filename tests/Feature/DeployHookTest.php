@@ -2,6 +2,7 @@
 
 use App\Services\DeployService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /** A token long enough to switch the hook on. */
 const HOOK_TOKEN = 'test-token-0123456789abcdef0123456789abcdef';
@@ -57,6 +58,18 @@ it('migriert nicht, wenn eine Prüfung fehlschlägt', function () {
         ->assertJsonPath('ok', false)
         ->assertJsonPath('checks.app-debug.ok', false)
         ->assertJsonPath('migrations', 'nicht ausgeführt – erst die Prüfungen beheben');
+});
+
+it('läuft auf einer frischen Datenbank, in der die Cache-Tabellen noch fehlen', function () {
+    // Web space: CACHE_STORE=database, but the cache tables are created by
+    // the very migrations this hook is meant to run.
+    config(['deploy.hook_token' => HOOK_TOKEN, 'app.debug' => false, 'cache.default' => 'database']);
+    Schema::drop('cache');
+    Schema::drop('cache_locks');
+
+    $this->withToken(HOOK_TOKEN)->postJson('/api/v1/deploy')
+        ->assertOk()
+        ->assertJsonPath('ok', true);
 });
 
 it('ist gegen Durchprobieren gedrosselt', function () {

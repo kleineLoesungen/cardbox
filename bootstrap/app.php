@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\LogoutInactiveUsers;
 use App\Http\Middleware\RequireDeployToken;
 use App\Http\Middleware\RequireScope;
+use App\Http\Middleware\ThrottleDeployHook;
 use App\Http\Middleware\TrustProxies;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.token' => RequireScope::class,
             'scope' => RequireScope::class,
             'deploy.token' => RequireDeployToken::class,
+            'deploy.throttle' => ThrottleDeployHook::class,
         ]);
 
         // Gesperrte Konten bei der naechsten Anfrage abmelden — an ALLEN Web-Routen.
