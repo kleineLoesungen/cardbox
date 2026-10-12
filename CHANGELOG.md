@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.12
+- Eigenes PostgreSQL-Schema über DB_SCHEMA (Standard: public), z. B. wenn der Hoster ein Schema vorgibt oder sich mehrere Anwendungen eine Datenbank teilen
+- Der Deploy per FTP legt ein fehlendes Schema an, wenn das Datenbankkonto das darf, und meldet ungültige Namen
+
 ## 2026.10.11.4
 - Lernplan unter Mehr: Normal, Schnell (vor Prüfungen), Gründlich oder ein eigener Plan mit 2–10 Fächern und eigenen Abständen
 - Hilfe unter Mehr: So funktioniert der Karteikasten, Folgen oder kopieren, Listen einfügen, App auf den Startbildschirm

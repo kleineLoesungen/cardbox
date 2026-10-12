@@ -70,6 +70,8 @@ DB_DATABASE=cardbox
 DB_USERNAME=cardbox
 DB_PASSWORD=…
 DB_SSLMODE=require
+# PostgreSQL-Schema (Standard public). Muss vor dem Start existieren.
+DB_SCHEMA=public
 MAIL_MAILER=smtp
 MAIL_URL=smtps://benutzer:passwort@mail.example.com:465
 MAIL_FROM_ADDRESS=noreply@example.com

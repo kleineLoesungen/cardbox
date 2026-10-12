@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\DeployService;
+use Illuminate\Support\Facades\DB;
 
 /** A token long enough to switch the hook on. */
 const HOOK_TOKEN = 'test-token-0123456789abcdef0123456789abcdef';
@@ -76,4 +77,28 @@ it('lässt keinen zweiten Deploy gleichzeitig laufen', function () {
     } finally {
         $holder->query('SELECT pg_advisory_unlock('.DeployService::LOCK_KEY.')');
     }
+});
+
+describe('DB_SCHEMA', function () {
+    it('nutzt ohne Angabe das Schema public', function () {
+        expect(config('database.connections.pgsql.search_path'))->toBe('public')
+            ->and(app(DeployService::class)->ensureSchema())->toBeNull();
+    });
+
+    it('legt ein fehlendes Schema an', function () {
+        config(['database.connections.pgsql.search_path' => 'cardbox_schema_test']);
+
+        expect(app(DeployService::class)->ensureSchema())->toBeNull()
+            ->and(DB::table('information_schema.schemata')
+                ->where('schema_name', 'cardbox_schema_test')->exists())->toBeTrue();
+    });
+
+    it('lehnt ungültige Schemanamen ab und migriert dann nicht', function (string $schema) {
+        config(['deploy.hook_token' => HOOK_TOKEN, 'app.debug' => false, 'database.connections.pgsql.search_path' => $schema]);
+
+        $this->withToken(HOOK_TOKEN)->postJson('/api/v1/deploy')
+            ->assertStatus(500)
+            ->assertJsonPath('checks.database-schema.ok', false)
+            ->assertJsonPath('migrations', 'nicht ausgeführt – erst die Prüfungen beheben');
+    })->with(['x"; DROP SCHEMA public; --', '1abc', 'mit leerzeichen', str_repeat('a', 64)]);
 });

@@ -16,6 +16,9 @@ class DeployService
     /** Same minimum as composer.json; the dependencies need it. */
     public const MIN_PHP = '8.4.1';
 
+    /** Allowed schema names: a plain PostgreSQL identifier, no quoting needed. */
+    public const SCHEMA_PATTERN = '/^[A-Za-z_][A-Za-z0-9_]{0,62}$/';
+
     /** Key of the PostgreSQL advisory lock that serialises deploy hooks. */
     public const LOCK_KEY = 4_242_001;
 
@@ -31,6 +34,13 @@ class DeployService
         $ready = ! in_array(false, array_column($checks, 'ok'), true);
 
         if (! $ready) {
+            return ['ok' => false, 'checks' => $checks, 'migrations' => 'nicht ausgeführt – erst die Prüfungen beheben'];
+        }
+
+        $schema = $this->ensureSchema();
+        if ($schema !== null) {
+            $checks['database-schema'] = ['ok' => false, 'detail' => $schema];
+
             return ['ok' => false, 'checks' => $checks, 'migrations' => 'nicht ausgeführt – erst die Prüfungen beheben'];
         }
 
@@ -54,6 +64,40 @@ class DeployService
         }
 
         return ['ok' => true, 'checks' => $checks, 'migrations' => $migrations];
+    }
+
+    /**
+     * Creates the schema from DB_SCHEMA if it does not exist yet (needs the
+     * CREATE privilege on the database). `public` always exists.
+     *
+     * @return string|null Error text, or null when the schema is there
+     */
+    public function ensureSchema(): ?string
+    {
+        $schema = $this->schema();
+        if ($schema === 'public') {
+            return null;
+        }
+        if (! preg_match(self::SCHEMA_PATTERN, $schema)) {
+            return "DB_SCHEMA „{$schema}“ ist kein gültiger Name (Buchstaben, Ziffern, _; mit Buchstabe oder _ beginnend).";
+        }
+
+        try {
+            // The name is validated above; identifiers cannot be bound as parameters.
+            DB::statement('CREATE SCHEMA IF NOT EXISTS "'.$schema.'"');
+        } catch (Throwable $e) {
+            return "Schema „{$schema}“ fehlt und kann nicht angelegt werden: ".$e->getMessage();
+        }
+
+        return null;
+    }
+
+    /** The configured schema (search_path of the connection). */
+    public function schema(): string
+    {
+        $path = config('database.connections.pgsql.search_path', 'public');
+
+        return trim(is_string($path) ? $path : 'public');
     }
 
     /**
@@ -99,7 +143,7 @@ class DeployService
 
         try {
             DB::select('SELECT 1');
-            $checks['database'] = ['ok' => true, 'detail' => 'erreichbar'];
+            $checks['database'] = ['ok' => true, 'detail' => 'erreichbar, Schema „'.$this->schema().'“'];
         } catch (Throwable $e) {
             $checks['database'] = ['ok' => false, 'detail' => 'nicht erreichbar: '.$e->getMessage()];
         }

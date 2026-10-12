@@ -89,6 +89,7 @@ nie committet. Diese Werte setzen:
 | `APP_URL` | `https://cardbox.example.com` |
 | `APP_NAME`, `APP_SHORT_NAME` | Name der App, mit Leerzeichen in Anführungszeichen: `"Cardbox Schule"` |
 | `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | aus dem Kundenmenü |
+| `DB_SCHEMA` | Schema für die Tabellen, Standard `public`. Gibt der Hoster ein Schema vor oder teilen sich mehrere Anwendungen eine Datenbank, hier den Namen eintragen. Fehlt das Schema, legt der erste Deploy es an, sofern das Datenbankkonto das darf |
 | `DB_SSLMODE` | `require`, wenn die Datenbank auf einem anderen Rechner liegt; sonst `prefer` |
 | `SESSION_SECURE_COOKIE` | `true` |
 | `TRUST_PROXY` | `false`. `true` nur, wenn der Hoster einen Proxy davorschaltet **und** der Server ausschließlich über diesen erreichbar ist. Sonst kann jeder die Anmeldebremse pro IP umgehen. Im Zweifel `false` |
@@ -167,6 +168,7 @@ Willst du nur die `.env` auf dem Server ändern: `.env.production` anpassen und
 | „Deploy-Hook antwortet 404“ | `DEPLOY_HOOK_TOKEN` in `.env.production` und `.env.deploy` gleich? Mindestens 32 Zeichen? |
 | ✗ bei `php` oder `ext-…` | im Kundenmenü PHP 8.4+ wählen bzw. Erweiterungen einschalten |
 | ✗ bei `database` | Zugangsdaten in `.env.production`. Liegt die Datenbank woanders, `DB_SSLMODE=require` probieren |
+| ✗ bei `database-schema` | `DB_SCHEMA` ist kein gültiger Name, oder das Schema fehlt und das Datenbankkonto darf keins anlegen – dann im Kundenmenü anlegen bzw. den Hoster fragen |
 | ✗ bei `writable-…` | im FTP-Programm `storage/` und `bootstrap/cache/` beschreibbar machen (Rechte 775) |
 | 403 auf der ganzen Seite | Die Domain zeigt auf `cardbox/` statt auf `cardbox/public` |
 | Anmeldung klappt nie | Läuft die Seite über HTTPS? Mit `SESSION_SECURE_COOKIE=true` setzen Browser das Cookie nur über HTTPS |

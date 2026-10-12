@@ -59,6 +59,13 @@ CREATE DATABASE cardbox OWNER cardbox ENCODING 'UTF8';
 
 Ein gutes Passwort erzeugt `openssl rand -hex 24`.
 
+**Eigenes Schema statt `public`** – etwa wenn sich mehrere Anwendungen eine
+Datenbank teilen: Schema anlegen und in `.env` `DB_SCHEMA=cardbox` setzen.
+
+```sql
+CREATE SCHEMA cardbox AUTHORIZATION cardbox;
+```
+
 **Läuft die Datenbank auf einem anderen Rechner**, muss sie Verbindungen vom
 Webserver annehmen (`listen_addresses` in `postgresql.conf` und ein Eintrag in
 `pg_hba.conf`). Die Verbindung sollte verschlüsselt sein, dazu später in
@@ -109,6 +116,7 @@ chmod 640 .env
 | `DB_HOST` | Rechner der Datenbank, z. B. `127.0.0.1` |
 | `DB_PORT` | `5432` |
 | `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | aus Schritt 1 |
+| `DB_SCHEMA` | `public`, oder das eigene Schema aus Schritt 1 |
 | `DB_SSLMODE` | `require`, wenn die Datenbank auf einem anderen Rechner liegt; sonst `prefer` |
 | `SESSION_SECURE_COOKIE` | `true` |
 | `TRUST_PROXY` | `false` – **außer** vor nginx steht noch ein weiterer Proxy oder Loadbalancer, dann `true`. In diesem Fall per Firewall sicherstellen, dass der Server **nur** über den Proxy erreichbar ist, sonst kann jeder die Anmeldebremse pro IP umgehen |
