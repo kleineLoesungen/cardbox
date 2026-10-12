@@ -1,7 +1,40 @@
-# Uploaded by deploy.sh as .htaccess into the Cardbox folder on the web space.
+# Uploaded by deploy.sh as .htaccess into the Cardbox folder on the web space
+# (FTP_DIR, e.g. public_html/cardbox).
 #
-# The domain must point to the public/ subfolder. If it points here instead,
-# deny everything — otherwise .env (passwords, APP_KEY) and the source code
-# could be downloaded. Visitors then see "403 Forbidden"; fix it in the
-# hosting panel by setting the document root to …/public.
-Require all denied
+# Many web spaces only let a domain point at public_html or a folder inside
+# it, not at its public/ subfolder. So every request is handed to public/
+# internally: /decks becomes public/decks, /css/app.css becomes
+# public/css/app.css. Nothing outside public/ is ever reachable — /.env ends
+# up as public/.env, which does not exist, and Laravel answers 404.
+#
+# public/.htaccess has its own RewriteEngine, so these rules do not apply a
+# second time to requests that are already inside public/.
+#
+# The domain may point here or directly at public/; both work.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Strip a trailing slash here, before the request moves into public/.
+    # The same rule in public/.htaccess would see the rewritten path and
+    # redirect /login/ to /public/login.
+    RewriteCond %{REQUEST_URI} ^(.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Let's Encrypt: many hosts put the HTTP challenge into the folder the
+    # domain points at. Serve it from here, or HTTPS cannot be issued.
+    RewriteRule ^\.well-known/ - [L]
+
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Never serve .htaccess or .env. Most hosts deny .ht* globally already;
+# this does not rely on it.
+<FilesMatch "^\.(ht|env)">
+    Require all denied
+</FilesMatch>
+
+# Without mod_rewrite the line above does nothing and the code would be
+# served as files. Deny everything instead.
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

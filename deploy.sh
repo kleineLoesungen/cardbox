@@ -38,7 +38,7 @@ FTP_HOST="${FTP_HOST:-}"
 FTP_PORT="${FTP_PORT:-21}"
 FTP_USER="${FTP_USER:-}"
 FTP_PASS="${FTP_PASS:-}"
-FTP_DIR="${FTP_DIR:-cardbox}"
+FTP_DIR="${FTP_DIR:-}"
 FTP_DIR="${FTP_DIR%/}"
 FTP_SSL="${FTP_SSL:-true}"
 DEPLOY_URL="${DEPLOY_URL:-}"
@@ -52,8 +52,8 @@ DEPLOY_ALLOW_DIRTY="${DEPLOY_ALLOW_DIRTY:-false}"
 
 schritt "Voraussetzungen prüfen"
 
-[[ -n "$FTP_HOST" && -n "$FTP_USER" && -n "$DEPLOY_URL" ]] \
-    || fehler "FTP_HOST, FTP_USER und DEPLOY_URL müssen gesetzt sein (in .env.deploy, Vorlage: .env.deploy.example)."
+[[ -n "$FTP_HOST" && -n "$FTP_USER" && -n "$FTP_DIR" && -n "$DEPLOY_URL" ]] \
+    || fehler "FTP_HOST, FTP_USER, FTP_DIR und DEPLOY_URL müssen gesetzt sein (in .env.deploy, Vorlage: .env.deploy.example)."
 [[ ${#DEPLOY_HOOK_TOKEN} -ge 32 ]] \
     || fehler "DEPLOY_HOOK_TOKEN fehlt oder ist kürzer als 32 Zeichen (erzeugen: openssl rand -hex 32)."
 [[ "$DEPLOY_URL" == https://* ]] \
@@ -113,8 +113,9 @@ git archive HEAD | tar -x -C "$BUILD"
 rm -rf "$BUILD"/{tests,docs,deploy,docker,.claude,scripts} \
        "$BUILD"/{deploy.sh,.env.deploy.example,Dockerfile,compose.yaml,Justfile,phpunit.xml,phpstan.neon,pint.json,CLAUDE.md,README.md,.dockerignore}
 
-# In case the web space points at the app folder instead of public/: deny
-# everything there, so .env and the code are never served.
+# The domain usually points at FTP_DIR itself (hosts that only offer
+# public_html). This .htaccess hands every request to public/, so .env and
+# the code are never served.
 cp deploy/webspace/htaccess-root "$BUILD/.htaccess"
 
 # A file the web server cannot read is served as 403, silently and only for
@@ -188,11 +189,11 @@ php -r '
 
 schritt "Abschlussprüfung"
 
-# If the domain points at the app folder instead of public/ and the server
-# ignores .htaccess (nginx), secrets would be downloadable. Must not be 200.
+# If the server ignores the .htaccess in FTP_DIR (nginx, AllowOverride None),
+# secrets would be downloadable. Must not be 200.
 for path in .env composer.json; do
     code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "${DEPLOY_URL}/${path}")
-    [[ "$code" != "200" ]] || fehler "${DEPLOY_URL}/${path} ist abrufbar! Die Domain muss auf ${FTP_DIR}/public zeigen. Sofort im Kundenmenü ändern und APP_KEY, DB-Passwort und DEPLOY_HOOK_TOKEN erneuern."
+    [[ "$code" != "200" ]] || fehler "${DEPLOY_URL}/${path} ist abrufbar! Der Server beachtet die .htaccess in ${FTP_DIR} nicht. Sofort die Domain auf ${FTP_DIR}/public stellen (oder die Dateien löschen) und APP_KEY, DB-Passwort und DEPLOY_HOOK_TOKEN erneuern."
 done
 
 curl -fsS --max-time 20 "${DEPLOY_URL}/api/v1/health" || fehler "${DEPLOY_URL}/api/v1/health antwortet nicht mit OK."

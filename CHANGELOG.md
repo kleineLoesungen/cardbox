@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.12.2
+- Webspace: Die Domain darf jetzt direkt auf den Upload-Ordner zeigen (z. B. public_html/cardbox), wie es Hoster mit nur public_html verlangen. Eine .htaccess dort reicht alle Anfragen an public/ weiter; .env und Code bleiben unerreichbar
+- FTP_DIR in .env.deploy muss jetzt gesetzt sein, Vorlage: public_html/cardbox
+- Die Let's-Encrypt-Prüfung unter /.well-known funktioniert auch in diesem Ordner
+
 ## 2026.10.12
 - Eigenes PostgreSQL-Schema über DB_SCHEMA (Standard: public), z. B. wenn der Hoster ein Schema vorgibt oder sich mehrere Anwendungen eine Datenbank teilen
 - Der Deploy per FTP legt ein fehlendes Schema an, wenn das Datenbankkonto das darf, und meldet ungültige Namen
