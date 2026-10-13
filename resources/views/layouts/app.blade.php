@@ -24,9 +24,8 @@
     <div class="container-app flex h-14 items-center gap-2">
 
       <a href="/learn" class="row mr-2 shrink-0 font-semibold tracking-tight">
-        <span class="grid size-7 place-items-center rounded-ui bg-brand text-brand-content text-xs font-bold">
-          {{ $branding->initial() }}
-        </span>
+        {{-- The app icon (resources/icons/icon.svg, copied by scripts/icons.sh). --}}
+        <img src="/favicon.svg" alt="" class="size-7">
         <span>{{ $branding->name }}</span>
       </a>
 
@@ -106,6 +105,15 @@
       <rect x="4" y="7" width="14" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/>
     </svg>
     Stapel
+  </a>
+
+  <a href="/dictionary" class="tab {{ request()->is('dictionary') ? 'tab-active' : '' }}">
+    {{-- An open book. --}}
+    <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 6.5C10.5 5 8 4.5 4 4.5v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-13c-4 0-6.5.5-8 2z"/><path d="M12 6.5v13"/>
+    </svg>
+    Wörterbuch
   </a>
 
   <button type="button" class="tab relative" data-menu-toggle

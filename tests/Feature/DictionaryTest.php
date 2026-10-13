@@ -128,9 +128,17 @@ it('bietet Vorlesen in der Sprache jeder Seite an', function () {
         ->assertSee('data-speak-text="dog" data-speak-lang="en"', false);
 });
 
+it('zeigt in der Kopfzeile das App-Icon', function () {
+    actingAsUser();
+
+    $this->get('/learn')->assertSee('<img src="/favicon.svg" alt="" class="size-7">', false);
+});
+
 it('ist nur für Angemeldete und steht im Menü', function () {
     $this->get('/dictionary')->assertRedirect('/login');
 
     actingAsUser();
     $this->get('/learn')->assertSee('href="/dictionary"', false);
+    // Also in the bottom bar on the phone, marked active on its own page.
+    $this->get('/dictionary')->assertSee('<a href="/dictionary" class="tab tab-active">', false);
 });

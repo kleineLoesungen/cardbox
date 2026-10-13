@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.12
+- Wörterbuch auch in der unteren Leiste auf dem Telefon
+- Die Kopfzeile der App zeigt das Icon statt des Anfangsbuchstabens
+
 ## 2026.10.13.11
 - Moderation: „Doppelte Karten“ listet gleiche Wortpaare in geteilten Stapeln. Die Moderation wählt die Karte, die bleibt, kann ihren Inhalt ergänzen und führt zusammen: Doppelte im selben Stapel werden gelöscht (der weiter fortgeschrittene Lernstand bleibt), Doppelte in anderen Stapeln übernehmen den Inhalt und bekommen spätere Korrekturen angeboten
 

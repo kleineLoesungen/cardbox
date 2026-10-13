@@ -30,12 +30,6 @@ final readonly class Branding
         );
     }
 
-    /** Erster Buchstabe des Namens, fuer das Logo-Quadrat in der Kopfzeile. */
-    public function initial(): string
-    {
-        return mb_strtoupper(mb_substr($this->name, 0, 1)) ?: '·';
-    }
-
     /**
      * Streng, weil der Wert unveraendert im Manifest und in einem Meta-Tag landet.
      *
