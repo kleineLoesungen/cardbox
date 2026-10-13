@@ -6,6 +6,8 @@
 @section('title', $deck->name)
 
 @section('main')
+{{-- Display only: the moderation routes check the role themselves. --}}
+@php($canModerate = ! $isOwner && $deck->is_shared && auth()->user()->hasRole(\App\Enums\Role::Moderator))
 <div class="mx-auto max-w-md">
   <div class="mb-4 flex items-start gap-2">
     <div class="min-w-0 flex-1">
@@ -87,7 +89,8 @@
   <ul id="card-list" class="list">
     @foreach ($cards as $card)
       <x-card-row :card="$card" :deck="$deck" :editable="$isOwner"
-                  :can-suggest="! $isOwner && $deck->is_shared" :suggestion="$mySuggestions[$card->id] ?? null" />
+                  :can-suggest="! $isOwner && $deck->is_shared" :can-moderate="$canModerate"
+                  :suggestion="$mySuggestions[$card->id] ?? null" />
     @endforeach
   </ul>
 
@@ -126,6 +129,10 @@
 
 @if (! $isOwner && $deck->is_shared)
   <x-sheet id="suggest-sheet" title="Fehler melden"></x-sheet>
+@endif
+
+@if ($canModerate)
+  <x-sheet id="card-sheet" title="Karte korrigieren"></x-sheet>
 @endif
 
 {{-- "⋯" menu: what the viewer may do with this deck. --}}

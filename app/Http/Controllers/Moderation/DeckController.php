@@ -14,7 +14,8 @@ use Illuminate\View\View;
  *
  * Uses the system-wide `…Shared` flavour of DeckService, which only ever
  * touches shared decks — other people's private decks stay invisible here.
- * Moderators never edit content; they end sharing or delete.
+ * Here they end sharing or delete whole decks; correcting single cards is
+ * Moderation\CardController.
  */
 class DeckController extends Controller
 {

@@ -5,8 +5,10 @@
   Own deck: tapping opens the edit sheet (#card-sheet). Other people's decks:
   read only; tapping unfolds all meanings and, in shared decks, "Fehler
   melden" (#suggest-sheet) or the status of the viewer's own suggestion.
+  For moderation also "Bearbeiten (Moderation)" (#card-sheet); showing it
+  is display only, the role:moderator routes decide.
 --}}
-@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'suggestion' => null])
+@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null])
 @php($more = count($card->front) + count($card->back) - 2)
 <li id="card-{{ $card->id }}">
   @if ($editable)
@@ -39,8 +41,15 @@
           <span class="text-muted">{{ implode(', ', $card->back) }}</span>
         </div>
       @endif
-      @if ($canSuggest)
+      @if ($canSuggest || $canModerate)
         <div class="flex flex-wrap items-center gap-2 px-4 pb-3">
+          @if ($canModerate)
+            <button type="button" class="btn btn-ghost btn-sm"
+                    hx-get="/moderation/decks/{{ $deck->id }}/cards/{{ $card->id }}/edit" hx-target="#card-sheet-body">
+              Bearbeiten (Moderation)
+            </button>
+          @endif
+          @if ($canSuggest)
           @if ($suggestion)
             <span class="badge {{ $suggestion->status === \App\Enums\SuggestionStatus::Declined ? 'badge-neutral' : 'badge-brand' }}">{{ $suggestion->status->label() }}</span>
           @endif
@@ -49,6 +58,7 @@
                     hx-get="/decks/{{ $deck->id }}/cards/{{ $card->id }}/suggest" hx-target="#suggest-sheet-body">
               Fehler melden
             </button>
+          @endif
           @endif
         </div>
       @endif

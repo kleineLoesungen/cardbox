@@ -72,6 +72,44 @@ class CardService
         return $card;
     }
 
+    // -------------------------------------------------------------------------
+    // Moderation — system-wide, but only on SHARED decks (like DeckService).
+    // Used only behind the role:moderator routes; never in owner controllers.
+    // -------------------------------------------------------------------------
+
+    /**
+     * A card in any shared deck.
+     *
+     * @throws ModelNotFoundException<Deck|Card>
+     */
+    public function getShared(string $deckId, string $cardId): Card
+    {
+        $deck = $this->decks->getShared($deckId);
+        $this->ensureUuid($cardId);
+
+        $card = $deck->cards()->findOrFail($cardId);
+        $card->setRelation('deck', $deck);
+
+        return $card;
+    }
+
+    /**
+     * Moderation corrects a card in somebody else's shared deck, with the
+     * same checks as an edit by the owner.
+     *
+     * @param  array<string, mixed>  $input  front[], back[], hint
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck|Card>
+     */
+    public function updateShared(string $deckId, string $cardId, array $input): Card
+    {
+        $card = $this->getShared($deckId, $cardId);
+        $card->update($this->validate($input));
+
+        return $card;
+    }
+
     /**
      * Deletes the card together with everybody's progress on it — followers
      * of a shared deck included.

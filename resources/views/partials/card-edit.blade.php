@@ -2,11 +2,19 @@
   Edit form inside the #card-sheet; loaded via htmx when a card row is
   tapped. The order of the inputs is the order of the meanings: the first
   one is the main meaning (☆ moves another one up, see layouts/app).
+
+  @param bool $moderation  correcting somebody else's shared card
+                           (Moderation\CardController): other form target,
+                           a note whose card it is, no delete
 --}}
+@php($moderation ??= false)
 @php($frontTag = \App\Enums\Language::tryFrom($deck->front_language)?->tag())
 @php($backTag = \App\Enums\Language::tryFrom($deck->back_language)?->tag())
 <div class="stack">
-  <form class="stack" hx-post="/decks/{{ $deck->id }}/cards/{{ $card->id }}"
+  @if ($moderation)
+    <p class="alert alert-warning">Moderation: Du änderst eine Karte von {{ $deck->user->name }}. Alle, die mit dem Stapel lernen, sehen die Änderung.</p>
+  @endif
+  <form class="stack" hx-post="{{ $moderation ? '/moderation' : '' }}/decks/{{ $deck->id }}/cards/{{ $card->id }}"
         hx-target="#card-{{ $card->id }}" hx-swap="outerHTML">
     <div class="field">
       <span class="label">{{ $deck->frontLabel() }}</span>
@@ -34,10 +42,13 @@
     <button type="submit" class="btn btn-primary btn-lg btn-block">Speichern</button>
   </form>
 
+  {{-- Moderation never deletes single cards (duplicates go through the merge). --}}
+  @unless ($moderation)
   <form hx-post="/decks/{{ $deck->id }}/cards/{{ $card->id }}/delete"
         hx-target="#card-{{ $card->id }}" hx-swap="outerHTML"
         data-confirm-action="Karte löschen"
         hx-confirm="{{ $deck->is_shared && $followerCount > 0 ? 'Karte löschen? Auch alle, die diesem Stapel folgen, verlieren sie samt Lernstand.' : 'Karte löschen?' }}">
     <button type="submit" class="btn btn-ghost btn-block text-danger">Karte löschen</button>
   </form>
+  @endunless
 </div>

@@ -15,6 +15,7 @@ use App\Http\Controllers\DeckRunController;
 use App\Http\Controllers\DictionaryController;
 use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
+use App\Http\Controllers\Moderation\CardController as ModerationCardController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
@@ -150,6 +151,9 @@ Route::middleware(['auth', 'role:moderator'])->group(function () {
     Route::get('/moderation', [ModerationDeckController::class, 'index']);
     Route::post('/moderation/decks/{deck}/unshare', [ModerationDeckController::class, 'unshare'])->whereUuid('deck');
     Route::post('/moderation/decks/{deck}/delete', [ModerationDeckController::class, 'destroy'])->whereUuid('deck');
+    // Correcting cards in shared decks of other people (issue #6); never deleting them.
+    Route::get('/moderation/decks/{deck}/cards/{card}/edit', [ModerationCardController::class, 'edit'])->whereUuid(['deck', 'card']);
+    Route::post('/moderation/decks/{deck}/cards/{card}', [ModerationCardController::class, 'update'])->whereUuid(['deck', 'card']);
 });
 
 // --- Nur Administrator -------------------------------------------------------

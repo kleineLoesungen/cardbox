@@ -75,8 +75,12 @@ einzelnen Abläufen weiter unten gelten sie zuerst.
   verwirrend. Ordnen geht hier nur über Stapel. Eine `tags`-Spalte in
   importierten Dateien wird ignoriert.
 - **Globale Kartenliste.** Karten gibt es nur im Stapel.
-- **Fremde Inhalte bearbeiten**, auch nicht als Moderatorin. Moderation
-  heißt hier: Teilen beenden oder löschen.
+- **Fremde Inhalte bearbeiten** – für Benutzerinnen. Seit
+  [woerterbuch-und-bereinigung.md](woerterbuch-und-bereinigung.md) dürfen
+  Moderation und Verwaltung Karten in geteilten Stapeln korrigieren (Issue
+  #6); Administratoren importieren seit
+  [csv-und-produktseite.md](csv-und-produktseite.md) auch in fremde geteilte
+  Stapel.
 - **Mehrsprachige Oberfläche** (vocaBox: EN/DE). Nur Deutsch.
 - **Desktop-Gestaltung**, Tastaturkürzel, Mehrfachauswahl mit Umschalt.
 - **Eingetippte Antworten**, Audioaufnahmen, Bilder auf Karten.
@@ -247,7 +251,7 @@ ist ausgeblendet, nicht ausgegraut.
     Liste einfügen, Kopieren, Fortschritt zurücksetzen, Stapel löschen
   - gefolgter Stapel: Nicht mehr folgen, Kopieren, Fortschritt zurücksetzen
   - Moderatorin bei fremdem geteiltem Stapel zusätzlich: Teilen beenden,
-    Stapel löschen
+    Stapel löschen; an jeder Karte „Bearbeiten (Moderation)“
 
 „Nicht mehr folgen" fragt: „Dein Lernstand für diesen Stapel bleibt
 erhalten, falls du wieder folgst." Wer den Lernstand loswerden will, setzt
@@ -394,7 +398,7 @@ Sichtbarkeit und Schreibrecht (geprüft im Service):
 | | sehen, lernen, folgen, kopieren, Karten übernehmen | bearbeiten, Karten anlegen/löschen, teilen, löschen |
 |---|---|---|
 | eigener Stapel | ja | ja |
-| fremder geteilter | ja | nein (Moderatorin: nur Teilen beenden, löschen) |
+| fremder geteilter | ja | nein (Moderatorin: Teilen beenden, löschen, Karten korrigieren) |
 | fremder privater | nein (404) | nein (404) |
 
 Fortschritt, Lernplan, Lernserie und Folgen: ausschließlich eigene.

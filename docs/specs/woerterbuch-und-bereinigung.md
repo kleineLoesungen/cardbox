@@ -1,6 +1,6 @@
 # Wörterbuch und Bereinigung durch die Moderation
 
-Status: **freigegeben** · Stufe 1 (Wörterbuch) ✅ · Stufen 2–3 offen
+Status: **freigegeben** · Stufe 1 (Wörterbuch) ✅ · Stufe 2 (Korrigieren) ✅ · Stufe 3 offen
 
 Fasst die Issues #5 und #6 zusammen:
 
@@ -203,7 +203,13 @@ Geplante Stellen:
   (`partials/speak-script`), damit Lernrunde und Wörterbuch es teilen.
 - `nav-links.blade.php`: Menüpunkt; Hilfe-Abschnitt „Wörterbuch“.
 
-**Stufe 2**
+**Stufe 2** ✅ – umgesetzt wie beschrieben:
+- Das Bearbeiten-Blatt (`partials/card-edit`) hat eine Moderationsfassung:
+  Hinweis „Du änderst eine Karte von …“, Formularziel unter
+  `/moderation/…`, kein Löschen.
+- Tests: `tests/Feature/ModerationCardTest.php`.
+
+Geplante Stellen:
 - `CardService::getShared`, `updateShared` (systemweit, nur geteilte
   Stapel; dieselbe Validierung wie `updateOwned`).
 - `Moderation/CardController` (neu), Routen in der Moderationsgruppe.
