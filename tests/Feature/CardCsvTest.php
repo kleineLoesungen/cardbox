@@ -126,7 +126,8 @@ describe('Import', function () {
         $geteilt = englishDeck(User::factory()->create(), ['is_shared' => true]);
         $original = Card::factory()->for($geteilt)->create(['front' => ['Haus'], 'back' => ['house']]);
         $privat = englishDeck(User::factory()->create());
-        $versteckt = Card::factory()->for($privat)->create();
+        // Fixed words: the factory picks random ones and might pick "Baum" itself.
+        $versteckt = Card::factory()->for($privat)->create(['front' => ['Geheimnis'], 'back' => ['secret']]);
         $deck = englishDeck($ich);
 
         $csv = "ID;de;en\n{$original->id};Haus;house\n{$versteckt->id};Baum;tree\nabc;Ast;branch\n";
@@ -139,7 +140,7 @@ describe('Import', function () {
         $haus = $deck->cards()->where('front', json_encode(['Haus']))->sole();
         expect($haus->source_card_id)->toBe($original->id)
             ->and($deck->cards()->where('front', json_encode(['Baum']))->sole()->source_card_id)->toBeNull()
-            ->and($versteckt->fresh()->front)->not->toBe(['Baum'])
+            ->and($versteckt->fresh()->front)->toBe(['Geheimnis'])
             ->and($original->fresh()->back)->toBe(['house']);
     });
 

@@ -6,6 +6,9 @@
 # with passwords and APP_KEY — it must never end up inside the image.
 **/.env
 deploy/
+# The product page (published via GitHub Pages) and its workflow.
+site/
+.github/
 .bin
 vendor
 node_modules

@@ -396,6 +396,24 @@ sich damit nicht an der Prüfung vorbeischmuggeln — auch nicht versehentlich.
 
 ---
 
+## Produktseite (`site/`)
+
+`site/index.html` ist die Produktseite unter `cardbox.se-wi.com` – **nicht
+Teil der App**: eine statische Datei mit eingebettetem CSS und wenigen
+Zeilen JavaScript, kein Blade, keine Tailwind-Tokens, kein Build.
+
+* Veröffentlicht wird sie von `.github/workflows/pages.yml` bei Änderungen in
+  `site/`. Das ist keine CI – `just check` bleibt die einzige Prüfung.
+* Keine Schriften, Skripte oder Analyse von Dritten. Einzige Anfrage nach
+  außen: `CHANGELOG.md` von `raw.githubusercontent.com` für „Zuletzt
+  verbessert“ (`tests/Feature/ProductSiteTest.php` prüft das).
+* Aussagen über Funktionen müssen stimmen – nach größeren Änderungen an der
+  App die Seite gegenlesen.
+* Das Icon kopiert `./scripts/icons.sh` mit nach `site/icon.svg`.
+* `deploy.sh` und das Docker-Abbild lassen `site/` und `.github/` weg.
+
+---
+
 ## Wiederkehrende Aufgaben
 
 Für „wie füge ich eine Seite / eine Ressource / ein Feld hinzu" gibt es

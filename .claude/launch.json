@@ -4,14 +4,33 @@
     {
       "name": "cardbox",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "serve", "--port=8001"],
+      "runtimeArgs": [
+        "artisan",
+        "serve",
+        "--port=8001"
+      ],
       "port": 8001
     },
     {
       "name": "cardbox-preview",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "serve", "--port=8002"],
+      "runtimeArgs": [
+        "artisan",
+        "serve",
+        "--port=8002"
+      ],
       "port": 8002
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "php",
+      "runtimeArgs": [
+        "-S",
+        "localhost:8003",
+        "-t",
+        "site"
+      ],
+      "port": 8003
     }
   ]
 }

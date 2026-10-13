@@ -1,6 +1,6 @@
 # CSV-Import und -Export, Lizenz und Produktseite
 
-Status: **freigegeben** · Stufe 1 (CSV) ✅ · Stufe 2 (Lizenz, Icon, Produktseite) offen
+Status: **freigegeben** · Stufe 1 (CSV) ✅ · Stufe 2 (Lizenz, Icon, Produktseite) ✅
 
 Fasst die Issues #3 und #4 zusammen:
 
@@ -235,7 +235,19 @@ Geplante Stellen:
   (`decks/import-preview`), Admin-Abschnitt im Menü.
 - `CHANGELOG.md`, Hilfe-Abschnitt „Viele Karten auf einmal“ ergänzt.
 
-**Stufe 2**
+**Stufe 2** ✅ – umgesetzt wie beschrieben:
+- Icon: Entwurf **B** (Karteikasten von vorn) gewählt; die maskierbare
+  Fassung verkleinert das Motiv auf 68 % für die Android-Schutzzone.
+- Issue im team-manager angelegt:
+  [kleineLoesungen/team-manager#18](https://github.com/kleineLoesungen/team-manager/issues/18).
+- Drei Aussagen der Produktseite beim Gegenlesen an die App angepasst
+  (Offline-Seite statt „offline-fest“, 11 Sprachen, Docker Compose).
+- `.claude/launch.json` hat einen Eintrag `site` (PHP-Server auf Port 8003)
+  zum Ansehen der Seite.
+- Tests: `tests/Feature/ProductSiteTest.php` (Lizenz, keine Fremd-Ressourcen,
+  Icon gleich, Migrationen ausgeblendet).
+
+Geplante Stellen:
 - `LICENSE`, `composer.json`, `README.md`.
 - `resources/icons/*.svg`, `public/icons/*`, `public/favicon.svg`.
 - `site/index.html`, `site/icon.svg`, `.github/workflows/pages.yml`.

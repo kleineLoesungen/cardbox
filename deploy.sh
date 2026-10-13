@@ -112,7 +112,7 @@ git archive HEAD | tar -x -C "$BUILD"
 (cd "$BUILD" && "$SCRIPT_DIR/.bin/tailwindcss" -i resources/css/app.css -o public/css/app.css --minify 2>/dev/null)
 
 # Not needed on the server.
-rm -rf "$BUILD"/{tests,docs,deploy,docker,.claude,scripts} \
+rm -rf "$BUILD"/{tests,docs,deploy,docker,.claude,.github,scripts,site} \
        "$BUILD"/{deploy.sh,.env.deploy.example,Dockerfile,compose.yaml,Justfile,phpunit.xml,phpstan.neon,pint.json,CLAUDE.md,README.md,.dockerignore}
 
 # The domain usually points at FTP_DIR itself (hosts that only offer

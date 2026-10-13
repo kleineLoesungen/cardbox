@@ -326,4 +326,10 @@ deploy.sh              Deploy auf Webspace per FTP (Einstellungen in .env.deploy
 
 ## Lizenz
 
-Noch keine Lizenz festgelegt.
+[MIT](LICENSE) – kostenlos und frei nutzbar, auch zum Weitergeben und
+Verändern. Nur der Lizenzhinweis muss erhalten bleiben.
+
+Produktseite: [cardbox.se-wi.com](https://cardbox.se-wi.com). Sie ist eine
+einzelne statische Datei in `site/`, unabhängig von der App, und wird bei
+Änderungen in `site/` über GitHub Pages veröffentlicht
+(`.github/workflows/pages.yml`).

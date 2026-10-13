@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cardbox – Vokabeln lernen mit dem Karteikasten</title>
+  <meta name="description" content="Ein digitaler Karteikasten fürs Smartphone: Vokabeln lernen, Stapel teilen, jeden Tag ein paar Minuten. Kostenlos, Open Source, selbst betrieben.">
+  <meta name="theme-color" content="#3370c7">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <!--
+    Product page for Cardbox, published from site/ via GitHub Pages
+    (.github/workflows/pages.yml). Not part of the app: one static file, no
+    build, no third-party fonts or scripts. The only request to another
+    host is CHANGELOG.md from raw.githubusercontent.com ("Zuletzt verbessert").
+  -->
+  <style>
+    :root {
+      color-scheme: light dark;
+      --brand: #3370c7;
+      --brand-subtle: #e6eefa;
+      --on-brand: #ffffff;
+      --surface: #f5f6f8;
+      --raised: #ffffff;
+      --sunken: #eceef2;
+      --border: #dde1e8;
+      --content: #161a22;
+      --muted: #5b6372;
+      --subtle: #8a92a0;
+      --success: #2f8a55;
+      --success-subtle: #e3f4ea;
+      --radius: 14px;
+      --shadow: 0 1px 2px rgb(20 30 50 / 6%), 0 4px 14px rgb(20 30 50 / 6%);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --brand: #7aa5e6;
+        --brand-subtle: #1e2b40;
+        --on-brand: #0e1420;
+        --surface: #121418;
+        --raised: #1a1d23;
+        --sunken: #0d0f12;
+        --border: #2a2f38;
+        --content: #e8ebf0;
+        --muted: #a3aab6;
+        --subtle: #7b8391;
+        --success: #6fcf97;
+        --success-subtle: #16281e;
+        --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 14px rgb(0 0 0 / 25%);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--surface); color: var(--content);
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      overflow-x: clip;
+    }
+    a { color: var(--brand); }
+    h1, h2, h3 { line-height: 1.2; letter-spacing: -0.01em; margin: 0; }
+    p { margin: 0; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+    .muted { color: var(--muted); }
+    .small { font-size: 14px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* Header */
+    header { border-bottom: 1px solid var(--border); background: var(--raised); }
+    header .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; color: var(--content); text-decoration: none; }
+    .brand img { width: 30px; height: 30px; }
+    header nav { margin-left: auto; display: flex; gap: 18px; font-size: 15px; }
+    header nav a { color: var(--muted); text-decoration: none; }
+    header nav a:hover { color: var(--content); }
+    @media (max-width: 520px) { header nav .optional { display: none; } }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 48px; padding: 0 22px; border-radius: 12px; font-weight: 600; text-decoration: none;
+      border: 1px solid var(--border); background: var(--raised); color: var(--content);
+    }
+    .btn-primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+
+    /* Hero */
+    .hero { padding: 48px 0 56px; }
+    .hero .wrap { display: grid; gap: 40px; align-items: center; }
+    @media (min-width: 820px) { .hero .wrap { grid-template-columns: 1.1fr 0.9fr; } }
+    .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand); }
+    .hero h1 { font-size: clamp(32px, 6vw, 50px); margin-top: 12px; text-wrap: balance; }
+    .hero .lead { margin-top: 16px; font-size: 18px; color: var(--muted); max-width: 34em; text-wrap: pretty; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+
+    /* Phone with a flash card */
+    .phone {
+      width: min(300px, 100%); margin: 0 auto; padding: 14px; border-radius: 36px;
+      background: var(--content); box-shadow: var(--shadow);
+    }
+    .screen { border-radius: 26px; background: var(--surface); padding: 18px 16px 16px; display: grid; gap: 14px; }
+    .topline { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+    .meter { flex: 1; height: 6px; border-radius: 99px; background: var(--sunken); overflow: hidden; }
+    .meter span { display: block; height: 100%; width: 35%; background: var(--brand); border-radius: 99px; }
+    .flash { perspective: 900px; cursor: pointer; }
+    .flash-inner { display: grid; transform-style: preserve-3d; transition: transform 450ms ease; }
+    .flash.flipped .flash-inner { transform: rotateY(180deg); }
+    .face {
+      grid-area: 1 / 1; backface-visibility: hidden; min-height: 210px; border-radius: 18px;
+      border: 1px solid var(--border); background: var(--raised); box-shadow: var(--shadow);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px; text-align: center;
+    }
+    .face.back { transform: rotateY(180deg); }
+    .lang { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--subtle); }
+    .word { font-size: 36px; font-weight: 650; }
+    .also { font-size: 15px; color: var(--muted); }
+    .hint { font-size: 14px; color: var(--muted); }
+    .rate { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .rate span { height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; }
+    .rate .again { background: var(--raised); border: 1px solid var(--border); }
+    .rate .known { background: var(--brand); color: var(--on-brand); }
+    .tap { text-align: center; font-size: 13px; color: var(--subtle); margin-top: 10px; }
+
+    /* Sections */
+    section.band { padding: 56px 0; border-top: 1px solid var(--border); }
+    section.alt { background: var(--raised); }
+    .section-head { max-width: 40em; }
+    .section-head h2 { font-size: clamp(26px, 4vw, 34px); }
+    .section-head p { margin-top: 10px; color: var(--muted); font-size: 17px; }
+
+    /* Features: text + small mockup */
+    .features { display: grid; gap: 18px; margin-top: 32px; }
+    @media (min-width: 760px) { .features { grid-template-columns: 1fr 1fr; } }
+    .feature {
+      border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+      padding: 20px; display: grid; gap: 14px; min-width: 0;
+    }
+    section.alt .feature { background: var(--surface); }
+    .feature h3 { font-size: 19px; }
+    .feature p { color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--brand-subtle); color: var(--brand); }
+    .mock { border-radius: 12px; background: var(--raised); border: 1px solid var(--border); padding: 12px; min-width: 0; }
+
+    .boxes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+    .box { border-radius: 10px; background: var(--sunken); padding: 8px 2px; text-align: center; }
+    .box b { display: block; font-size: 18px; }
+    .box span { font-size: 10.5px; color: var(--muted); }
+    .box.done { background: var(--success-subtle); color: var(--success); }
+    .box.done span { color: var(--success); }
+
+    .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: var(--sunken); font-size: 14px; text-align: center; }
+    .seg span { padding: 8px 4px; border-radius: 9px; color: var(--muted); }
+    .seg .on { background: var(--raised); color: var(--content); font-weight: 600; box-shadow: var(--shadow); }
+
+    .rows { display: grid; gap: 8px; font-size: 14px; }
+    .rows div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 9px; background: var(--surface); }
+    .rows .new { color: var(--success); font-weight: 600; }
+    .rows .chg { color: var(--brand); font-weight: 600; }
+    code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    pre { margin: 0; overflow-x: auto; }
+
+    /* Index cards: ruled lines under the text */
+    .steps { display: grid; gap: 16px; margin-top: 32px; counter-reset: step; }
+    @media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+    .index-card {
+      border: 1px solid var(--border); border-top: 4px solid var(--brand); border-radius: var(--radius);
+      background: var(--raised); box-shadow: var(--shadow); padding: 14px 18px 18px; min-width: 0;
+    }
+    .index-card h3 { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+    .index-card h3::before {
+      counter-increment: step; content: counter(step);
+      display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center; justify-content: center;
+      background: var(--brand); color: var(--on-brand); font-size: 14px;
+    }
+    .ruled {
+      margin-top: 10px; line-height: 1.5rem; font-size: 15px;
+      background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.5rem - 1px), var(--border) calc(1.5rem - 1px) 1.5rem);
+    }
+
+    /* Running it */
+    .facts { display: grid; gap: 12px; margin-top: 32px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .fact { border: 1px solid var(--border); border-radius: var(--radius); background: var(--raised); padding: 16px; }
+    .fact b { display: block; font-size: 17px; }
+    .fact span { font-size: 14px; color: var(--muted); }
+    .ways { display: grid; gap: 12px; margin-top: 16px; }
+    @media (min-width: 760px) { .ways { grid-template-columns: repeat(3, 1fr); } }
+    .way { border-radius: var(--radius); background: var(--sunken); padding: 16px; }
+    .way h3 { font-size: 16px; }
+    .way p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+    /* Changelog */
+    #changelog { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 14px; }
+    #changelog > li { border: 1px solid var(--border); border-radius: var(--radius); background: var(--raised); padding: 14px 18px; }
+    #changelog time { font-weight: 650; }
+    #changelog ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 15px; }
+    .more { display: inline-block; margin-top: 16px; }
+
+    footer { border-top: 1px solid var(--border); padding: 28px 0 40px; font-size: 14px; color: var(--muted); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon.svg" alt=""> Cardbox</a>
+    <nav aria-label="Seite">
+      <a class="optional" href="#funktionen">Funktionen</a>
+      <a href="#betrieb">Selbst betreiben</a>
+      <a href="https://github.com/kleineLoesungen/cardbox">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Kostenlos · Open Source · fürs Smartphone</p>
+        <h1>Vokabeln lernen mit dem Karteikasten.</h1>
+        <p class="lead">
+          Karten anlegen oder von anderen übernehmen, jeden Tag ein paar Minuten
+          lernen. Was du kannst, wandert nach hinten – was noch nicht sitzt, kommt
+          öfter dran. Für Schülerinnen und Schüler ab 10 und alle, die es einfach
+          mögen.
+        </p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#betrieb">Selbst betreiben</a>
+          <a class="btn" href="https://github.com/kleineLoesungen/cardbox">Code auf GitHub</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="phone" aria-label="Cardbox auf dem Smartphone: eine Lernkarte">
+          <div class="screen">
+            <div class="topline"><span>✕</span><span class="meter"><span></span></span><span>7 / 20</span></div>
+            <div class="flash" data-flash role="button" tabindex="0" aria-label="Karte umdrehen">
+              <div class="flash-inner">
+                <div class="face">
+                  <span class="lang">Deutsch</span>
+                  <span class="word" lang="de">verpassen</span>
+                  <span class="hint">(Zug)</span>
+                </div>
+                <div class="face back" aria-hidden="true">
+                  <span class="hint" lang="de">verpassen (Zug)</span>
+                  <span class="lang">Englisch</span>
+                  <span class="word" lang="en">miss</span>
+                  <span class="also">auch: <span lang="en">lose</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="rate" aria-hidden="true"><span class="again">Nochmal</span><span class="known">Gewusst</span></div>
+          </div>
+        </div>
+        <p class="tap">Tipp auf die Karte.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band alt" id="funktionen">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Nur das Wesentliche</h2>
+        <p>Eine Hauptaktion je Bildschirm, alles mit dem Daumen erreichbar, einfache Wörter statt Fachbegriffe.</p>
+      </div>
+
+      <div class="features">
+        <article class="feature">
+          <h3>Der Karteikasten</h3>
+          <p>Gewusst? Die Karte rückt ein Fach weiter und kommt seltener. Nicht gewusst? Zurück in Fach 1 – und am Ende der Runde gleich nochmal.</p>
+          <div class="mock" aria-hidden="true">
+            <div class="boxes">
+              <div class="box"><b>12</b><span>Neu</span></div>
+              <div class="box"><b>8</b><span>Fach 1</span></div>
+              <div class="box"><b>5</b><span>Fach 2</span></div>
+              <div class="box"><b>4</b><span>Fach 3</span></div>
+              <div class="box"><b>3</b><span>Fach 4</span></div>
+              <div class="box done"><b>9</b><span>Kann ich</span></div>
+            </div>
+          </div>
+          <div class="tags"><span class="tag">Heute fällig</span><span class="tag">Lernserie</span><span class="tag">Freies Üben</span></div>
+        </article>
+
+        <article class="feature">
+          <h3>Lernplan je Stapel</h3>
+          <p>Bald ist eine Arbeit? Einen Stapel mit „Schnell“ starten – die anderen bleiben, wie sie sind. Ein Stapel darf auch mit zwei Plänen gleichzeitig laufen.</p>
+          <div class="mock" aria-hidden="true">
+            <div class="seg"><span>Normal</span><span class="on">Schnell</span><span>Gründlich</span></div>
+          </div>
+          <div class="tags"><span class="tag">Eigener Standard</span><span class="tag">Neu starten</span></div>
+        </article>
+
+        <article class="feature">
+          <h3>Stapel teilen</h3>
+          <p>Einen geteilten Stapel lernen alle mit: folgen, und Korrekturen kommen sofort an. Oder kopieren und selbst ändern – Änderungen am Original lassen sich später übernehmen.</p>
+          <div class="mock" aria-hidden="true">
+            <div class="rows">
+              <div><span>Englisch Unit 3 · von Frau Weber</span><span class="chg">folgen</span></div>
+              <div><span>2 Karten im Original geändert</span><span class="chg">ansehen ›</span></div>
+            </div>
+          </div>
+          <div class="tags"><span class="tag">Entdecken</span><span class="tag">Folgen</span><span class="tag">Kopieren</span></div>
+        </article>
+
+        <article class="feature">
+          <h3>Fehler melden</h3>
+          <p>Stimmt eine Karte nicht? Ein Vorschlag geht an die Person, der der Stapel gehört. Sie übernimmt ihn mit einem Tipp – für alle.</p>
+          <div class="mock" aria-hidden="true">
+            <div class="rows">
+              <div><span>Bahnhof – station</span><span class="new">+ railway station</span></div>
+            </div>
+          </div>
+          <div class="tags"><span class="tag">Tippfehler</span><span class="tag">Bedeutung fehlt</span><span class="tag">Übernehmen</span></div>
+        </article>
+
+        <article class="feature">
+          <h3>Vorlesen, Bedeutungen, Hinweise</h3>
+          <p>Wörter in der richtigen Sprache anhören. Mehrere Bedeutungen je Karte, die erste ist die Hauptbedeutung. Ein Hinweis wie „(Zug)“ hilft, ähnliche Wörter zu unterscheiden.</p>
+          <div class="tags"><span class="tag">11 Sprachen</span><span class="tag">auch: …</span><span class="tag">Hinweis</span><span class="tag">Wischen</span></div>
+        </article>
+
+        <article class="feature">
+          <h3>Viele Karten auf einmal</h3>
+          <p>Eine Liste einfügen oder aus Excel kopieren. Ganze Stapel als CSV exportieren, in der Tabelle bearbeiten und zurückspielen – der Lernstand bleibt.</p>
+          <div class="mock" aria-hidden="true">
+<pre><code>ID;de;en;Hinweis
+3f2a…;schnell;fast | quick;
+;verpassen;miss;(Zug)</code></pre>
+          </div>
+          <div class="tags"><span class="tag">Vorschau</span><span class="tag">CSV</span><span class="tag">Nichts wird gelöscht</span></div>
+        </article>
+
+        <article class="feature">
+          <h3>Auch Mathe</h3>
+          <p>Statt Sprachen „Aufgabe“ und „Ergebnis“ – fürs Einmaleins und alles, was man auswendig können will.</p>
+          <div class="mock" aria-hidden="true">
+            <div class="rows"><div><span>6 · 7</span><span>42</span></div><div><span>8 · 8</span><span>64</span></div></div>
+          </div>
+        </article>
+
+        <article class="feature">
+          <h3>Wie eine App</h3>
+          <p>Auf den Startbildschirm legen und mit einem Tipp loslernen – ohne App-Store. Hell und dunkel, ab dem kleinsten Telefon.</p>
+          <div class="tags"><span class="tag">Web-App</span><span class="tag">Dunkelmodus</span><span class="tag">Ohne Installation</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>In drei Schritten startklar</h2>
+        <p>Jede Rolle sieht nur, was sie braucht.</p>
+      </div>
+      <ol class="steps" style="list-style: none; padding: 0; margin-bottom: 0;">
+        <li class="index-card">
+          <h3>Einrichten</h3>
+          <p class="ruled">Das erste Konto wird Administrator. Neue Konten melden sich selbst an und werden freigegeben – ganz ohne E-Mail-Adresse.</p>
+        </li>
+        <li class="index-card">
+          <h3>Stapel anlegen</h3>
+          <p class="ruled">Karten eintippen, eine Liste einfügen oder einen geteilten Stapel übernehmen. Wer mag, teilt seinen Stapel mit allen.</p>
+        </li>
+        <li class="index-card">
+          <h3>Jeden Tag lernen</h3>
+          <p class="ruled">„Los geht's“ zeigt genau die Karten, die heute dran sind. Ein paar Minuten reichen.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band alt" id="betrieb">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Schlank betrieben</h2>
+        <p>Läuft auf normalem Webspace, auf einem eigenen Server oder per Docker – mit eigener oder schon vorhandener Datenbank. Keine Tracker, keine App-Stores.</p>
+      </div>
+      <div class="facts">
+        <div class="fact"><b>PHP und Laravel</b><span>serverseitig gerendert, kein JavaScript-Build</span></div>
+        <div class="fact"><b>PostgreSQL</b><span>auch in einem eigenen Schema</span></div>
+        <div class="fact"><b>Web-App</b><span>zum Startbildschirm, mit Offline-Seite</span></div>
+        <div class="fact"><b>Datensparsam</b><span>Konten ohne E-Mail-Adresse, keine Tracker</span></div>
+      </div>
+      <div class="ways">
+        <div class="way"><h3>Docker</h3><p>Mit Docker Compose, Datenbank und HTTPS auf Wunsch dabei.</p></div>
+        <div class="way"><h3>Webserver mit SSH</h3><p>nginx oder Apache, PHP-FPM und eine vorhandene PostgreSQL.</p></div>
+        <div class="way"><h3>Webspace nur per FTP</h3><p>Ein Skript lädt hoch und richtet die Datenbank ein – ohne Kommandozeile auf dem Server.</p></div>
+      </div>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://github.com/kleineLoesungen/cardbox#installation-auf-einem-server">Installationsanleitung</a>
+        <a class="btn" href="https://github.com/kleineLoesungen/cardbox">Code auf GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Zuletzt verbessert</h2>
+      </div>
+      <ul id="changelog" aria-live="polite"></ul>
+      <a class="more" href="https://github.com/kleineLoesungen/cardbox/blob/main/CHANGELOG.md">Alle Änderungen auf GitHub →</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Cardbox · <a href="https://github.com/kleineLoesungen/cardbox/blob/main/LICENSE">MIT-Lizenz</a></span>
+    <span>© 2026 Sebastian Willer</span>
+    <a href="https://github.com/kleineLoesungen/cardbox">github.com/kleineLoesungen/cardbox</a>
+  </div>
+</footer>
+
+<script>
+  // The flash card in the phone turns on tap, Enter or Space.
+  (() => {
+    const card = document.querySelector('[data-flash]');
+    const back = card.querySelector('.back');
+    const flip = () => {
+      const flipped = card.classList.toggle('flipped');
+      back.toggleAttribute('aria-hidden', !flipped);
+    };
+    card.addEventListener('click', flip);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+    });
+  })();
+
+  // The last three versions straight from CHANGELOG.md on GitHub (main):
+  // "## JJJJ.MM.TT[.n]" headings with "- item" lines. "Migration:" lines
+  // concern operators only and are left out; several versions on one day
+  // are shown under one date. Without an answer only the link remains.
+  (async () => {
+    const url = 'https://raw.githubusercontent.com/kleineLoesungen/cardbox/main/CHANGELOG.md';
+    const list = document.getElementById('changelog');
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) return;
+      const entries = [];
+      for (const line of (await res.text()).split(/\r?\n/)) {
+        const head = line.match(/^##\s+(\d{4})\.(\d{2})\.(\d{2})(?:\.\d+)?\s*$/);
+        const item = line.match(/^\s*[-*]\s+(.+?)\s*$/);
+        if (head) entries.push({ date: `${head[3]}.${head[2]}.${head[1]}`, iso: `${head[1]}-${head[2]}-${head[3]}`, items: [] });
+        else if (item && entries.length && !/^Migration:/i.test(item[1])) entries[entries.length - 1].items.push(item[1]);
+      }
+      const days = [];
+      for (const e of entries.slice(0, 3)) {
+        const last = days[days.length - 1];
+        if (last && last.iso === e.iso) last.items.push(...e.items); else days.push({ ...e, items: [...e.items] });
+      }
+      for (const d of days.filter((d) => d.items.length)) {
+        const li = list.appendChild(document.createElement('li'));
+        const time = li.appendChild(document.createElement('time'));
+        time.dateTime = d.iso;
+        time.textContent = d.date;
+        const ul = li.appendChild(document.createElement('ul'));
+        for (const text of d.items) ul.appendChild(document.createElement('li')).textContent = text;
+      }
+    } catch {
+      // Offline or GitHub slow: the link below is enough.
+    }
+  })();
+</script>
+</body>
+</html>

@@ -34,4 +34,6 @@ render "$QUELLE/icon-maskable.svg" 512 "$ZIEL/icon-maskable-512.png"
 render "$QUELLE/icon-maskable.svg" 180 "$ZIEL/apple-touch-icon.png"
 cp "$QUELLE/icon.svg" "$ZIEL/icon.svg"
 cp "$QUELLE/icon.svg" public/favicon.svg
+# Same icon on the product page (site/, published separately).
+cp "$QUELLE/icon.svg" site/icon.svg
 echo "Fertig."

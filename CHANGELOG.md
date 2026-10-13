@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.8
+- Neues Icon: ein Karteikasten mit Karten. Installierte Web-Apps zeigen es, sobald das Gerät das Manifest neu lädt
+- Cardbox steht jetzt unter der MIT-Lizenz: kostenlos und frei nutzbar
+- Produktseite unter cardbox.se-wi.com (eigene statische Seite, nicht Teil der App)
+
 ## 2026.10.13.7
 - CSV: Stapel lassen sich unter ⋯ → „Als CSV exportieren“ als Tabelle herunterladen (Spalten ID, Sprachen, Hinweis; mehrere Bedeutungen mit |). Öffnet sich in Excel und Numbers direkt richtig
 - Eine bearbeitete CSV über „Liste einfügen“ wieder hochladen: bekannte Karten werden geändert und behalten ihren Lernstand, neue Zeilen werden neue Karten, gelöscht wird nichts. Die Vorschau zeigt neu, geändert und unverändert

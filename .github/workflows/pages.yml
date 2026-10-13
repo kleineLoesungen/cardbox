@@ -1,0 +1,45 @@
+# Die Produktseite unter https://cardbox.se-wi.com.
+#
+# Veröffentlicht wird nur der Ordner site/ – eine statische Seite, nicht die
+# App. Kein Test, kein Build: Das ist keine CI, `just check` bleibt die
+# einzige Prüfung (CLAUDE.md).
+#
+# Einmalig nötig: GitHub → Settings → Pages → Source auf „GitHub Actions“,
+# dort auch die Domain cardbox.se-wi.com eintragen; beim Hoster ein
+# CNAME-Eintrag „cardbox“ auf kleineloesungen.github.io.
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nie zwei Veröffentlichungen gleichzeitig; eine laufende wird zu Ende gebracht.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
