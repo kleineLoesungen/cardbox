@@ -448,3 +448,71 @@
   .flashcard-inner.is-dragging { transition: none; }
   .flashcard { touch-action: pan-y; }
 }
+
+/* =========================================================================
+   Cardbox — landing page: the page is made of cards
+   ========================================================================= */
+@layer components {
+
+  /* --- A fanned stack of cards behind the hero flash card -------------- */
+  .card-stack { @apply relative mx-auto w-full max-w-xs; }
+  .card-stack-layer {
+    @apply absolute inset-0 rounded-2xl border border-border shadow-sm;
+  }
+  .card-stack-layer-1 { @apply bg-surface-sunken; transform: rotate(-7deg) translate(-4%, 3%); }
+  .card-stack-layer-2 { @apply bg-brand-subtle; transform: rotate(5deg) translate(4%, 2%); }
+  .card-stack .flashcard { @apply relative; }
+  /* The hero card is a real button; keep the flash card look. */
+  button.flashcard-inner { @apply cursor-pointer; font: inherit; color: inherit; }
+
+  /* --- Index card: a brand line on top, ruled lines under the text ----- */
+  .index-card {
+    @apply relative min-w-0 rounded-ui border border-border bg-surface-raised px-4 pt-3 pb-4 shadow-sm;
+    border-top: 4px solid var(--ui-brand);
+  }
+  /*
+    Ruled paper: one line under each line of text. Pair it with leading-6,
+    so the text's line height matches the 1.5rem rhythm of the lines.
+  */
+  .ruled {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(1.5rem - 1px),
+      var(--ui-border) calc(1.5rem - 1px) 1.5rem
+    );
+  }
+  .index-card-number {
+    @apply inline-flex size-7 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-content;
+  }
+
+  /* --- A card travelling through the boxes ---------------------------- */
+  /*
+    Six columns without gaps (the gaps are padding inside), so the moving
+    card can sit exactly on a column with left: n × 100% / 6. With reduced
+    motion it simply rests in "Kann ich".
+  */
+  .box-journey { @apply relative grid grid-cols-6; }
+  .box-journey > .box-journey-slot { @apply px-0.5; }
+  .box-journey .box-tile { @apply min-h-20 justify-end pb-2; }
+  .box-journey-card {
+    @apply pointer-events-none absolute top-1.5 h-6 rounded border border-border-strong bg-surface-raised shadow-sm;
+    width: calc(100% / 6 - 1rem);
+    margin-left: 0.5rem;
+    animation: box-journey 9s ease-in-out infinite;
+  }
+  @keyframes box-journey {
+    0%, 10%   { left: 0; }
+    18%, 28%  { left: calc(100% / 6); }
+    36%, 46%  { left: calc(200% / 6); }
+    54%, 64%  { left: calc(300% / 6); }
+    72%, 82%  { left: calc(400% / 6); }
+    90%, 100% { left: calc(500% / 6); background-color: var(--ui-success-subtle); border-color: var(--ui-success); }
+  }
+
+  /* --- Feature cards --------------------------------------------------- */
+  .feature-card {
+    @apply min-w-0 rounded-ui border border-border bg-surface-raised p-4 shadow-sm;
+  }
+  .feature-card-title { @apply font-semibold; }
+  .feature-card-text { @apply mt-1 text-sm text-muted; }
+}

@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.6
+- Neue Startseite für Gäste im Stil der Karten: eine Lernkarte zum Umdrehen mit Beispielwörtern, „So geht's“ als Karteikarten, der Karteikasten mit einer wandernden Karte und die Funktionen im Überblick
+
 ## 2026.10.13.5
 - Deploy (FTP und Webserver) prüft die .env vor dem Ausrollen: Werte mit # oder Leerzeichen ohne Anführungszeichen, die Laravel abgeschnitten lesen würde, brechen mit dem Namen des Eintrags ab. Typischer Fall: ein Mail-Passwort mit #, das zu „535 Incorrect authentication data“ führt
 
