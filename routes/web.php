@@ -17,6 +17,7 @@ use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
 use App\Http\Controllers\Moderation\CardController as ModerationCardController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
+use App\Http\Controllers\Moderation\DuplicateController as ModerationDuplicateController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PwaController;
@@ -154,6 +155,10 @@ Route::middleware(['auth', 'role:moderator'])->group(function () {
     // Correcting cards in shared decks of other people (issue #6); never deleting them.
     Route::get('/moderation/decks/{deck}/cards/{card}/edit', [ModerationCardController::class, 'edit'])->whereUuid(['deck', 'card']);
     Route::post('/moderation/decks/{deck}/cards/{card}', [ModerationCardController::class, 'update'])->whereUuid(['deck', 'card']);
+    // Duplicate cards in shared decks; a group is addressed by any of its cards.
+    Route::get('/moderation/duplicates', [ModerationDuplicateController::class, 'index']);
+    Route::get('/moderation/duplicates/{card}', [ModerationDuplicateController::class, 'show'])->whereUuid('card');
+    Route::post('/moderation/duplicates/{card}/merge', [ModerationDuplicateController::class, 'store'])->whereUuid('card');
 });
 
 // --- Nur Administrator -------------------------------------------------------

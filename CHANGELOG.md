@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.11
+- Moderation: „Doppelte Karten“ listet gleiche Wortpaare in geteilten Stapeln. Die Moderation wählt die Karte, die bleibt, kann ihren Inhalt ergänzen und führt zusammen: Doppelte im selben Stapel werden gelöscht (der weiter fortgeschrittene Lernstand bleibt), Doppelte in anderen Stapeln übernehmen den Inhalt und bekommen spätere Korrekturen angeboten
+
 ## 2026.10.13.10
 - Moderation und Verwaltung können Karten in fremden geteilten Stapeln korrigieren („Bearbeiten (Moderation)“ an der Karte). Wer mit dem Stapel lernt, sieht „geändert“, der Lernstand bleibt. Einzelne Karten löschen können sie nicht; jede Korrektur wird protokolliert
 

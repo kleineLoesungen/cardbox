@@ -1,6 +1,7 @@
 {{--
   Moderation: all decks other people share. Moderators can end sharing or
-  delete from the deck page ("⋯" menu); they never edit content.
+  delete from the deck page ("⋯" menu), correct single cards there, and
+  merge duplicate cards (/moderation/duplicates).
 --}}
 @extends('layouts.app')
 @section('title', 'Moderation')
@@ -10,8 +11,16 @@
   <h1 class="text-2xl font-semibold tracking-tight">Moderation</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Alle geteilten Stapel. Unpassende Inhalte kannst du im Stapel über „⋯“
-    nicht mehr teilen oder löschen.
+    nicht mehr teilen oder löschen, einzelne Karten dort korrigieren.
   </p>
+
+  <a href="/moderation/duplicates" class="list-row mb-4 rounded-ui border border-border bg-surface-raised">
+    <span class="min-w-0 flex-1">
+      <span class="block font-medium">Doppelte Karten</span>
+      <span class="block text-sm text-muted">Gleiche Wörter in mehreren geteilten Stapeln zusammenführen</span>
+    </span>
+    <span aria-hidden="true" class="text-subtle">›</span>
+  </a>
 
   <form method="get" action="/moderation" class="mb-4">
     <input class="input" type="search" name="q" value="{{ $search }}" placeholder="Stapel suchen …" aria-label="Stapel suchen">

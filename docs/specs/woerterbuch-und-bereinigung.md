@@ -1,6 +1,6 @@
 # Wörterbuch und Bereinigung durch die Moderation
 
-Status: **freigegeben** · Stufe 1 (Wörterbuch) ✅ · Stufe 2 (Korrigieren) ✅ · Stufe 3 offen
+Status: **umgesetzt** · Stufe 1 (Wörterbuch) ✅ · Stufe 2 (Korrigieren) ✅ · Stufe 3 (Zusammenführen) ✅
 
 Fasst die Issues #5 und #6 zusammen:
 
@@ -216,7 +216,22 @@ Geplante Stellen:
 - `components/card-row`: Knopf für Moderation; `partials/card-edit` mit
   Formularziel und Hinweis „Du änderst eine Karte von …“.
 
-**Stufe 3**
+**Stufe 3** ✅ – umgesetzt wie beschrieben, mit diesen Präzisierungen:
+- Eine Gruppe wird über **eine ihrer Karten** adressiert
+  (`/moderation/duplicates/{card}`) statt über einen Schlüssel in der URL;
+  der Service bildet die Gruppe bei jedem Aufruf neu (SQL als Vorfilter,
+  `DictionaryService::pairKey` entscheidet).
+- Die Seite übergibt die gesehenen Karten (`cards[]`); weicht die Gruppe
+  beim Zusammenführen davon ab, passiert nichts („hat sich geändert“).
+- Eine Gruppe gilt als erledigt, wenn alle Karten bis auf eine verknüpfte
+  Kopien mit gleichem Inhalt sind – also auch normale Kopien geteilter
+  Stapel, die unverändert blieben.
+- Formular der bleibenden Karte mit ☆ und „+ weitere Bedeutung“ wie beim
+  Bearbeiten; „+ Bedeutung“ an den anderen Karten ergänzt, was fehlt
+  (auch bei umgekehrter Sprachreihenfolge).
+- Tests: `tests/Feature/CardMergeTest.php`.
+
+Geplante Stellen:
 - `app/Services/CardMergeService.php` (neu): `groups(page)`,
   `group(key)`, `merge(key, keepCardId, content)`.
 - `Moderation/DuplicateController` (neu), Routen.
