@@ -13,10 +13,17 @@
 
   <x-form-error />
 
+  @if ($tab === 'mine' && ($search !== '' || $decks->isNotEmpty()))
+    {{-- Name or description, e.g. an ISBN; hyphens and spaces do not matter. --}}
+    <form method="get" action="/decks" class="mb-4">
+      <input class="input" type="search" name="q" value="{{ $search }}" placeholder="Name, Beschreibung, ISBN …" aria-label="Meine Stapel durchsuchen">
+    </form>
+  @endif
+
   @if ($tab === 'discover')
     <form method="get" action="/decks" class="mb-4 flex gap-2">
       <input type="hidden" name="tab" value="discover">
-      <input class="input min-w-0 flex-1" type="search" name="q" value="{{ $search }}" placeholder="Suchen …" aria-label="Stapel suchen">
+      <input class="input min-w-0 flex-1" type="search" name="q" value="{{ $search }}" placeholder="Name, Beschreibung, ISBN …" aria-label="Stapel suchen">
       <select class="select w-32 shrink-0" name="lang" aria-label="Sprache" onchange="this.form.submit()">
         <option value="">Alle</option>
         @foreach (\App\Enums\Language::cases() as $l)
@@ -46,6 +53,10 @@
                 <span class="block truncate text-sm text-muted">
                   {{ $deck->directionLabel() }} · {{ $deck->cards_count === 1 ? '1 Karte' : $deck->cards_count.' Karten' }}
                 </span>
+                @if ($deck->description)
+                  {{-- Shown so it is clear why a search found the deck (e.g. its ISBN). --}}
+                  <span class="block line-clamp-2 text-xs text-muted break-words">{{ $deck->description }}</span>
+                @endif
                 <span class="block truncate text-xs text-subtle">
                   von {{ $deck->user->name }}
                   @if ($deck->followers_count > 0)
@@ -63,7 +74,13 @@
       </ul>
     @endif
   @else
-    @if ($decks->isEmpty())
+    @if ($decks->isEmpty() && $search !== '')
+      <div class="empty">
+        <p class="empty-title">Kein Stapel passt zu „{{ $search }}“</p>
+        <p class="empty-hint">Gesucht wird in Name und Beschreibung deiner Stapel.</p>
+        <a href="/decks" class="btn btn-secondary">Alle zeigen</a>
+      </div>
+    @elseif ($decks->isEmpty())
       <div class="empty">
         <p class="empty-title">Du hast noch keine Stapel</p>
         <p class="empty-hint">Leg einen eigenen an oder schau, was andere geteilt haben.</p>

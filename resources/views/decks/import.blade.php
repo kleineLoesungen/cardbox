@@ -38,7 +38,7 @@
       <div class="field mt-3">
         <input class="block w-full text-sm" type="file" name="file" accept=".txt,.csv,.tsv,text/plain,text/csv">
         <p class="hint">Textdatei (.txt, .csv), höchstens {{ config('learning.import_max_kilobytes') }} KB.</p>
-        <p class="hint">Eine Datei aus „Als CSV exportieren“ (Kopfzeile <code>ID;…</code>) ändert bekannte Karten, statt sie doppelt anzulegen. Gelöscht wird nichts, der Lernstand bleibt.</p>
+        <p class="hint">Eine Datei aus „Als CSV exportieren“ (Kopfzeile <code>ID;…</code>) ändert bekannte Karten, statt sie doppelt anzulegen. Gelöscht wird nichts, der Lernstand bleibt. <a href="/help#csv" class="text-brand hover:underline">Format erklärt</a></p>
       </div>
     </details>
 

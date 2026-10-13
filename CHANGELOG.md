@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.13
+- Stapel suchen: Name und Beschreibung werden auch ohne Bindestriche und Leerzeichen verglichen – eine ISBN wie 978-3-12-834211-5 findet man auch als 9783128342115. Entdecken zeigt die Beschreibung in der Trefferliste
+- Suchfeld auch unter „Meine“ (eigene und gefolgte Stapel)
+- Hilfe: neuer Abschnitt „Tabellen (CSV)“ mit Format, Beispiel, Regeln und allen Sprachkürzeln; „Liste einfügen“ verlinkt dorthin
+
 ## 2026.10.13.12
 - Wörterbuch auch in der unteren Leiste auf dem Telefon
 - Die Kopfzeile der App zeigt das Icon statt des Anfangsbuchstabens

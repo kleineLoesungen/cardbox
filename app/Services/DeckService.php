@@ -43,13 +43,14 @@ class DeckService
 
     /**
      * "Meine Stapel": own decks plus shared decks of others the user follows.
-     * A followed deck that is no longer shared drops out silently.
+     * A followed deck that is no longer shared drops out silently. With a
+     * search term only decks whose name or description match (see search()).
      *
      * @return Collection<int, Deck>
      */
-    public function mine(User $user): Collection
+    public function mine(User $user, ?string $search = null): Collection
     {
-        return $this->mineQuery($user)
+        return $this->search($this->mineQuery($user), $search)
             ->with('user')
             ->withCount(['cards', 'followers', 'suggestions as open_suggestions_count' => fn (Builder $q) => $q->where('card_suggestions.status', 'open')])
             ->orderByRaw('user_id = ? DESC', [$user->id])
@@ -81,24 +82,49 @@ class DeckService
         $search = trim((string) $search);
         $language = Language::tryFrom((string) $language)?->value;
 
-        return Deck::query()
+        $query = Deck::query()
             ->with('user')
             ->withCount(['cards', 'followers'])
             ->withExists(['followers as followed_by_me' => fn (Builder $f) => $f->whereKey($user->id)])
             ->where('is_shared', true)
-            ->where('user_id', '!=', $user->id)
-            ->when($search !== '', function (Builder $q) use ($search) {
-                $pattern = '%'.addcslashes($search, '\\%_').'%';
-                $q->where(fn (Builder $q) => $q
-                    ->where('name', 'ilike', $pattern)
-                    ->orWhere('description', 'ilike', $pattern));
-            })
+            ->where('user_id', '!=', $user->id);
+
+        return $this->search($query, $search)
             ->when($language !== null, fn (Builder $q) => $q->where(fn (Builder $q) => $q
                 ->where('front_language', $language)
                 ->orWhere('back_language', $language)))
             ->orderBy('name')
             ->limit(100)
             ->get();
+    }
+
+    /**
+     * Name or description contain the term — literally (wildcards taken as
+     * text), or — for terms with at least four letters or digits — ignoring
+     * spaces, hyphens and other punctuation, so an ISBN like
+     * 978-3-12-345678-9 is also found as 9783123456789 and vice versa.
+     *
+     * @param  Builder<Deck>  $query
+     * @return Builder<Deck>
+     */
+    private function search(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+        if ($term === '') {
+            return $query;
+        }
+
+        $pattern = '%'.addcslashes($term, '\\%_').'%';
+        $compact = mb_strtolower((string) preg_replace('/[^\p{L}\p{N}]+/u', '', $term));
+        $stripped = fn (string $column) => "regexp_replace(lower(coalesce({$column}, '')), '[^[:alnum:]]+', '', 'g')";
+
+        return $query->where(fn (Builder $q) => $q
+            ->where('name', 'ilike', $pattern)
+            ->orWhere('description', 'ilike', $pattern)
+            // Only for longer terms: "0 %" would shrink to "0" and match almost anything.
+            ->when(mb_strlen($compact) >= 4, fn (Builder $q) => $q
+                ->orWhereRaw($stripped('name').' like ?', ['%'.$compact.'%'])
+                ->orWhereRaw($stripped('description').' like ?', ['%'.$compact.'%'])));
     }
 
     /**

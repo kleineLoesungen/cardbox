@@ -43,7 +43,7 @@ class DeckController extends Controller
             'search' => $search,
             'language' => $language,
             'decks' => $tab === 'mine'
-                ? $this->decks->mine($user)
+                ? $this->decks->mine($user, $search)
                 : $this->decks->discover($user, $search, $language),
         ]);
     }

@@ -180,7 +180,41 @@
       <strong>Liste einfügen</strong> wieder hochladen. Geänderte Karten behalten
       ihren Lernstand, neue Zeilen werden neue Karten, gelöscht wird nichts.
       Mehrere Bedeutungen trennst du mit <code class="code">|</code>.
+      <a href="#csv" class="text-brand hover:underline">So sieht die Datei aus</a>.
     </p>
+  </section>
+
+  <section class="stack gap-2 scroll-mt-20" id="csv">
+    <h2 class="text-lg font-semibold">Tabellen (CSV)</h2>
+    <p class="text-muted">
+      <strong>⋯ → Als CSV exportieren</strong> lädt einen Stapel als Datei
+      herunter. Sie öffnet sich in Excel, Numbers und LibreOffice. Bearbeitet
+      zurück kommt sie über <strong>⋯ → Liste einfügen → Oder eine Datei
+      wählen</strong>. Vor dem Speichern zeigt eine Vorschau, was neu ist, was
+      sich ändert und was gleich bleibt.
+    </p>
+    <pre class="code-block">ID;de;en;Hinweis
+3f2a…;schnell;fast | quick;
+7c1b…;verpassen;miss;(Zug)
+;Bahnhof;station;</pre>
+    <ul class="list-disc stack gap-1 pl-5 text-muted">
+      <li><strong>Erste Zeile:</strong> <code class="code">ID</code>, dann die Sprachen der beiden Seiten als Kürzel, dann freiwillig <code class="code">Hinweis</code>. Statt der Kürzel geht auch <code class="code">Vorne;Hinten</code>.</li>
+      <li><strong>ID:</strong> Mit ID wird die vorhandene Karte geändert, ihr Lernstand bleibt. Ohne ID entsteht eine neue Karte. IDs nie selbst ausdenken – leer lassen.</li>
+      <li><strong>Mehrere Bedeutungen</strong> in eine Zelle, getrennt mit <code class="code">|</code>. Die erste ist die Hauptbedeutung.</li>
+      <li><strong>Nichts wird gelöscht:</strong> Fehlt eine Karte in der Datei, bleibt sie im Stapel. Löschen geht nur in der App.</li>
+      <li><strong>Sprachen andersherum</strong> (z. B. <code class="code">en;de</code>) sind kein Problem, die Seiten werden getauscht. Andere Sprachen als die des Stapels lehnt der Import ab.</li>
+      <li><strong>Trennzeichen:</strong> Semikolon, Komma oder Tabulator – je nachdem, wie dein Programm speichert. Beim Speichern in Excel „CSV UTF-8“ wählen, damit Umlaute erhalten bleiben.</li>
+      <li><strong>Ein Apostroph am Anfang</strong> (<code class="code">'=1+1</code>) schützt vor Formeln; er wird beim Import wieder entfernt.</li>
+      <li><strong>Grenzen:</strong> höchstens {{ config('learning.import_max_lines') }} Zeilen und {{ config('learning.import_max_kilobytes') }} KB je Datei.</li>
+    </ul>
+    <details>
+      <summary class="cursor-pointer text-sm text-brand">Alle Sprachkürzel</summary>
+      <table class="mt-2 text-sm">
+        @foreach (\App\Enums\Language::cases() as $lang)
+          <tr><td class="pr-4"><code class="code">{{ $lang->value }}</code></td><td class="text-muted">{{ $lang->label() }}</td></tr>
+        @endforeach
+      </table>
+    </details>
   </section>
 
   {{--
