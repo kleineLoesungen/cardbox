@@ -12,6 +12,7 @@ use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\DeckRunController;
+use App\Http\Controllers\DictionaryController;
 use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
@@ -74,6 +75,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/learn/settings', [LearningSettingsController::class, 'update']);
     // A controller rather than Route::view, so RouteProtectionTest sees it.
     Route::get('/help', [PageController::class, 'help']);
+
+    // "Wörterbuch": look up words in all visible cards.
+    Route::get('/dictionary', [DictionaryController::class, 'index']);
+    Route::get('/dictionary/search', [DictionaryController::class, 'search']);
+    Route::post('/dictionary/adopt/{card}', [DictionaryController::class, 'adopt'])->whereUuid('card');
 
     // Learning round (state in the session, see StudyRoundController).
     Route::post('/learn/round', [StudyRoundController::class, 'start']);

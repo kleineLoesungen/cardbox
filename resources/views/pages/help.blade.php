@@ -131,6 +131,17 @@
   </section>
 
   <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Wörterbuch</h2>
+    <p class="text-muted">
+      Unter <strong>Mehr → Wörterbuch</strong> schlägst du ein Wort nach, ohne
+      zu lernen – in deinen Stapeln und in allen geteilten. Du siehst die
+      Übersetzung, kannst sie anhören und mit <strong>In Stapel
+      übernehmen</strong> in einen eigenen Stapel mit denselben Sprachen
+      legen.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Fehler gefunden?</h2>
     <p class="text-muted">
       Tippe in einem geteilten Stapel auf die Karte und dann auf

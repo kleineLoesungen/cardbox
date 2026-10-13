@@ -11,6 +11,7 @@
 
 <a href="/learn" class="{{ $linkClass }} {{ request()->is('learn') ? 'nav-link-active' : '' }}">Heute</a>
 <a href="/decks" class="{{ $linkClass }} {{ request()->is('decks*') ? 'nav-link-active' : '' }}">Stapel</a>
+<a href="/dictionary" class="{{ $linkClass }} {{ request()->is('dictionary') ? 'nav-link-active' : '' }}">Wörterbuch</a>
 <a href="/learn/settings" class="{{ $linkClass }} {{ request()->is('learn/settings') ? 'nav-link-active' : '' }}">Lernplan</a>
 <a href="/help" class="{{ $linkClass }} {{ request()->is('help') ? 'nav-link-active' : '' }}">Hilfe</a>
 
