@@ -20,6 +20,16 @@
     </form>
   @endif
 
+  @if ($tab === 'mine')
+    {{-- Several decks as one ZIP (issue #9). --}}
+    <div class="mb-4 flex gap-2">
+      @if ($decks->isNotEmpty() || $search !== '')
+        <a href="/decks/export" class="btn btn-ghost btn-sm">Stapel exportieren</a>
+      @endif
+      <a href="/decks/import" class="btn btn-ghost btn-sm">Stapel importieren</a>
+    </div>
+  @endif
+
   @if ($tab === 'discover')
     <form method="get" action="/decks" class="mb-4 flex gap-2">
       <input type="hidden" name="tab" value="discover">

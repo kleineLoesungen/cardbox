@@ -207,6 +207,15 @@
       <li><strong>Ein Apostroph am Anfang</strong> (<code class="code">'=1+1</code>) schützt vor Formeln; er wird beim Import wieder entfernt.</li>
       <li><strong>Grenzen:</strong> höchstens {{ config('learning.import_max_lines') }} Zeilen und {{ config('learning.import_max_kilobytes') }} KB je Datei.</li>
     </ul>
+    <p class="text-muted">
+      <strong>Mehrere Stapel auf einmal:</strong> unter <strong>Stapel → Meine →
+      Stapel exportieren</strong> Stapel ankreuzen und als ZIP-Datei laden. Darin
+      steckt je Stapel eine solche Tabelle und eine Übersicht
+      <code class="code">stapel.csv</code> mit Name, Beschreibung und Sprachen.
+      <strong>Stapel importieren</strong> nimmt die ZIP-Datei wieder an: Deine
+      Stapel werden aktualisiert, alle anderen kommen als neue private Stapel
+      dazu. So kannst du ein ganzes Set sichern oder weitergeben.
+    </p>
     <details>
       <summary class="cursor-pointer text-sm text-brand">Alle Sprachkürzel</summary>
       <table class="mt-2 text-sm">

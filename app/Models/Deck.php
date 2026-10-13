@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property string $back_language
  * @property bool $is_shared
  * @property string|null $copied_from_name
+ * @property string|null $source_deck_id deck this one was copied or imported from (no foreign key)
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read int|null $cards_count

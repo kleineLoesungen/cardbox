@@ -7,6 +7,12 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.14
+- Mehrere Stapel auf einmal: Unter Stapel → Meine → „Stapel exportieren“ eigene und gefolgte Stapel ankreuzen und als ZIP laden (je Stapel eine Tabelle plus Übersicht mit Name, Beschreibung und Sprachen)
+- „Stapel importieren“ nimmt die ZIP wieder an: eigene Stapel und eigene Kopien werden aktualisiert (nichts gelöscht, Lernstand bleibt), alle anderen kommen als neue private Stapel dazu. Ein zweiter Import derselben Datei legt keine Doppelten an
+- Server: die PHP-Erweiterung zip ist dafür nötig; der Deploy zeigt, ob sie da ist (freiwillig)
+- Migration: 2026_10_14_000000_add_source_deck_id_to_decks_table.php
+
 ## 2026.10.13.13
 - Stapel suchen: Name und Beschreibung werden auch ohne Bindestriche und Leerzeichen verglichen – eine ISBN wie 978-3-12-834211-5 findet man auch als 9783128342115. Entdecken zeigt die Beschreibung in der Trefferliste
 - Suchfeld auch unter „Meine“ (eigene und gefolgte Stapel)

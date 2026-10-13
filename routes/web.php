@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CardOriginController;
 use App\Http\Controllers\CardSuggestionController;
+use App\Http\Controllers\DeckBundleController;
 use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
@@ -98,6 +99,13 @@ Route::middleware('auth')->group(function () {
     // CardService: other people's private decks answer 404.
     Route::get('/decks', [DeckController::class, 'index']);
     Route::post('/decks', [DeckController::class, 'store']);
+    // Several decks as one ZIP (export and import); static paths, so they
+    // never collide with /decks/{deck}.
+    Route::get('/decks/export', [DeckBundleController::class, 'exportForm']);
+    Route::post('/decks/export', [DeckBundleController::class, 'export']);
+    Route::get('/decks/import', [DeckBundleController::class, 'importForm']);
+    Route::post('/decks/import/preview', [DeckBundleController::class, 'preview'])->middleware('throttle:20,1');
+    Route::post('/decks/import', [DeckBundleController::class, 'store'])->middleware('throttle:20,1');
     Route::whereUuid(['deck', 'card'])->prefix('/decks/{deck}')->group(function () {
         Route::get('/', [DeckController::class, 'show']);
         Route::post('/', [DeckController::class, 'update']);

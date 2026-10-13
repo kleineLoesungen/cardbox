@@ -40,7 +40,7 @@ Andere Wege: [mit Docker](../README.md#installation-auf-einem-server),
 
 | | |
 |---|---|
-| PHP | **8.4.1 oder neuer**, im Kundenmenü einstellbar; mit `pdo_pgsql`, `intl`, `mbstring`, `xml`, `curl` und Argon2 |
+| PHP | **8.4.1 oder neuer**, im Kundenmenü einstellbar; mit `pdo_pgsql`, `intl`, `mbstring`, `xml`, `curl` und Argon2; freiwillig `zip` (Export/Import mehrerer Stapel als ZIP) |
 | Datenbank | eine **PostgreSQL** (Name, Benutzer, Passwort, Rechner aus dem Kundenmenü) |
 | FTP | Zugang, am besten mit FTPS |
 | Domain | eine eigene Adresse (Domain oder Subdomain) mit HTTPS, z. B. `cardbox.example.com`. Ihr Zielordner liegt meist unter `public_html`. Ein Unterpfad wie `example.com/cardbox` geht **nicht** |

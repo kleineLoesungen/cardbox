@@ -123,6 +123,13 @@ class DeployService
             ];
         }
 
+        // Optional: without it only the ZIP export/import of several decks is
+        // missing, so it never blocks the migrations.
+        $checks['ext-zip'] = [
+            'ok' => true,
+            'detail' => extension_loaded('zip') ? 'geladen' : 'fehlt (freiwillig) – ohne sie kein Export/Import mehrerer Stapel als ZIP',
+        ];
+
         foreach (['storage' => storage_path(), 'bootstrap/cache' => base_path('bootstrap/cache')] as $name => $path) {
             $checks['writable-'.$name] = [
                 'ok' => is_writable($path),

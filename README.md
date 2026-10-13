@@ -212,7 +212,7 @@ Umgebungsvariablen, die Sicherheits-Checkliste und der Update-Hinweis
 ## Entwickeln
 
 Voraussetzungen:
-- PHP ≥ 8.4 mit `pdo_pgsql`
+- PHP ≥ 8.4 mit `pdo_pgsql` (und `zip` für den Export mehrerer Stapel)
 - [Composer](https://getcomposer.org)
 - Docker
 - [just](https://github.com/casey/just) (`brew install just`)

@@ -303,6 +303,8 @@ class DeckService
             ]);
             $copy->user_id = $user->id;
             $copy->copied_from_name = $original->name;
+            // Lets a later ZIP import recognise this copy (DeckBundleService).
+            $copy->source_deck_id = $original->id;
             $copy->save();
 
             $now = now();

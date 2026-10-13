@@ -175,17 +175,39 @@ class CardCsvService
     }
 
     /**
+     * The language codes in the header ("ID;de;en"), or null when the header
+     * says "Vorne;Hinten" or holds no valid codes. For decks that do not
+     * exist yet (DeckBundleService).
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public function headerLanguages(string $text): ?array
+    {
+        $delimiter = $this->delimiter($text);
+        if ($delimiter === null) {
+            return null;
+        }
+
+        $header = array_map(fn ($c) => mb_strtolower(trim((string) $c)), $this->read($text, $delimiter)[0] ?? []);
+        $front = Language::tryFrom($header[1] ?? '');
+        $back = Language::tryFrom($header[2] ?? '');
+
+        return $front !== null && $back !== null && $front !== $back ? [$front->value, $back->value] : null;
+    }
+
+    /**
      * Applies the import: new cards are created, changed ones updated in
-     * place. Nothing is deleted.
+     * place. Nothing is deleted. A file without a single valid row is
+     * refused, unless `$allowEmpty` (an empty deck in a ZIP set).
      *
      * @return array{new: int, update: int, same: int}
      *
      * @throws ValidationException
      */
-    public function import(Deck $deck, User $user, string $text): array
+    public function import(Deck $deck, User $user, string $text, bool $allowEmpty = false): array
     {
         $result = $this->parse($deck, $user, $text);
-        if ($result['counts']['new'] + $result['counts']['update'] + $result['counts']['same'] === 0) {
+        if (! $allowEmpty && $result['counts']['new'] + $result['counts']['update'] + $result['counts']['same'] === 0) {
             throw ValidationException::withMessages(['text' => 'In der Datei wurde keine gültige Zeile gefunden.']);
         }
 

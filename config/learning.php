@@ -27,6 +27,12 @@ return [
     'import_max_lines' => 1000,
     'import_max_kilobytes' => 1024,
 
+    // Several decks as one ZIP (export and import, docs/specs/stapel-export.md):
+    // file size, size once unpacked (against "ZIP bombs"), number of decks.
+    'bundle_max_kilobytes' => 5120,
+    'bundle_max_unpacked_kilobytes' => 20480,
+    'bundle_max_decks' => 50,
+
     // Search results in "Aus anderen Stapeln übernehmen".
     'search_limit' => 30,
 
