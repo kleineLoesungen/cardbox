@@ -24,10 +24,16 @@ use Illuminate\Validation\ValidationException;
  *
  * parse() never writes anything — the preview uses it, and import() parses
  * the same text again, so preview and result cannot drift apart.
+ *
+ * A file with an "ID" header (an exported CSV) goes to CardCsvService
+ * instead: it can change existing cards in place.
+ *
+ * Two flavours, as everywhere: import() for the person's own deck (web),
+ * importShared() for administrators, on any shared deck.
  */
 class CardImportService
 {
-    public function __construct(private DeckService $decks) {}
+    public function __construct(private DeckService $decks, private CardCsvService $csv) {}
 
     /**
      * Reads the input (text field or uploaded file) into plain text.
@@ -135,20 +141,52 @@ class CardImportService
     }
 
     /**
-     * Parses again and creates all valid rows as cards in the user's deck.
-     * The text goes through the same checks as for the preview (size,
-     * encoding), since this request can be sent without a preview.
+     * Parses again and imports into the user's own deck. The text goes
+     * through the same checks as for the preview (size, encoding), since
+     * this request can be sent without a preview.
      *
      * @param  array<string, mixed>  $input  text
-     * @return int Number of created cards
+     * @return array{new: int, update: int}
      *
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck>
      */
-    public function import(User $user, string $deckId, array $input): int
+    public function import(User $user, string $deckId, array $input): array
     {
-        $deck = $this->decks->getOwned($user, $deckId);
+        return $this->importInto($this->decks->getOwned($user, $deckId), $user, $input);
+    }
+
+    /**
+     * Administrators: import into any shared deck, also somebody else's.
+     * Other people's private decks stay out of reach (404), as everywhere.
+     *
+     * @param  array<string, mixed>  $input  text
+     * @return array{new: int, update: int}
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function importShared(User $admin, string $deckId, array $input): array
+    {
+        return $this->importInto($this->decks->getShared($deckId), $admin, $input);
+    }
+
+    /**
+     * @param  array<string, mixed>  $input  text
+     * @return array{new: int, update: int}
+     *
+     * @throws ValidationException
+     */
+    private function importInto(Deck $deck, User $user, array $input): array
+    {
         $text = $this->textFrom(['text' => $input['text'] ?? null]);
+
+        if ($this->csv->isCsv($text)) {
+            $counts = $this->csv->import($deck, $user, $text);
+
+            return ['new' => $counts['new'], 'update' => $counts['update']];
+        }
+
         $rows = $this->parse($deck, $text)['rows'];
 
         if ($rows === []) {
@@ -169,7 +207,7 @@ class CardImportService
             }
         });
 
-        return count($rows);
+        return ['new' => count($rows), 'update' => 0];
     }
 
     /**

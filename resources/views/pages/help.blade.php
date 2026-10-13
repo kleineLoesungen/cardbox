@@ -163,6 +163,13 @@
       Spalten aus Excel, Word oder Numbers kopieren und einfügen. Vor dem
       Speichern siehst du eine Vorschau.
     </p>
+    <p class="text-muted">
+      Größere Änderungen gehen auch in einer Tabelle: <strong>⋯ → Als CSV
+      exportieren</strong>, die Datei in Excel oder Numbers bearbeiten und über
+      <strong>Liste einfügen</strong> wieder hochladen. Geänderte Karten behalten
+      ihren Lernstand, neue Zeilen werden neue Karten, gelöscht wird nichts.
+      Mehrere Bedeutungen trennst du mit <code class="code">|</code>.
+    </p>
   </section>
 
   {{--

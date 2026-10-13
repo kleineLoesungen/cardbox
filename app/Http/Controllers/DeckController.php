@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Direction;
 use App\Enums\StudyPlan;
+use App\Services\CardCsvService;
 use App\Services\CardService;
 use App\Services\CardSuggestionService;
 use App\Services\DeckRunService;
@@ -11,7 +12,9 @@ use App\Services\DeckService;
 use App\Services\LearningOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 /**
  * Decks in the web UI. Thin: input to DeckService, result to the view.
@@ -140,6 +143,22 @@ class DeckController extends Controller
             'boxCount' => $result['run']->box_count,
             'box' => (int) $box,
             'entries' => $result['entries'],
+        ]);
+    }
+
+    /** "Als CSV exportieren": any deck the user can see, like "Kopieren". */
+    public function export(Request $request, string $deck, CardCsvService $csv): Response
+    {
+        $model = $this->decks->getVisible($request->user(), $deck);
+
+        // The name is a slug, so plain ASCII: it serves as its own fallback.
+        $name = $csv->fileName($model);
+
+        return response($csv->export($model), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => HeaderUtils::makeDisposition('attachment', $name, $name),
+            // A download of the cards as they are now; never cache it.
+            'Cache-Control' => 'no-store',
         ]);
     }
 

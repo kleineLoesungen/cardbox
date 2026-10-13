@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Admin\DeckImportController as AdminDeckImportController;
 use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\Admin\TokenController;
 use App\Http\Controllers\Admin\UserController;
@@ -97,6 +98,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/follow', [DeckController::class, 'follow']);
         Route::post('/unfollow', [DeckController::class, 'unfollow']);
         Route::post('/copy', [DeckController::class, 'copy']);
+        Route::get('/export', [DeckController::class, 'export']);
         // Deck runs: a deck learned with one plan. There is deliberately no
         // route that changes a run's plan — reset and start again instead.
         Route::post('/runs', [DeckRunController::class, 'store']);
@@ -147,6 +149,14 @@ Route::middleware(['auth', 'role:moderator'])->group(function () {
 // --- Nur Administrator -------------------------------------------------------
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    // Import into any shared deck, also other people's (overwrites their
+    // cards from a CSV). Private decks of others stay out of reach.
+    Route::whereUuid('deck')->prefix('/decks/{deck}')->group(function () {
+        Route::get('/import', [AdminDeckImportController::class, 'show']);
+        Route::post('/import/preview', [AdminDeckImportController::class, 'preview'])->middleware('throttle:20,1');
+        Route::post('/import', [AdminDeckImportController::class, 'store'])->middleware('throttle:20,1');
+    });
+
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::get('/users/suggest-username', [UserController::class, 'suggestUsername']);

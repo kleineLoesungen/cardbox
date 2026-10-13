@@ -8,9 +8,14 @@
   <h1 class="mt-1 mb-1 text-2xl font-semibold tracking-tight">Liste einfügen</h1>
   <p class="mb-4 text-sm text-muted">Viele Karten auf einmal in „{{ $deck->name }}“.</p>
 
+  {{-- Admin import into somebody else's deck (Admin\DeckImportController). --}}
+  @if (str_starts_with($base, '/admin/'))
+    <p class="alert alert-warning mb-4">Verwaltung: Du änderst Karten von {{ $deck->user->name }}. Alle, die mit dem Stapel lernen, sehen die Änderungen.</p>
+  @endif
+
   <x-form-error />
 
-  <form method="post" action="/decks/{{ $deck->id }}/import/preview" enctype="multipart/form-data" class="stack">
+  <form method="post" action="{{ $base }}/preview" enctype="multipart/form-data" class="stack">
     @csrf
 
     <div class="field">
@@ -33,6 +38,7 @@
       <div class="field mt-3">
         <input class="block w-full text-sm" type="file" name="file" accept=".txt,.csv,.tsv,text/plain,text/csv">
         <p class="hint">Textdatei (.txt, .csv), höchstens {{ config('learning.import_max_kilobytes') }} KB.</p>
+        <p class="hint">Eine Datei aus „Als CSV exportieren“ (Kopfzeile <code>ID;…</code>) ändert bekannte Karten, statt sie doppelt anzulegen. Gelöscht wird nichts, der Lernstand bleibt.</p>
       </div>
     </details>
 

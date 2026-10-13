@@ -146,6 +146,7 @@
         @csrf
         <button type="submit" class="sheet-action">Kopie anlegen</button>
       </form>
+      <a href="/decks/{{ $deck->id }}/export" class="sheet-action" download>Als CSV exportieren</a>
       @include('decks.partials.reset-action')
       <form method="post" action="/decks/{{ $deck->id }}/delete"
             data-confirm-action="Stapel löschen"
@@ -171,7 +172,15 @@
         @csrf
         <button type="submit" class="sheet-action">Als eigenen Stapel kopieren</button>
       </form>
+      <a href="/decks/{{ $deck->id }}/export" class="sheet-action" download>Als CSV exportieren</a>
       @include('decks.partials.reset-action')
+
+      {{-- Display only; the admin routes check the role themselves. --}}
+      @if (auth()->user()->hasRole(\App\Enums\Role::Admin) && $deck->is_shared)
+        <div class="my-2 border-t border-border"></div>
+        <p class="px-3 text-xs font-medium text-subtle">Verwaltung</p>
+        <a href="/admin/decks/{{ $deck->id }}/import" class="sheet-action">Liste einfügen (Karten überschreiben)</a>
+      @endif
 
       {{-- Display only; the moderation routes check the role themselves. --}}
       @if (auth()->user()->hasRole(\App\Enums\Role::Moderator))

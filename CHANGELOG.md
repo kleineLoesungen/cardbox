@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.13.7
+- CSV: Stapel lassen sich unter ⋯ → „Als CSV exportieren“ als Tabelle herunterladen (Spalten ID, Sprachen, Hinweis; mehrere Bedeutungen mit |). Öffnet sich in Excel und Numbers direkt richtig
+- Eine bearbeitete CSV über „Liste einfügen“ wieder hochladen: bekannte Karten werden geändert und behalten ihren Lernstand, neue Zeilen werden neue Karten, gelöscht wird nichts. Die Vorschau zeigt neu, geändert und unverändert
+- Administratoren können über „Liste einfügen (Karten überschreiben)“ auch in fremde geteilte Stapel importieren
+
 ## 2026.10.13.6
 - Neue Startseite für Gäste im Stil der Karten: eine Lernkarte zum Umdrehen mit Beispielwörtern, „So geht's“ als Karteikarten, der Karteikasten mit einer wandernden Karte und die Funktionen im Überblick
 
