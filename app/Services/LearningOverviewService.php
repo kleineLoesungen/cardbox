@@ -30,6 +30,7 @@ class LearningOverviewService
         private DeckService $decks,
         private LeitnerService $leitner,
         private DeckRunService $runs,
+        private CardSelectionService $selection,
     ) {}
 
     /**
@@ -99,10 +100,12 @@ class LearningOverviewService
             ->pluck('due', 'deck_id');
 
         // Grouped by deck_runs.id (its primary key), so box_count may be used.
+        [$active, $bindings] = $this->selection->activeCondition($user);
         $runs = DB::table('card_progress')
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
             ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
             ->where('card_progress.user_id', $user->id)
+            ->whereRaw($active, $bindings)
             ->whereIn('cards.deck_id', $decks->modelKeys())
             ->groupBy('cards.deck_id', 'deck_runs.id')
             ->select('cards.deck_id')
@@ -111,9 +114,12 @@ class LearningOverviewService
             ->get()
             ->groupBy('deck_id');
 
+        // Decks learned only in part count their active cards (issue #10).
+        $activeCounts = $this->selection->activeCounts($user, $decks->modelKeys());
+
         $stats = [];
         foreach ($decks as $deck) {
-            $cards = (int) ($deck->cards_count ?? 0);
+            $cards = $activeCounts[$deck->id] ?? (int) ($deck->cards_count ?? 0);
             $percent = 0;
             foreach ($runs->get($deck->id, []) as $row) {
                 $possible = $cards * max(1, (int) $row->directions);
@@ -144,8 +150,11 @@ class LearningOverviewService
         $boxCount = $run->box_count ?? $this->leitner->plan($user)['box_count'];
         $today = $this->leitner->today()->toDateString();
 
+        [$active, $bindings] = $this->selection->activeCondition($user);
         $rows = $run === null ? collect() : DB::table('card_progress')
+            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
             ->where('card_progress.deck_run_id', $run->id)
+            ->whereRaw($active, $bindings)
             ->where('card_progress.direction', $direction->value)
             ->select('card_progress.box')
             ->selectRaw('count(*) as cards')
@@ -202,8 +211,12 @@ class LearningOverviewService
             ->get()
             ->keyBy('card_id');
 
+        $activeIds = $this->selection->activeIds($user, $deck);
         $result = [];
         foreach ($deck->cards()->orderBy('created_at')->get() as $card) {
+            if ($activeIds !== null && ! in_array($card->id, $activeIds, true)) {
+                continue;
+            }
             $p = $progress->get($card->id);
             $cardBox = $p === null ? 0 : min($p->box, $boxCount);
             if ($cardBox === $box) {
@@ -227,11 +240,14 @@ class LearningOverviewService
      */
     private function learningRows(User $user): Builder
     {
+        [$active, $bindings] = $this->selection->activeCondition($user);
+
         return DB::table('card_progress')
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
             ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
             ->where('card_progress.user_id', $user->id)
             ->where('card_progress.box', '>=', 1)
-            ->whereColumn('card_progress.box', '<', 'deck_runs.box_count');
+            ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
+            ->whereRaw($active, $bindings);
     }
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\DeckRunController;
+use App\Http\Controllers\DeckSelectionController;
 use App\Http\Controllers\DictionaryController;
 use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
@@ -83,6 +84,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dictionary', [DictionaryController::class, 'index']);
     Route::get('/dictionary/search', [DictionaryController::class, 'search']);
     Route::post('/dictionary/adopt/{card}', [DictionaryController::class, 'adopt'])->whereUuid('card');
+    Route::post('/dictionary/learn/{card}', [DictionaryController::class, 'learn'])->whereUuid('card');
 
     // Learning round (state in the session, see StudyRoundController).
     Route::post('/learn/round', [StudyRoundController::class, 'start']);
@@ -114,6 +116,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/follow', [DeckController::class, 'follow']);
         Route::post('/unfollow', [DeckController::class, 'unfollow']);
         Route::post('/copy', [DeckController::class, 'copy']);
+        // Learning only part of a deck (issue #10).
+        Route::get('/selection', [DeckSelectionController::class, 'edit']);
+        Route::post('/selection', [DeckSelectionController::class, 'update']);
+        Route::post('/selection/all', [DeckSelectionController::class, 'all']);
         Route::get('/export', [DeckController::class, 'export']);
         // Deck runs: a deck learned with one plan. There is deliberately no
         // route that changes a run's plan — reset and start again instead.

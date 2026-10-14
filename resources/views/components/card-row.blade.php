@@ -8,16 +8,17 @@
   For moderation also "Bearbeiten (Moderation)" (#card-sheet); showing it
   is display only, the role:moderator routes decide.
 --}}
-@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null])
+@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null, 'paused' => false])
 @php($more = count($card->front) + count($card->back) - 2)
-<li id="card-{{ $card->id }}">
+{{-- Paused (issue #10): shown faded, with a badge; editing and suggesting still work. --}}
+<li id="card-{{ $card->id }}" @class(['opacity-60' => $paused])>
   @if ($editable)
     <button type="button" class="list-row"
             hx-get="/decks/{{ $deck->id }}/cards/{{ $card->id }}/edit"
             hx-target="#card-sheet-body"
             aria-label="Karte {{ $card->frontText() }} bearbeiten">
       <span class="card-row-sides">
-        <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif</span>
+        <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif @if ($paused)<span class="badge badge-neutral ml-1">pausiert</span>@endif</span>
         <span class="text-muted" lang="{{ \App\Enums\Language::tryFrom($deck->back_language)?->tag() }}">
           {{ $card->backText() }}
           @if ($more > 0)<span class="badge badge-neutral ml-1">+{{ $more }}</span>@endif
@@ -28,7 +29,7 @@
     <details class="group">
       <summary class="list-row cursor-pointer list-none">
         <span class="card-row-sides">
-          <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif</span>
+          <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif @if ($paused)<span class="badge badge-neutral ml-1">pausiert</span>@endif</span>
           <span class="text-muted" lang="{{ \App\Enums\Language::tryFrom($deck->back_language)?->tag() }}">
             {{ $card->backText() }}
             @if ($more > 0)<span class="badge badge-neutral ml-1">+{{ $more }}</span>@endif

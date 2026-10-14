@@ -90,7 +90,8 @@
     @foreach ($cards as $card)
       <x-card-row :card="$card" :deck="$deck" :editable="$isOwner"
                   :can-suggest="! $isOwner && $deck->is_shared" :can-moderate="$canModerate"
-                  :suggestion="$mySuggestions[$card->id] ?? null" />
+                  :suggestion="$mySuggestions[$card->id] ?? null"
+                  :paused="$activeIds !== null && ! in_array($card->id, $activeIds, true)" />
     @endforeach
   </ul>
 
@@ -138,6 +139,9 @@
 {{-- "⋯" menu: what the viewer may do with this deck. --}}
 <x-sheet id="deck-menu" :title="$deck->name">
   <div class="stack gap-1">
+    @if ($cards->isNotEmpty())
+      <a href="/decks/{{ $deck->id }}/selection" class="sheet-action">Karten auswählen (nur einen Teil lernen)</a>
+    @endif
     @if ($isOwner)
       <button type="button" class="sheet-action" data-open-sheet="deck-edit">Umbenennen oder Sprachen ändern</button>
       <form method="post" action="/decks/{{ $deck->id }}/share">

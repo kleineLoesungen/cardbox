@@ -131,13 +131,26 @@
   </section>
 
   <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Nur einen Teil lernen</h2>
+    <p class="text-muted">
+      Ein Stapel umfasst ein ganzes Buch, du bist aber erst bei Kapitel 3? Im
+      Stapel unter <strong>⋯ → Karten auswählen</strong> hakst du an, was du
+      lernen willst – mit <strong>bis hier</strong> geht das in einem Tipp.
+      Die anderen Karten sind pausiert: Sie kommen nicht dran, ihr Lernstand
+      bleibt. Neue Karten, die später dazukommen, bleiben ebenfalls pausiert,
+      bis du sie anhakst.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Wörterbuch</h2>
     <p class="text-muted">
       Unter <strong>Mehr → Wörterbuch</strong> schlägst du ein Wort nach, ohne
       zu lernen – in deinen Stapeln und in allen geteilten. Du siehst die
-      Übersetzung, kannst sie anhören und mit <strong>In Stapel
-      übernehmen</strong> in einen eigenen Stapel mit denselben Sprachen
-      legen.
+      Übersetzung und kannst sie anhören. <strong>Folgen und diese Karte
+      lernen</strong> folgt dem Stapel, aus dem sie stammt, und schaltet erst
+      einmal nur diese Karte frei. Brauchst du eine eigene Fassung, geht auch
+      <strong>Als Kopie in eigenen Stapel</strong>.
     </p>
   </section>
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Direction;
 use App\Enums\StudyPlan;
 use App\Services\CardCsvService;
+use App\Services\CardSelectionService;
 use App\Services\CardService;
 use App\Services\CardSuggestionService;
 use App\Services\DeckRunService;
@@ -28,6 +29,7 @@ class DeckController extends Controller
         private LearningOverviewService $overview,
         private DeckRunService $runs,
         private CardSuggestionService $suggestions,
+        private CardSelectionService $selection,
     ) {}
 
     /** "Meine" and "Entdecken" on one page, switched by ?tab=. */
@@ -68,6 +70,8 @@ class DeckController extends Controller
         $direction = Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward;
         $cards = $this->cards->listForDeck($model);
         $runs = $this->runs->listOwned($user, $model);
+        // Learning only part of the deck (issue #10): null = every card.
+        $activeIds = $this->selection->activeIds($user, $model);
         $run = $runs->firstWhere('id', $this->queryText($request, 'run')) ?? $runs->first();
 
         return view('decks.show', [
@@ -78,7 +82,8 @@ class DeckController extends Controller
             'standardKey' => $this->runs->standardKey($user),
             'presets' => StudyPlan::cases(),
             // Only needed when there is something to learn.
-            'boxes' => $cards->isEmpty() ? null : $this->overview->boxes($user, $model, $run, $direction, $cards->count()),
+            'activeIds' => $activeIds,
+            'boxes' => $cards->isEmpty() ? null : $this->overview->boxes($user, $model, $run, $direction, $activeIds === null ? $cards->count() : count($activeIds)),
             'cards' => $cards,
             'isOwner' => $isOwner,
             'isFollowing' => ! $isOwner && $this->decks->isFollowing($user, $model),

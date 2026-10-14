@@ -36,6 +36,7 @@ class StudyRoundService
         private DeckService $decks,
         private LeitnerService $leitner,
         private DeckRunService $runs,
+        private CardSelectionService $selection,
     ) {}
 
     /**
@@ -68,7 +69,10 @@ class StudyRoundService
             ->pluck('card_progress.card_id')
             ->all();
 
+        [$active, $bindings] = $this->selection->activeCondition($user);
         $new = $deck->cards()
+            // Paused cards (issue #10) are never started.
+            ->whereRaw($active, $bindings)
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('card_progress')
                 ->whereColumn('card_progress.card_id', 'cards.id')
@@ -141,7 +145,8 @@ class StudyRoundService
         }
 
         $deck = $this->decks->getVisible($user, $deckId);
-        $cards = $deck->cards();
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        $cards = $deck->cards()->whereRaw($active, $bindings);
 
         if ($box !== null) {
             $run = $runId !== null && $runId !== ''
@@ -315,13 +320,17 @@ class StudyRoundService
      */
     private function dueQuery(User $user): Builder
     {
+        [$active, $bindings] = $this->selection->activeCondition($user);
+
         return CardProgress::query()
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
             ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
             ->where('card_progress.user_id', $user->id)
             ->where('card_progress.box', '>=', 1)
             ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
-            ->where('card_progress.due_on', '<=', $this->leitner->today()->toDateString());
+            ->where('card_progress.due_on', '<=', $this->leitner->today()->toDateString())
+            // Paused cards keep their progress but are not due (issue #10).
+            ->whereRaw($active, $bindings);
     }
 
     /**

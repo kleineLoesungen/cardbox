@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Language;
+use App\Services\CardSelectionService;
 use App\Services\CardService;
 use App\Services\DictionaryService;
 use Illuminate\Http\Request;
@@ -16,7 +17,11 @@ use Illuminate\View\View;
  */
 class DictionaryController extends Controller
 {
-    public function __construct(private DictionaryService $dictionary, private CardService $cards) {}
+    public function __construct(
+        private DictionaryService $dictionary,
+        private CardService $cards,
+        private CardSelectionService $selection,
+    ) {}
 
     /** The page; with ?q= it also shows results (reload, no JavaScript). */
     public function index(Request $request): View
@@ -42,6 +47,17 @@ class DictionaryController extends Controller
             'term' => $term,
             'result' => $this->dictionary->search($request->user(), $term, $this->queryText($request, 'lang')),
         ]);
+    }
+
+    /**
+     * htmx: "Folgen und diese Karte lernen" / "Diese Karte lernen" (issue #10):
+     * follows the card's deck if needed and makes the card active.
+     */
+    public function learn(Request $request, string $card): Response
+    {
+        $model = $this->selection->learnCard($request->user(), $card);
+
+        return response()->view('partials.dictionary-learning', ['deck' => $model->deck]);
     }
 
     /** htmx: copies the card into one of the user's decks; the button turns into a confirmation. */

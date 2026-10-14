@@ -1,7 +1,8 @@
 {{--
   Hits of the dictionary search. One hit per word pair: main meanings,
-  further ones as "auch: …", hint, read aloud, where it comes from, and
-  "In Stapel übernehmen" into an own deck with the same languages.
+  further ones as "auch: …", hint, read aloud, where it comes from. First
+  offer: learn the card in its deck (follow it, or switch it on); second:
+  a copy into an own deck with the same languages.
 
   @param string $term
   @param array{hits: list<array{card: \App\Models\Card, decks: list<\App\Models\Deck>, targets: list<\App\Models\Deck>}>, more: bool} $result
@@ -55,9 +56,22 @@
               @endif
             </p>
 
+            {{-- First offer: learn the card where it is (issue #10); copying comes second. --}}
+            @if ($hit['learn'] === 'active')
+              <p class="text-sm"><span class="badge badge-success">du lernst sie</span></p>
+            @else
+              <button type="button" class="btn btn-primary btn-block"
+                      hx-post="/dictionary/learn/{{ $card->id }}" hx-target="this" hx-swap="outerHTML">
+                {{ $hit['learn'] === 'follow' ? 'Folgen und diese Karte lernen' : 'Diese Karte lernen' }}
+              </button>
+              @if ($hit['learn'] === 'follow')
+                <p class="hint -mt-1">Du folgst „{{ $deck->name }}“, lernst aber erst einmal nur diese Karte. Weitere schaltest du im Stapel dazu.</p>
+              @endif
+            @endif
+
             @if ($hit['targets'] !== [])
               <details>
-                <summary class="btn btn-ghost btn-sm cursor-pointer list-none">In Stapel übernehmen</summary>
+                <summary class="btn btn-ghost btn-sm cursor-pointer list-none">Als Kopie in eigenen Stapel</summary>
                 <div class="mt-2 stack gap-2">
                   @foreach ($hit['targets'] as $target)
                     <button type="button" class="btn btn-secondary btn-block justify-start"
@@ -68,8 +82,6 @@
                   @endforeach
                 </div>
               </details>
-            @elseif ($deck->user_id !== auth()->id())
-              <p class="hint">Zum Übernehmen lege zuerst einen Stapel {{ $deck->frontLabel() }} → {{ $deck->backLabel() }} an.</p>
             @endif
           </div>
         </li>

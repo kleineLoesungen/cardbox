@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.14.2
+- Nur einen Teil eines Stapels lernen: Unter ⋯ → „Karten auswählen“ Karten anhaken (mit „bis hier“ für ganze Kapitel). Die anderen sind pausiert – sie kommen nicht dran, ihr Lernstand bleibt. Neue Karten der Besitzerin bleiben pausiert, bis man sie anhakt. Für eigene und gefolgte Stapel
+- Wörterbuch: Die erste Aktion ist jetzt „Folgen und diese Karte lernen“ – man folgt dem Stapel und lernt erst einmal nur diese Karte. Die Kopie in einen eigenen Stapel gibt es weiter als zweite Möglichkeit
+- Migration: 2026_10_14_100000_create_deck_selections_tables.php
+
 ## 2026.10.14
 - Mehrere Stapel auf einmal: Unter Stapel → Meine → „Stapel exportieren“ eigene und gefolgte Stapel ankreuzen und als ZIP laden (je Stapel eine Tabelle plus Übersicht mit Name, Beschreibung und Sprachen)
 - „Stapel importieren“ nimmt die ZIP wieder an: eigene Stapel und eigene Kopien werden aktualisiert (nichts gelöscht, Lernstand bleibt), alle anderen kommen als neue private Stapel dazu. Ein zweiter Import derselben Datei legt keine Doppelten an

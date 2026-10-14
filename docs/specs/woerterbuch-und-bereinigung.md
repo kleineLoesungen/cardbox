@@ -292,3 +292,29 @@ Zu allen Stufen: `CHANGELOG.md`, Hilfe, `docs/specs/vokabelkarten.md`
   „Entdecken“ heute schon.
 - **Moderation ändert fremde Karten** – siehe Berechtigungen; geloggt, nur
   geteilte Stapel.
+
+---
+
+## Nachtrag: Folgen statt Kopieren, nur einen Teil lernen (Issue #10)
+
+Umgesetzt am 14.10.2026 ohne eigene Spezifikation (auf Wunsch), hier
+festgehalten. Entscheidungen: neue Karten der Besitzerin bleiben pausiert,
+solange eine Auswahl besteht (1a); gilt für eigene und gefolgte Stapel (2a).
+
+- **Teil eines Stapels lernen:** Unter ⋯ → „Karten auswählen“
+  (`/decks/{deck}/selection`) hakt man die aktiven Karten an, in
+  Buchreihenfolge (älteste zuerst), mit „Alle“, „Keine“ und „bis hier“.
+  Pausierte Karten kommen nicht in Lernrunden (auch nicht beim freien
+  Üben), zählen nicht bei „fällig“, „neu“ und „Kann ich“ und behalten ihren
+  Lernstand. Sind alle angehakt, endet die Auswahl.
+- **Datenmodell:** Migration `2026_10_14_100000_create_deck_selections_tables.php`
+  – `deck_selections` (Person + Stapel: es gibt eine Auswahl) und
+  `deck_selection_cards` (die aktiven Karten). Ohne Eintrag ist alles aktiv.
+  Die Regel „Karte aktiv“ steht einmal als SQL-Bedingung in
+  `CardSelectionService::activeCondition`.
+- **Wörterbuch:** erste Aktion „Folgen und diese Karte lernen“ (folgt dem
+  Stapel und startet eine Auswahl mit nur dieser Karte) bzw. „Diese Karte
+  lernen“ bei einer pausierten Karte; „du lernst sie“, wenn sie aktiv ist.
+  „Als Kopie in eigenen Stapel“ (bisher „In Stapel übernehmen“) steht an
+  zweiter Stelle.
+- Tests: `tests/Feature/DeckSelectionTest.php`.

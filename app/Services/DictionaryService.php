@@ -18,14 +18,19 @@ use Illuminate\Database\Eloquent\Collection;
  * the same language pair (also reversed) are shown once, with all decks
  * they appear in.
  *
- * @phpstan-type Hit array{card: Card, decks: list<Deck>, targets: list<Deck>}
+ * The first offer for a hit is to learn it (issue #10): "learn" says whether
+ * the person learns the card already ("active"), has it paused in a deck
+ * they learn ("paused"), or would follow its deck for it ("follow").
+ * Copying into an own deck stays as a further option.
+ *
+ * @phpstan-type Hit array{card: Card, decks: list<Deck>, targets: list<Deck>, learn: 'active'|'paused'|'follow'}
  */
 class DictionaryService
 {
     /** Cards read per search; more than enough for the shown hits. */
     private const SCAN = 200;
 
-    public function __construct(private DeckService $decks) {}
+    public function __construct(private DeckService $decks, private CardSelectionService $selection) {}
 
     /**
      * @return array{hits: list<Hit>, more: bool}
@@ -77,8 +82,22 @@ class DictionaryService
             'targets' => array_values(array_filter($hit['targets'], fn (Deck $deck) => ! isset($hit['decks'][$deck->id]))),
         ], array_values($groups));
 
+        $hits = array_slice($hits, 0, $limit);
+        $followed = $user->followedDecks()->pluck('decks.id')->all();
+        $active = [];
+        foreach ($hits as $i => $hit) {
+            $deck = $hit['card']->deck;
+            $learns = $deck->user_id === $user->id || in_array($deck->id, $followed, true);
+            $active[$deck->id] ??= $learns ? $this->selection->activeIds($user, $deck) : [];
+            $hits[$i]['learn'] = match (true) {
+                ! $learns => 'follow',
+                $active[$deck->id] === null || in_array($hit['card']->id, $active[$deck->id], true) => 'active',
+                default => 'paused',
+            };
+        }
+
         return [
-            'hits' => array_slice($hits, 0, $limit),
+            'hits' => $hits,
             'more' => count($groups) > $limit || $cards->count() === self::SCAN,
         ];
     }

@@ -8,6 +8,8 @@
   @param \App\Models\DeckRun|null $run  the selected run; null = not started yet
   @param string $standardKey  key of the viewer's standard plan
   @param list<\App\Enums\StudyPlan> $presets
+  @param list<string>|null $activeIds  active cards when only part is learned (issue #10)
+  @param \Illuminate\Support\Collection $cards  all cards of the deck
   @param array $boxes  from LearningOverviewService::boxes
 --}}
 @php($n = $boxes['box_count'])
@@ -30,6 +32,14 @@
     </div>
   @else
     <p class="text-sm text-muted">Lernplan: <span class="font-medium text-content">{{ $run?->label() ?? $standardLabel }}</span></p>
+  @endif
+
+  @if ($activeIds !== null)
+    {{-- Learning only part of the deck (issue #10). --}}
+    <p class="text-sm text-muted">
+      Du lernst <span class="font-medium text-content">{{ count($activeIds) }} von {{ $cards->count() }}</span> Karten ·
+      <a href="/decks/{{ $deck->id }}/selection" class="text-brand hover:underline">Auswahl ändern</a>
+    </p>
   @endif
 
   <nav class="segmented" aria-label="Richtung">
