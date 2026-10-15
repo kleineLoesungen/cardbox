@@ -150,14 +150,17 @@
       Übersetzung und kannst sie anhören. <strong>Folgen und diese Karte
       lernen</strong> folgt dem Stapel, aus dem sie stammt, und schaltet erst
       einmal nur diese Karte frei. Brauchst du eine eigene Fassung, geht auch
-      <strong>Als Kopie in eigenen Stapel</strong>.
+      <strong>Als Kopie in eigenen Stapel</strong>. Steht das Wort in deinem
+      eigenen Stapel, kannst du die Karte mit <strong>Bearbeiten</strong>
+      gleich dort ändern oder löschen – steht es in mehreren, wählst du einen
+      Stapel oder alle.
     </p>
   </section>
 
   <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Fehler gefunden?</h2>
     <p class="text-muted">
-      Tippe in einem geteilten Stapel auf die Karte und dann auf
+      Tippe in einem geteilten Stapel oder im Wörterbuch auf die Karte und dann auf
       <strong>Fehler melden</strong>. Schreib, wie es richtig wäre. Die Person,
       der der Stapel gehört, sieht deinen Vorschlag und kann die Karte für
       alle ändern. Ob sie ihn übernommen hat, siehst du an der Karte.

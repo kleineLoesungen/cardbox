@@ -11,9 +11,9 @@ use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /**
- * "Wörterbuch": look words up in every visible card, read them aloud and
- * take one into an own deck. All rules are in DictionaryService and
- * CardService::adopt.
+ * "Wörterbuch": look words up in every visible card, read them aloud,
+ * take one into an own deck, and edit or delete own cards. All rules are in
+ * DictionaryService and CardService.
  */
 class DictionaryController extends Controller
 {
@@ -67,5 +67,35 @@ class DictionaryController extends Controller
         $copy = $this->cards->adopt($request->user(), is_string($deck) ? $deck : '', $card);
 
         return response()->view('partials.dictionary-adopted', ['deck' => $copy->deck]);
+    }
+
+    /**
+     * htmx: the sheet "Karte bearbeiten" (issue #12). With several cards in
+     * the hit it first offers a choice; ?selected= is a card id or "all".
+     */
+    public function edit(Request $request, string $card): View
+    {
+        $selected = $request->query('selected');
+
+        return view('partials.dictionary-edit', [
+            'group' => $this->dictionary->group($request->user(), $card),
+            'selected' => is_string($selected) ? $selected : null,
+        ]);
+    }
+
+    /** htmx: saves own cards; the sheet closes and the results reload. */
+    public function update(Request $request): Response
+    {
+        $cards = $this->cards->updateManyOwned($request->user(), $request->input('cards'), $request->input('base'), $request->only('front', 'back', 'hint'));
+
+        return $this->dictionaryChanged($cards->count(), 'gespeichert');
+    }
+
+    /** htmx: deletes own cards; the sheet closes and the results reload. */
+    public function destroy(Request $request): Response
+    {
+        $cards = $this->cards->deleteManyOwned($request->user(), $request->input('cards'));
+
+        return $this->dictionaryChanged($cards->count(), 'gelöscht');
     }
 }

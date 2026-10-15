@@ -58,6 +58,7 @@ class UserController extends Controller
         return view('admin.user', [
             'edited' => $user,
             'deckSummary' => $decks->ownerSummary($user),
+            'decks' => $decks->listForAdmin($user),
             // Steuert nur, welche Bedienelemente die Seite sperrt. Die eigentliche
             // Absicherung liegt im UserService, nicht in dieser Anzeige.
             'isSelf' => $user->is(request()->user()),
@@ -116,6 +117,23 @@ class UserController extends Controller
         Log::info('Benutzer gelöscht', ['by' => $request->user()->id, 'user_id' => $user->id]);
 
         return redirect('/admin/users')->with('toast', ['kind' => 'success', 'message' => 'Konto gelöscht.']);
+    }
+
+    /** Hands decks of this account to another one (issue #12). */
+    public function transferDecks(Request $request, User $user, DeckService $decks): RedirectResponse
+    {
+        ['to' => $to, 'decks' => $moved] = $decks->transfer($user, $request->input('decks'), $request->input('to_username'));
+
+        foreach ($moved as $deck) {
+            Log::info('Stapel übertragen', ['by' => $request->user()->id, 'deck_id' => $deck->id, 'from' => $user->id, 'to' => $to->id]);
+        }
+
+        $count = $moved->count();
+
+        return redirect("/admin/users/{$user->id}")->with('toast', [
+            'kind' => 'success',
+            'message' => ($count === 1 ? '1 Stapel' : "{$count} Stapel")." an {$to->username} übertragen.",
+        ]);
     }
 
     public function approve(Request $request, User $user): RedirectResponse

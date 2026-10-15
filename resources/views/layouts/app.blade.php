@@ -230,6 +230,12 @@
     const source = e.detail.elt.closest("[data-confirm-action]");
     askConfirm(e.detail.question, source?.dataset.confirmAction, () => e.detail.issueRequest(true));
   });
+  // "Alle auswählen": a checkbox data-check-all="decks[]" ticks all boxes of that name in its form.
+  document.addEventListener("change", (e) => {
+    const all = e.target.closest("[data-check-all]");
+    if (!all?.form) return;
+    all.form.querySelectorAll(`input[type=checkbox][name="${CSS.escape(all.dataset.checkAll)}"]`).forEach((box) => { box.checked = all.checked; });
+  });
   // A sheet can ask to be open right away (e.g. "add card" after creating a deck).
   document.querySelectorAll("dialog.dialog-sheet[data-open-on-load]").forEach((d) => d.showModal());
   // Enter in the front field jumps to the back field instead of submitting.

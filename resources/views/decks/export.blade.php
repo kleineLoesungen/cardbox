@@ -28,7 +28,7 @@
     <form method="post" action="/decks/export" class="stack" data-export-form>
       @csrf
       <label class="flex items-center gap-3 px-1 text-sm font-medium">
-        <input type="checkbox" class="checkbox" data-select-all> Alle auswählen
+        <input type="checkbox" class="checkbox" data-check-all="decks[]"> Alle auswählen
       </label>
       <ul class="list">
         @foreach ($decks as $deck)
@@ -48,11 +48,6 @@
       </ul>
       <button type="submit" class="btn btn-primary btn-lg btn-block">Als ZIP herunterladen</button>
     </form>
-    <script>
-      document.querySelector("[data-select-all]")?.addEventListener("change", (e) => {
-        document.querySelectorAll("[data-export-form] input[name='decks[]']").forEach((box) => { box.checked = e.target.checked; });
-      });
-    </script>
   @endif
 </div>
 @endsection

@@ -6,14 +6,20 @@
   @param \App\Models\Deck $deck
   @param \App\Models\Card $card
   @param \App\Models\CardSuggestion|null $open  the viewer's open suggestion, if any
+  @param bool $fromDictionary  opened in the dictionary (issue #12): no card
+                               row to replace, the answer is only a toast
 --}}
+@php($fromDictionary ??= false)
 @php($frontTag = \App\Enums\Language::tryFrom($deck->front_language)?->tag())
 @php($backTag = \App\Enums\Language::tryFrom($deck->back_language)?->tag())
 @if ($open)
   <p class="text-sm">Du hast schon einen Vorschlag zu „{{ $card->frontText() }}“ geschickt. {{ $deck->user->name }} hat noch nicht entschieden.</p>
 @else
   <form class="stack" hx-post="/decks/{{ $deck->id }}/cards/{{ $card->id }}/suggest"
-        hx-target="#card-{{ $card->id }}" hx-swap="outerHTML">
+        @if ($fromDictionary) hx-swap="none" @else hx-target="#card-{{ $card->id }}" hx-swap="outerHTML" @endif>
+    @if ($fromDictionary)
+      <input type="hidden" name="context" value="dictionary">
+    @endif
     <p class="text-sm text-muted">
       Dein Vorschlag geht an {{ $deck->user->name }}. Nur {{ $deck->user->name }} kann die Karte ändern.
     </p>

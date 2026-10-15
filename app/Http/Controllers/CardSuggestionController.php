@@ -26,16 +26,23 @@ class CardSuggestionController extends Controller
             'deck' => $model->deck,
             'card' => $model,
             'open' => $this->suggestions->openFor($request->user(), $model),
+            'fromDictionary' => $request->query('context') === 'dictionary',
         ]);
     }
 
-    /** htmx: the card row replaces itself with the new status; the sheet closes. */
+    /** htmx: the card row replaces itself with the new status (in the dictionary only a toast); the sheet closes. */
     public function store(Request $request, string $deck, string $card): Response
     {
         $suggestion = $this->suggestions->createFor(
             $request->user(), $deck, $card, $request->only('type', 'front', 'back', 'comment'),
         );
         $model = $this->suggestions->getSuggestable($request->user(), $deck, $card);
+        $toast = ['kind' => 'success', 'message' => 'Danke! Dein Vorschlag ist bei '.$model->deck->user->name.'.'];
+
+        // From the dictionary there is no card row to replace (issue #12).
+        if ($request->input('context') === 'dictionary') {
+            return response()->view('partials.toast-oob', ['toast' => $toast])->header('HX-Trigger', 'sheet-close');
+        }
 
         return response()
             ->view('partials.suggestion-sent', ['deck' => $model->deck, 'card' => $model, 'suggestion' => $suggestion])

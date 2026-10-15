@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.15
+- Wörterbuch: Eigene Karten lassen sich direkt dort bearbeiten und löschen. Steht ein Wort in mehreren Stapeln, wählt man einen Stapel oder alle auf einmal. Bei fremden Karten gibt es „Fehler melden“
+- Moderation und Verwaltung können im Wörterbuch auch Karten in geteilten Stapeln anderer bearbeiten und löschen; jede solche Änderung wird protokolliert
+- Verwaltung: Auf der Seite eines Kontos lassen sich dessen Stapel – auch private – an ein anderes Konto übertragen, z. B. bevor man das Konto löscht. Bei geteilten Stapeln folgt die bisherige Besitzerin danach und lernt weiter
+
 ## 2026.10.14.2
 - Nur einen Teil eines Stapels lernen: Unter ⋯ → „Karten auswählen“ Karten anhaken (mit „bis hier“ für ganze Kapitel). Die anderen sind pausiert – sie kommen nicht dran, ihr Lernstand bleibt. Neue Karten der Besitzerin bleiben pausiert, bis man sie anhakt. Für eigene und gefolgte Stapel
 - Wörterbuch: Die erste Aktion ist jetzt „Folgen und diese Karte lernen“ – man folgt dem Stapel und lernt erst einmal nur diese Karte. Die Kopie in einen eigenen Stapel gibt es weiter als zweite Möglichkeit

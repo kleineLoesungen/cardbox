@@ -19,6 +19,7 @@ use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
 use App\Http\Controllers\Moderation\CardController as ModerationCardController;
 use App\Http\Controllers\Moderation\DeckController as ModerationDeckController;
+use App\Http\Controllers\Moderation\DictionaryCardController as ModerationDictionaryCardController;
 use App\Http\Controllers\Moderation\DuplicateController as ModerationDuplicateController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
@@ -85,6 +86,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/dictionary/search', [DictionaryController::class, 'search']);
     Route::post('/dictionary/adopt/{card}', [DictionaryController::class, 'adopt'])->whereUuid('card');
     Route::post('/dictionary/learn/{card}', [DictionaryController::class, 'learn'])->whereUuid('card');
+    // Editing and deleting from the dictionary (issue #12): own cards only;
+    // moderation uses the /moderation/dictionary routes below.
+    Route::get('/dictionary/cards/{card}/edit', [DictionaryController::class, 'edit'])->whereUuid('card');
+    Route::post('/dictionary/cards', [DictionaryController::class, 'update']);
+    Route::post('/dictionary/cards/delete', [DictionaryController::class, 'destroy']);
 
     // Learning round (state in the session, see StudyRoundController).
     Route::post('/learn/round', [StudyRoundController::class, 'start']);
@@ -166,9 +172,12 @@ Route::middleware(['auth', 'role:moderator'])->group(function () {
     Route::get('/moderation', [ModerationDeckController::class, 'index']);
     Route::post('/moderation/decks/{deck}/unshare', [ModerationDeckController::class, 'unshare'])->whereUuid('deck');
     Route::post('/moderation/decks/{deck}/delete', [ModerationDeckController::class, 'destroy'])->whereUuid('deck');
-    // Correcting cards in shared decks of other people (issue #6); never deleting them.
+    // Correcting cards in shared decks of other people (issue #6); deleting goes through the dictionary.
     Route::get('/moderation/decks/{deck}/cards/{card}/edit', [ModerationCardController::class, 'edit'])->whereUuid(['deck', 'card']);
     Route::post('/moderation/decks/{deck}/cards/{card}', [ModerationCardController::class, 'update'])->whereUuid(['deck', 'card']);
+    // Editing and deleting from the dictionary: own cards and shared decks of others (issue #12).
+    Route::post('/moderation/dictionary/cards', [ModerationDictionaryCardController::class, 'update']);
+    Route::post('/moderation/dictionary/cards/delete', [ModerationDictionaryCardController::class, 'destroy']);
     // Duplicate cards in shared decks; a group is addressed by any of its cards.
     Route::get('/moderation/duplicates', [ModerationDuplicateController::class, 'index']);
     Route::get('/moderation/duplicates/{card}', [ModerationDuplicateController::class, 'show'])->whereUuid('card');
@@ -195,6 +204,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/users/{user}', [UserController::class, 'update'])->whereUuid('user');
     Route::post('/users/{user}/password', [UserController::class, 'updatePassword'])->whereUuid('user');
     Route::post('/users/{user}/delete', [UserController::class, 'destroy'])->whereUuid('user');
+    // Hand decks to another account, private ones included (issue #12).
+    Route::post('/users/{user}/decks/transfer', [UserController::class, 'transferDecks'])->whereUuid('user');
 
     Route::get('/tokens', [TokenController::class, 'index']);
     Route::post('/tokens', [TokenController::class, 'store']);

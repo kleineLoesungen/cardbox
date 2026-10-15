@@ -399,6 +399,71 @@ class DeckService
     }
 
     // -------------------------------------------------------------------------
+    // Administration — any deck of any account, private ones included.
+    // Used only behind the role:admin routes (issue #12).
+    // -------------------------------------------------------------------------
+
+    /**
+     * All decks of an account for the admin's list: names and numbers only,
+     * never the cards.
+     *
+     * @return Collection<int, Deck>
+     */
+    public function listForAdmin(User $owner): Collection
+    {
+        return $owner->decks()->withCount(['cards', 'followers'])->orderBy('name')->get();
+    }
+
+    /**
+     * Hands decks of `$from` to the account with the given username. The new
+     * owner stops following them (owners learn their decks anyway); the old
+     * owner follows the shared ones and keeps learning with their progress.
+     * Progress, selections and runs belong to people, not to the owner, so
+     * they stay as they are.
+     *
+     * @return array{to: User, decks: Collection<int, Deck>}
+     *
+     * @throws ValidationException
+     */
+    public function transfer(User $from, mixed $deckIds, mixed $username): array
+    {
+        Validator::make(['decks' => $deckIds, 'to_username' => $username], [
+            'decks' => ['required', 'array'],
+            'decks.*' => ['uuid'],
+            'to_username' => ['required', 'string'],
+        ], [
+            'decks.required' => 'Wähle mindestens einen Stapel.',
+            'decks.*.uuid' => 'Die Liste hat sich geändert. Bitte neu laden.',
+        ])->validate();
+
+        /** @var list<string> $deckIds */
+        $deckIds = array_values(array_unique($deckIds));
+        $to = User::where('username', UserService::normalizeUsername($username))->first();
+        if ($to === null || ! $to->isApproved() || ! $to->is_active) {
+            throw ValidationException::withMessages(['to_username' => 'Kein freigegebenes, aktives Konto mit diesem Benutzernamen.']);
+        }
+        if ($to->is($from)) {
+            throw ValidationException::withMessages(['to_username' => "Die Stapel gehören schon {$to->username}."]);
+        }
+
+        return DB::transaction(function () use ($from, $to, $deckIds) {
+            $decks = $from->decks()->whereKey($deckIds)->orderBy('id')->lockForUpdate()->get();
+            if ($decks->count() !== count($deckIds)) {
+                throw ValidationException::withMessages(['decks' => 'Die Liste hat sich geändert. Bitte neu laden.']);
+            }
+
+            foreach ($decks as $deck) {
+                // Not fillable: nobody hands over a deck through a form field.
+                $deck->forceFill(['user_id' => $to->id])->save();
+            }
+            $to->followedDecks()->detach($deckIds);
+            $from->followedDecks()->syncWithoutDetaching($decks->where('is_shared', true)->modelKeys());
+
+            return ['to' => $to, 'decks' => $decks];
+        });
+    }
+
+    // -------------------------------------------------------------------------
 
     /**
      * @param  array<string, mixed>  $input

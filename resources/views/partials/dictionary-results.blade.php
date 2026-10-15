@@ -2,7 +2,8 @@
   Hits of the dictionary search. One hit per word pair: main meanings,
   further ones as "auch: …", hint, read aloud, where it comes from. First
   offer: learn the card in its deck (follow it, or switch it on); second:
-  a copy into an own deck with the same languages.
+  a copy into an own deck with the same languages; then editing or
+  reporting it (issue #12, partials/dictionary-edit).
 
   @param string $term
   @param array{hits: list<array{card: \App\Models\Card, decks: list<\App\Models\Deck>, targets: list<\App\Models\Deck>}>, more: bool} $result
@@ -83,6 +84,13 @@
                 </div>
               </details>
             @endif
+
+            {{-- Issue #12: edit own cards (moderation: also shared ones of others), otherwise report. --}}
+            @php($canEdit = auth()->user()->hasRole(\App\Enums\Role::Moderator) || collect($hit['decks'])->contains(fn ($d) => $d->user_id === auth()->id()))
+            <button type="button" class="btn btn-ghost btn-sm self-start" hx-target="#dictionary-sheet-body"
+                    hx-get="{{ ! $canEdit && count($hit['decks']) === 1 ? "/decks/{$deck->id}/cards/{$card->id}/suggest?context=dictionary" : "/dictionary/cards/{$card->id}/edit" }}">
+              {{ $canEdit ? 'Bearbeiten' : 'Fehler melden' }}
+            </button>
           </div>
         </li>
       @endforeach

@@ -11,7 +11,8 @@
   <h1 class="text-2xl font-semibold tracking-tight">Moderation</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Alle geteilten Stapel. Unpassende Inhalte kannst du im Stapel über „⋯“
-    nicht mehr teilen oder löschen, einzelne Karten dort korrigieren.
+    nicht mehr teilen oder löschen, einzelne Karten dort korrigieren. Im
+    Wörterbuch kannst du Karten auch bearbeiten oder löschen.
   </p>
 
   <a href="/moderation/duplicates" class="list-row mb-4 rounded-ui border border-border bg-surface-raised">

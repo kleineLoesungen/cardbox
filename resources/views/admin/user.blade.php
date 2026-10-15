@@ -99,6 +99,48 @@
       </form>
     </div>
 
+    {{-- --- Hand decks to another account (issue #12) ----------------------- --}}
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Stapel ({{ $decks->count() }})</h2></div>
+      @if ($decks->isEmpty())
+        <div class="card-body"><p class="text-sm text-muted">Dieses Konto hat keine Stapel.</p></div>
+      @else
+        <form class="card-body stack" method="post" action="/admin/users/{{ $edited->id }}/decks/transfer"
+              data-confirm-action="Übertragen" data-confirm="Die gewählten Stapel an das angegebene Konto übertragen?">
+          @csrf
+          <label class="row gap-2 text-sm font-medium">
+            <input type="checkbox" class="checkbox" data-check-all="decks[]">
+            Alle auswählen
+          </label>
+          <ul class="stack gap-2">
+            @foreach ($decks as $deck)
+              <li>
+                <label class="row min-w-0 items-start gap-2 text-sm">
+                  <input type="checkbox" class="checkbox mt-0.5" name="decks[]" value="{{ $deck->id }}"
+                         @checked(in_array($deck->id, (array) old('decks', []), true))>
+                  <span class="min-w-0">
+                    <span class="block break-words font-medium">{{ $deck->name }}</span>
+                    <span class="block text-muted">
+                      {{ $deck->frontLabel() }} → {{ $deck->backLabel() }} ·
+                      {{ $deck->is_shared ? 'geteilt' : 'privat' }} ·
+                      {{ $deck->cards_count }} {{ $deck->cards_count === 1 ? 'Karte' : 'Karten' }}@if ($deck->is_shared) · {{ $deck->followers_count }} folgen @endif
+                    </span>
+                  </span>
+                </label>
+              </li>
+            @endforeach
+          </ul>
+          <div class="field">
+            <label class="label" for="to_username">An Konto (Benutzername)</label>
+            <input class="input" type="text" id="to_username" name="to_username" value="{{ old('to_username') }}" required
+                   autocapitalize="none" autocorrect="off" spellcheck="false">
+            <p class="hint">Die neue Besitzerin kann die Stapel danach bearbeiten, teilen und löschen. Geteilten Stapeln folgt {{ $edited->name }} danach und lernt weiter; private sieht {{ $edited->name }} nicht mehr.</p>
+          </div>
+          <button type="submit" class="btn btn-secondary">Übertragen</button>
+        </form>
+      @endif
+    </div>
+
     {{-- --- Loeschen -------------------------------------------------------- --}}
     <div class="card">
       <div class="card-header"><h2 class="card-title">Konto löschen</h2></div>
@@ -113,7 +155,7 @@
         @else
           <form method="post" action="/admin/users/{{ $edited->id }}/delete"
                 data-confirm-action="Konto löschen"
-                data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?{{ $deckSummary['decks'] > 0 ? ' Dabei werden '.$deckSummary['decks'].' Stapel gelöscht' : '' }}{{ $deckSummary['followers'] > 0 ? ', denen insgesamt '.$deckSummary['followers'].' Personen folgen' : '' }}{{ $deckSummary['decks'] > 0 ? '.' : '' }}">
+                data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?{{ $deckSummary['decks'] > 0 ? ' Dabei werden '.$deckSummary['decks'].' Stapel gelöscht' : '' }}{{ $deckSummary['followers'] > 0 ? ', denen insgesamt '.$deckSummary['followers'].' Personen folgen' : '' }}{{ $deckSummary['decks'] > 0 ? '. Stapel lassen sich vorher übertragen.' : '' }}">
             @csrf
             <button type="submit" class="btn btn-danger">Konto löschen</button>
           </form>

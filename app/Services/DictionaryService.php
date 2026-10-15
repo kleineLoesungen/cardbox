@@ -8,6 +8,8 @@ use App\Models\Deck;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 
 /**
  * "Wörterbuch": looking words up in every card the person may see — own
@@ -100,6 +102,57 @@ class DictionaryService
             'hits' => $hits,
             'more' => count($groups) > $limit || $cards->count() === self::SCAN,
         ];
+    }
+
+    /**
+     * All visible cards of the hit the given card stands for (issue #12):
+     * same word pair as in search(). The given card comes first, then cards
+     * in own decks, then the oldest. Decks come with owner and follower count.
+     *
+     * @return Collection<int, Card>
+     *
+     * @throws ModelNotFoundException<Card>
+     */
+    public function group(User $user, string $cardId): Collection
+    {
+        if (! Str::isUuid($cardId)) {
+            throw (new ModelNotFoundException)->setModel(Card::class, [$cardId]);
+        }
+
+        $visible = $this->decks->visibleTo($user);
+        $withDeck = ['deck' => fn ($q) => $q->with('user')->withCount('followers')];
+        $base = Card::with($withDeck)->whereIn('deck_id', $visible->select('id'))->findOrFail($cardId);
+        $deck = $base->deck;
+
+        // Same normalisation as pairKey() in SQL: the main meaning of the
+        // front equals one of the base card's main meanings (reversed decks
+        // have them the other way round); pairKey() then decides exactly.
+        $main = "lower(regexp_replace(btrim(front->>0), '\\s+', ' ', 'g'))";
+        $key = self::pairKey($base);
+
+        $cards = Card::with($withDeck)
+            ->whereIn('deck_id', $this->decks->visibleTo($user)
+                ->where(fn (Builder $q) => $q
+                    ->where(fn (Builder $q) => $q
+                        ->where('front_language', $deck->front_language)
+                        ->where('back_language', $deck->back_language))
+                    ->orWhere(fn (Builder $q) => $q
+                        ->where('front_language', $deck->back_language)
+                        ->where('back_language', $deck->front_language)))
+                ->select('id'))
+            ->whereRaw("{$main} in (?, ?)", [self::normalize($base->frontText()), self::normalize($base->backText())])
+            ->whereKeyNot($base->id)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit(self::SCAN)
+            ->get()
+            ->filter(fn (Card $card) => self::pairKey($card) === $key);
+
+        // The shown card always comes first, then own decks.
+        return $cards
+            ->sortBy(fn (Card $card) => $card->deck->user_id === $user->id ? 0 : 1)
+            ->prepend($base)
+            ->values();
     }
 
     /**

@@ -22,6 +22,9 @@ use Illuminate\Validation\ValidationException;
  */
 class CardService
 {
+    /** Most cards changed in one go from the dictionary; a hit has far fewer. */
+    private const MANY_LIMIT = 50;
+
     public function __construct(private DeckService $decks) {}
 
     /**
@@ -108,6 +111,165 @@ class CardService
         $card->update($this->validate($input));
 
         return $card;
+    }
+
+    // -------------------------------------------------------------------------
+    // Several cards at once, from the dictionary (issue #12). The `…Owned`
+    // flavour only reaches own decks; `…Moderated` also shared decks of
+    // others and is used only behind the role:moderator routes. Private
+    // decks of others stay out of reach for both.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Gives all named cards the same content. `$baseId` names the card
+     * whose orientation the input has; cards in decks with the languages the
+     * other way round get the sides swapped.
+     *
+     * @param  array<string, mixed>  $input  front[], back[], hint
+     * @return Collection<int, Card> the changed cards, with deck and owner
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Card>
+     */
+    public function updateManyOwned(User $user, mixed $ids, mixed $baseId, array $input): Collection
+    {
+        return $this->updateMany($user->decks()->getQuery(), $ids, $baseId, $input);
+    }
+
+    /**
+     * @param  array<string, mixed>  $input  front[], back[], hint
+     * @return Collection<int, Card>
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Card>
+     */
+    public function updateManyModerated(User $user, mixed $ids, mixed $baseId, array $input): Collection
+    {
+        return $this->updateMany($this->decks->visibleTo($user), $ids, $baseId, $input);
+    }
+
+    /**
+     * Deletes the named cards with everybody's progress on them.
+     *
+     * @return Collection<int, Card> the deleted cards, with deck and owner
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Card>
+     */
+    public function deleteManyOwned(User $user, mixed $ids): Collection
+    {
+        return $this->deleteMany($user->decks()->getQuery(), $ids);
+    }
+
+    /**
+     * @return Collection<int, Card>
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Card>
+     */
+    public function deleteManyModerated(User $user, mixed $ids): Collection
+    {
+        return $this->deleteMany($this->decks->visibleTo($user), $ids);
+    }
+
+    /**
+     * @param  Builder<Deck>  $decks
+     * @param  array<string, mixed>  $input
+     * @return Collection<int, Card>
+     */
+    private function updateMany(Builder $decks, mixed $ids, mixed $baseId, array $input): Collection
+    {
+        $data = $this->validate($input);
+        $ids = $this->cardIds($ids);
+        if (! is_string($baseId) || ! in_array($baseId, $ids, true)) {
+            throw (new ModelNotFoundException)->setModel(Card::class);
+        }
+
+        return DB::transaction(function () use ($decks, $ids, $baseId, $data) {
+            $cards = $this->lockCards($decks, $ids);
+            $baseLanguage = $cards->firstWhere('id', $baseId)?->deck->front_language;
+
+            foreach ($cards as $card) {
+                $swap = $card->deck->front_language !== $baseLanguage;
+                $card->update([
+                    'front' => $swap ? $data['back'] : $data['front'],
+                    'back' => $swap ? $data['front'] : $data['back'],
+                    'hint' => $data['hint'],
+                ]);
+            }
+
+            return $cards;
+        });
+    }
+
+    /**
+     * @param  Builder<Deck>  $decks
+     * @return Collection<int, Card>
+     */
+    private function deleteMany(Builder $decks, mixed $ids): Collection
+    {
+        $ids = $this->cardIds($ids);
+
+        return DB::transaction(function () use ($decks, $ids) {
+            $cards = $this->lockCards($decks, $ids);
+            Card::whereKey($cards->modelKeys())->delete();
+
+            return $cards;
+        });
+    }
+
+    /**
+     * Checked list of card ids: UUIDs only, at least one, no duplicates.
+     *
+     * @return list<string>
+     *
+     * @throws ModelNotFoundException<Card>
+     */
+    private function cardIds(mixed $ids): array
+    {
+        $ids = is_array($ids) ? array_values(array_unique($ids, SORT_REGULAR)) : [];
+        if ($ids === [] || count($ids) > self::MANY_LIMIT) {
+            throw (new ModelNotFoundException)->setModel(Card::class);
+        }
+        foreach ($ids as $id) {
+            if (! is_string($id)) {
+                throw (new ModelNotFoundException)->setModel(Card::class);
+            }
+            $this->ensureUuid($id);
+        }
+
+        /** @var list<string> $ids */
+        return $ids;
+    }
+
+    /**
+     * All named cards, locked, or nothing: one card that is gone or outside
+     * the allowed decks makes the whole request a 404, so nothing is changed
+     * halfway. Gone and forbidden look the same, so ids reveal nothing.
+     *
+     * @param  Builder<Deck>  $decks
+     * @param  list<string>  $ids
+     * @return Collection<int, Card>
+     */
+    private function lockCards(Builder $decks, array $ids): Collection
+    {
+        // Lock the decks first: sharing cannot end between check and write.
+        $deckIds = $decks->whereIn('id', Card::whereKey($ids)->select('deck_id'))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('id');
+        $cards = Card::with('deck.user')
+            ->whereKey($ids)
+            ->whereIn('deck_id', $deckIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        if ($cards->count() !== count($ids)) {
+            throw (new ModelNotFoundException)->setModel(Card::class, $ids);
+        }
+
+        return $cards;
     }
 
     /**

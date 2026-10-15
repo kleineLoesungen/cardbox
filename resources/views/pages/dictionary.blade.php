@@ -20,7 +20,7 @@
     <input class="input input-lg" type="search" name="q" value="{{ $term }}" placeholder="Wort suchen …"
            aria-label="Wort suchen" autocomplete="off" autocapitalize="off" enterkeyhint="search"
            @if ($term === '') autofocus @endif
-           hx-get="/dictionary/search" hx-trigger="input changed delay:350ms, search"
+           hx-get="/dictionary/search" hx-trigger="input changed delay:350ms, search, dictionary-refresh from:body"
            hx-target="#dictionary-results" hx-swap="outerHTML" hx-include="[name=lang]">
     @if (count($languages) > 1)
       <select class="select" name="lang" aria-label="Sprache"
@@ -39,6 +39,9 @@
     @include('partials.dictionary-results', ['term' => $term, 'result' => $result])
   </div>
 </div>
+
+{{-- Editing, deleting and "Fehler melden" (issue #12); filled via htmx. --}}
+<x-sheet id="dictionary-sheet" title="Karte"></x-sheet>
 
 @push('scripts')
   @include('partials.speak-script')

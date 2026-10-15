@@ -29,7 +29,8 @@ Karten aufräumen, ohne dass jemand Lernstand verliert.
   (Wiktionary, DeepL o. Ä.).
 - Lernen aus dem Wörterbuch heraus; dafür gibt es Stapel.
 - Ganze Stapel zusammenführen (3a) und Stapel einer anderen Besitzerin
-  übertragen.
+  übertragen. (Übertragen durch Administratoren kam mit Issue #12 dazu,
+  siehe [woerterbuch-bearbeiten-und-uebertragen.md](woerterbuch-bearbeiten-und-uebertragen.md).)
 - Zusammenführen in privaten Stapeln – auch nicht für Moderation oder
   Verwaltung, private Stapel anderer bleiben für alle unsichtbar.
 - Karten als **Verweise** in mehreren Stapeln (bewusst ausgeschlossen in
@@ -75,8 +76,10 @@ Karten aufräumen, ohne dass jemand Lernstand verliert.
   Hinweis) mit dem Zusatz „Du änderst eine Karte von *Anna*.“
 - Speichern ändert die Karte für alle. Lernende sehen „geändert“, Kopien
   „Original geändert“ – wie bei jeder Änderung durch die Besitzerin.
-- **Löschen** einzelner Karten darf die Moderation nicht (nur ganze Stapel,
-  wie bisher). Doppelte Karten verschwinden über Stufe 3.
+- **Löschen** einzelner Karten darf die Moderation hier nicht (nur ganze Stapel,
+  wie bisher). Doppelte Karten verschwinden über Stufe 3. Seit Issue #12
+  löscht die Moderation einzelne Karten über das Wörterbuch, siehe
+  [woerterbuch-bearbeiten-und-uebertragen.md](woerterbuch-bearbeiten-und-uebertragen.md).
 - Offene Vorschläge zu der Karte bleiben offen; die Besitzerin entscheidet
   weiter über sie.
 - Jede Korrektur wird geloggt (`Log::info`, wer, welche Karte), wie die
