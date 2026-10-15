@@ -31,12 +31,16 @@ class LearningOverviewService
         private LeitnerService $leitner,
         private DeckRunService $runs,
         private CardSelectionService $selection,
+        private DeckPreferenceService $preferences,
+        private StudyRoundService $rounds,
     ) {}
 
     /**
-     * Due today and tomorrow across "Meine Stapel", plus the streak.
+     * Due today and tomorrow across "Meine Stapel", plus the streak. `new`:
+     * new cards "Los geht's" adds today by itself; `more_new`: further new
+     * cards for "Noch 20 neue Karten".
      *
-     * @return array{due: int, tomorrow: int, streak: int}
+     * @return array{due: int, tomorrow: int, streak: int, new: int, more_new: int}
      */
     public function today(User $user): array
     {
@@ -48,10 +52,17 @@ class LearningOverviewService
             ->selectRaw('count(distinct '.self::PAIR.') filter (where card_progress.due_on = ?) as tomorrow', [$today->addDay()->toDateString()])
             ->first();
 
+        // Enough to show today's share and "Noch 20 neue Karten" — never more.
+        $available = $this->rounds->newCardCount($user, $this->decks->mineQuery($user)->pluck('id')->all(),
+            (int) config('learning.new_per_day') + (int) config('learning.round_size'));
+        $new = min($available, $this->rounds->newAllowedToday($user));
+
         return [
             'due' => (int) ($row->due ?? 0),
             'tomorrow' => (int) ($row->tomorrow ?? 0),
             'streak' => $this->leitner->streak($user),
+            'new' => $new,
+            'more_new' => $available - $new,
         ];
     }
 
@@ -241,6 +252,7 @@ class LearningOverviewService
     private function learningRows(User $user): Builder
     {
         [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
 
         return DB::table('card_progress')
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
@@ -248,6 +260,7 @@ class LearningOverviewService
             ->where('card_progress.user_id', $user->id)
             ->where('card_progress.box', '>=', 1)
             ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
-            ->whereRaw($active, $bindings);
+            ->whereRaw($active, $bindings)
+            ->whereRaw($learned, $learnedBindings);
     }
 }

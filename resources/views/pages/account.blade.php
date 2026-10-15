@@ -11,6 +11,23 @@
 
 <div class="grid gap-6 lg:grid-cols-2">
 
+  {{-- --- Learning plan (moved here from the menu) -------------------------- --}}
+  <a href="/learn/settings" class="card h-fit block hover:border-border-strong">
+    <div class="card-body flex items-center justify-between gap-3">
+      <span class="min-w-0">
+        <span class="block font-semibold">Lernplan</span>
+        <span class="block text-sm text-muted">
+          @if ($plan['preset'])
+            {{ $plan['preset']->label() }} – {{ $plan['preset']->description() }}
+          @else
+            Eigener Plan mit {{ $plan['box_count'] }} Fächern
+          @endif
+        </span>
+      </span>
+      <span class="shrink-0 font-medium text-brand">Ändern ›</span>
+    </div>
+  </a>
+
   {{-- --- Profil ----------------------------------------------------------- --}}
   <div class="card h-fit">
     <div class="card-header"><h2 class="card-title">Profil</h2></div>

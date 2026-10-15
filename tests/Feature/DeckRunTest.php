@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Direction;
+use App\Enums\StudyPlan;
 use App\Models\Card;
 use App\Models\CardProgress;
 use App\Models\Deck;
@@ -17,12 +18,20 @@ use Illuminate\Support\Str;
  * docs/specs/lernplaene-und-karten.md, A1–A7.
  */
 
-/** A run of the person on the deck, as the start sheet would create it. */
+/**
+ * A run of the person on the deck with a preset. Starting another plan on
+ * the deck page is gone (docs/specs/einfacher-lernen.md); runs started
+ * before still exist and keep working, so the tests create them directly.
+ */
 function run(User $user, Deck $deck, string $plan): DeckRun
 {
-    test()->actingAs($user)->post("/decks/{$deck->id}/runs", ['plan' => $plan])->assertRedirect();
+    $preset = StudyPlan::from($plan);
+    if (! $deck->isOwnedBy($user)) {
+        $user->followedDecks()->syncWithoutDetaching([$deck->id]);
+    }
 
-    return DeckRun::where('user_id', $user->id)->where('deck_id', $deck->id)->latest('created_at')->latest('id')->firstOrFail();
+    return DeckRun::create(['user_id' => $user->id, 'deck_id' => $deck->id, 'plan' => $preset->value,
+        'box_count' => $preset->boxCount(), 'day_gaps' => $preset->dayGaps()]);
 }
 
 /** A progress row in a given run: box and days until due. */
@@ -79,52 +88,17 @@ describe('Starten', function () {
             ->label()->toBe('Mein Plan');
     });
 
-    it('startet mit einer Vorgabe und zeigt den neuen Durchgang', function () {
+    it('bietet keinen Start mit anderem Lernplan mehr an', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();
         Card::factory()->for($deck)->create();
 
-        $response = $this->post("/decks/{$deck->id}/runs", ['plan' => 'quick']);
+        $this->get("/decks/{$deck->id}")->assertOk()
+            ->assertDontSee('Mit anderem Lernplan starten')
+            ->assertDontSee('Lernplan:');
+        $this->post("/decks/{$deck->id}/runs", ['plan' => 'quick'])->assertNotFound();
 
-        $run = DeckRun::where('user_id', $ich->id)->sole();
-        $response->assertRedirect("/decks/{$deck->id}?run={$run->id}")
-            ->assertSessionHas('toast.message', 'Gestartet mit Lernplan Schnell.');
-        expect($run)->plan->toBe('quick')->box_count->toBe(4)->day_gaps->toBe([1, 1, 2]);
-    });
-
-    it('startet einen Stapel mit jedem Plan nur einmal, mit verschiedenen Plänen mehrmals', function () {
-        $ich = actingAsUser();
-        $deck = Deck::factory()->for($ich)->create();
-
-        run($ich, $deck, 'quick');
-        $this->from("/decks/{$deck->id}")->post("/decks/{$deck->id}/runs", ['plan' => 'quick'])
-            ->assertSessionHasErrors(['plan' => 'Dieser Stapel läuft schon mit diesem Plan.']);
-        run($ich, $deck, 'thorough');
-        // "standard" is Normal here: a third, different run.
-        run($ich, $deck, 'standard');
-
-        expect(DeckRun::where('user_id', $ich->id)->orderBy('created_at')->orderBy('id')->pluck('plan')->sort()->values()->all())
-            ->toBe(['normal', 'quick', 'thorough']);
-    });
-
-    it('lehnt unbekannte Pläne ab', function (mixed $plan) {
-        $ich = actingAsUser();
-        $deck = Deck::factory()->for($ich)->create();
-
-        $this->from("/decks/{$deck->id}")->post("/decks/{$deck->id}/runs", ['plan' => $plan])->assertSessionHasErrors('plan');
         expect(DeckRun::count())->toBe(0);
-    })->with(['custom', 'schnell', '', null, [['quick']]]);
-
-    it('folgt einem fremden geteilten Stapel beim Starten und verweigert private', function () {
-        $ich = actingAsUser();
-        $geteilt = Deck::factory()->shared()->create();
-        $privat = Deck::factory()->create();
-
-        run($ich, $geteilt, 'quick');
-        $this->post("/decks/{$privat->id}/runs", ['plan' => 'quick'])->assertNotFound();
-
-        expect($ich->followedDecks()->pluck('decks.id')->all())->toBe([$geteilt->id])
-            ->and(DeckRun::where('deck_id', $privat->id)->exists())->toBeFalse();
     });
 
     it('bietet keine Route an, die den Plan eines Durchgangs ändert', function () {
@@ -134,7 +108,6 @@ describe('Starten', function () {
             ->sort()->values()->all();
 
         expect($routes)->toBe([
-            'POST decks/{deck}/runs',
             'POST decks/{deck}/runs/{run}/reset',
         ]);
     });
@@ -224,12 +197,12 @@ describe('Lernen mit mehreren Durchgängen', function () {
 });
 
 describe('Stapelansicht', function () {
-    it('zeigt bei einem Durchgang den Plan, bei mehreren die Umschaltleiste', function () {
+    it('zeigt den Plan nicht, bei schon vorhandenen mehreren Durchgängen aber die Umschaltleiste', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();
         Card::factory()->for($deck)->create();
 
-        $this->get("/decks/{$deck->id}")->assertSee('Lernplan:')->assertSee('Normal')
+        $this->get("/decks/{$deck->id}")->assertDontSee('Lernplan')
             ->assertDontSee('aria-label="Lernplan"', false);
 
         run($ich, $deck, 'normal');
@@ -238,8 +211,7 @@ describe('Stapelansicht', function () {
         $this->get("/decks/{$deck->id}?run={$schnell->id}")
             ->assertSee('aria-label="Lernplan"', false)
             ->assertSee('name="run" value="'.$schnell->id.'"', false)
-            ->assertSee('/runs/'.$schnell->id.'/reset', false)
-            ->assertSee('läuft schon');
+            ->assertSee('/runs/'.$schnell->id.'/reset', false);
     });
 
     it('nimmt bei unbekanntem ?run den ältesten Durchgang statt eines Fehlers', function () {

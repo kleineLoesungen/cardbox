@@ -58,6 +58,9 @@ Lernstand zu einem **Durchgang**: Stapel + Lernplan, mit beiden Richtungen.
 - **Noch nie gelernt:** Die Stapelansicht zeigt wie bisher die Knöpfe zum
   Lernen. Ein Tipp startet den Stapel mit dem **Standard-Lernplan** – ohne
   Rückfrage, damit sich für die meisten nichts ändert.
+- *Seit [einfacher-lernen.md](einfacher-lernen.md) entfallen: „Mit anderem
+  Lernplan starten“ und die Richtungswahl auf der Stapelseite. Bestehende
+  Durchgänge laufen weiter.*
 - Darunter ein kleiner Link **„Mit anderem Lernplan starten“**. Er öffnet ein
   Blatt mit den drei Vorgaben **Normal**, **Schnell**, **Gründlich** (große
   Auswahlkarten mit dem bekannten Satz zur Erklärung). Der Standard ist

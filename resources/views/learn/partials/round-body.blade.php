@@ -8,6 +8,8 @@
   @param int        $streak    days in a row (end screen only)
 --}}
 @php($practice = $round['mode'] === 'practice')
+{{-- "Für den Test üben": every card until known once, nothing saved. --}}
+@php($test = $round['mode'] === 'test')
 <div id="round" class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-3"
      style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))">
 
@@ -32,15 +34,19 @@
   {{-- Top: leave, progress --}}
   <div class="flex items-center gap-3">
     <a href="/learn" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
-    <div class="meter flex-1" role="progressbar" aria-valuemin="1" aria-valuemax="{{ $round['total'] }}" aria-valuenow="{{ $position }}">
-      <span style="width: {{ $round['total'] > 0 ? round(100 * ($position - 1) / $round['total']) : 0 }}%"></span>
+    {{-- In a test round progress counts the cards known, as repeats never end there. --}}
+    @php($done = $test ? $round['known'] : $position - 1)
+    <div class="meter flex-1" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $round['total'] }}" aria-valuenow="{{ $test ? $done : $position }}">
+      <span style="width: {{ $round['total'] > 0 ? round(100 * $done / $round['total']) : 0 }}%"></span>
     </div>
-    <span class="shrink-0 text-sm tabular-nums text-muted">{{ $position }} / {{ $round['total'] }}</span>
+    <span class="shrink-0 text-sm tabular-nums text-muted">{{ $test ? $done : $position }} / {{ $round['total'] }}</span>
   </div>
 
   <div class="mt-3 flex min-h-6 flex-wrap justify-center gap-2">
     @if ($practice)
       <span class="badge badge-warning">Freies Üben – zählt nicht</span>
+    @elseif ($test)
+      <span class="badge badge-warning">Test üben – zählt nicht</span>
     @endif
     @if ($current['repeat'])
       <span class="badge badge-neutral">Wiederholung</span>
@@ -117,6 +123,11 @@
     @if ($round['answered'] === 0)
       <h1 class="text-2xl font-semibold">Gerade ist nichts zu lernen</h1>
       <p class="text-muted">Alle Karten sind erledigt oder noch nicht dran.</p>
+    @elseif ($test)
+      {{-- total counts questions (a card twice with back → front), so no number of words here. --}}
+      <h1 class="text-3xl font-semibold">Alles gewusst!</h1>
+      <p class="text-lg"><strong>{{ $round['first'] }} von {{ $round['total'] }}</strong> gleich beim ersten Mal.</p>
+      <p class="text-sm text-muted">Test üben zählt nicht für den Karteikasten.</p>
     @else
       <h1 class="text-3xl font-semibold">Geschafft!</h1>
       <p class="text-lg">
@@ -136,6 +147,14 @@
   </div>
 
   <div class="stack">
+    @if ($test && $round['answered'] > 0)
+      <form method="post" action="/learn/round">
+        @csrf
+        <input type="hidden" name="mode" value="test">
+        <input type="hidden" name="deck" value="{{ $round['deck'] }}">
+        <button type="submit" class="btn btn-secondary btn-lg btn-block">Nochmal üben</button>
+      </form>
+    @endif
     <a href="/learn" class="btn btn-primary btn-lg btn-block">Fertig</a>
     @if ($round['deck'])
       <a href="/decks/{{ $round['deck'] }}" class="btn btn-ghost btn-block">Zum Stapel</a>

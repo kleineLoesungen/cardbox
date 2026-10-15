@@ -8,27 +8,22 @@ use App\Models\DeckRun;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Deck runs ("Durchgänge"): a deck learned with one plan. See
  * docs/specs/lernplaene-und-karten.md, A1–A4.
  *
  * * A deck runs at most once per plan (normal, quick, thorough, custom).
+ *   New runs only start with the person's standard plan; starting another
+ *   plan on the deck page is gone (docs/specs/einfacher-lernen.md, C), but
+ *   runs started before keep working.
  * * The plan's values are copied in at the start and never change. There is
  *   deliberately no way to change them; reset and start again instead.
  * * Runs are always the viewer's own. Other people's runs answer 404.
  */
 class DeckRunService
 {
-    /** Plan choices on the deck page; "standard" is the person's own default. */
-    public const CHOICES = ['standard', 'normal', 'quick', 'thorough'];
-
     public function __construct(private DeckService $decks, private LeitnerService $leitner) {}
 
     /**
@@ -75,50 +70,12 @@ class DeckRunService
     }
 
     /**
-     * Starts a deck with a plan from the deck page ("Mit anderem Lernplan
-     * starten"). Learning somebody else's shared deck follows it.
-     *
-     * @throws ModelNotFoundException<Deck>
-     * @throws ValidationException
-     */
-    public function start(User $user, string $deckId, mixed $choice): DeckRun
-    {
-        Validator::make(['plan' => $choice], [
-            'plan' => ['required', 'string', Rule::in(self::CHOICES)],
-        ], [
-            'plan.required' => 'Bitte einen Lernplan wählen.',
-            'plan.in' => 'Diesen Lernplan gibt es nicht.',
-        ])->validate();
-
-        $deck = $this->decks->getVisible($user, $deckId);
-        [$key, $boxCount, $gaps] = $this->values($user, (string) $choice);
-
-        try {
-            // Nested transaction = savepoint: in PostgreSQL a failed insert
-            // would otherwise abort a surrounding transaction.
-            $run = DB::transaction(fn () => DeckRun::create([
-                'user_id' => $user->id,
-                'deck_id' => $deck->id,
-                'plan' => $key,
-                'box_count' => $boxCount,
-                'day_gaps' => $gaps,
-            ]));
-        } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['plan' => 'Dieser Stapel läuft schon mit diesem Plan.']);
-        }
-
-        $this->followIfForeign($user, $deck);
-
-        return $run;
-    }
-
-    /**
      * The run with the person's standard plan, started if needed. Used when
      * "Lernen" is tapped on a deck that has no run yet; the caller follows.
      */
     public function forStandard(User $user, Deck $deck): DeckRun
     {
-        [$key, $boxCount, $gaps] = $this->values($user, 'standard');
+        [$key, $boxCount, $gaps] = $this->standardValues($user);
 
         // createOrFirst: two taps at once must not end in a unique violation.
         $run = DeckRun::createOrFirst(
@@ -144,28 +101,14 @@ class DeckRunService
     }
 
     /**
-     * Plan key and values for a choice.
+     * Key and values of the person's standard plan.
      *
      * @return array{0: string, 1: int, 2: list<int>}
      */
-    private function values(User $user, string $choice): array
+    private function standardValues(User $user): array
     {
-        if ($choice === 'standard') {
-            $plan = $this->leitner->plan($user);
+        $plan = $this->leitner->plan($user);
 
-            return [$this->standardKey($user), $plan['box_count'], $plan['day_gaps']];
-        }
-
-        $preset = StudyPlan::from($choice);
-
-        return [$preset->value, $preset->boxCount(), $preset->dayGaps()];
-    }
-
-    /** Learning somebody else's shared deck follows it, so it shows up under "Meine Stapel". */
-    private function followIfForeign(User $user, Deck $deck): void
-    {
-        if (! $deck->isOwnedBy($user)) {
-            $user->followedDecks()->syncWithoutDetaching([$deck->id]);
-        }
+        return [$this->standardKey($user), $plan['box_count'], $plan['day_gaps']];
     }
 }

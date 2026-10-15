@@ -44,7 +44,7 @@ it('lernt nur ausgewählte Karten und zeigt die anderen als pausiert', function 
         ->assertRedirect("/decks/{$deck->id}");
 
     expect(startDeckRound($deck))->toBe([$cards[0]->id, $cards[1]->id]);
-    $this->get("/decks/{$deck->id}")->assertSee('2 von 5')->assertSee('pausiert')->assertSee('2 neu');
+    $this->get("/decks/{$deck->id}")->assertSee('2 von 5')->assertSee('pausiert')->assertSee('Nur diesen Stapel lernen')->assertSee('(2)');
 });
 
 it('lässt neue Karten der Besitzerin pausiert, bis sie angehakt werden', function () {
@@ -126,16 +126,16 @@ it('folgt im Wörterbuch dem Stapel und lernt erst einmal nur diese Karte', func
     $ich = actingAsUser();
     [$deck, $cards] = book(3);
 
-    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+2')->assertSee('Folgen und diese Karte lernen');
-    $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[1]->id}")->assertOk()->assertSee('du lernst sie');
+    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+2')->assertSee('Lernen')->assertSee('lernst du erst einmal nur dieses Wort');
+    $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[1]->id}")->assertOk()->assertSee('lernst du');
 
     expect($ich->followedDecks()->pluck('decks.id')->all())->toBe([$deck->id])
         ->and(startDeckRound($deck))->toBe([$cards[1]->id]);
 
-    // A paused card of a followed deck: "Diese Karte lernen" adds it.
-    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('Diese Karte lernen');
+    // A paused card of a followed deck: "Lernen" adds it, without the hint about following.
+    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('Lernen')->assertDontSee('erst einmal nur dieses Wort');
     $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[2]->id}");
-    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('du lernst sie');
+    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('lernst du');
     expect(startDeckRound($deck))->toBe([$cards[1]->id, $cards[2]->id]);
 });
 
@@ -144,7 +144,7 @@ it('ändert im Wörterbuch nichts an einem Stapel, den man ganz lernt', function
     [$deck, $cards] = book(2);
     $ich->followedDecks()->attach($deck);
 
-    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+1')->assertSee('du lernst sie')->assertDontSee('Folgen und diese Karte lernen');
+    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+1')->assertSee('lernst du')->assertDontSee('erst einmal nur dieses Wort');
     $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[0]->id}")->assertOk();
 
     expect(startDeckRound($deck))->toHaveCount(2);

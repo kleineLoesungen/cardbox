@@ -91,7 +91,7 @@
           </li>
           <li class="index-card">
             <p class="flex items-center gap-2 font-semibold"><span class="index-card-number">2</span> Jeden Tag kurz lernen</p>
-            <p class="ruled mt-2 text-sm leading-6">„Los geht's“ zeigt dir genau die Karten, die heute dran sind. Karte ansehen, umdrehen, ehrlich sagen: gewusst oder nochmal.</p>
+            <p class="ruled mt-2 text-sm leading-6">„Los geht's“ zeigt dir genau die Karten, die heute dran sind – und ein paar neue. Karte ansehen, umdrehen, ehrlich sagen: gewusst oder nochmal.</p>
           </li>
           <li class="index-card">
             <p class="flex items-center gap-2 font-semibold"><span class="index-card-number">3</span> Fach für Fach nach hinten</p>
@@ -129,11 +129,11 @@
         <div class="mt-5 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
           <div class="feature-card">
             <p class="feature-card-title">Stapel teilen</p>
-            <p class="feature-card-text">Einem Stapel folgen und mitlernen – oder ihn kopieren und selbst ändern.</p>
+            <p class="feature-card-text">Geteilte Stapel mit einem Tipp mitlernen – oder eine eigene Fassung anlegen und selbst ändern.</p>
           </div>
           <div class="feature-card">
-            <p class="feature-card-title">Schnell vor der Arbeit</p>
-            <p class="feature-card-text">Einen Stapel mit dem Lernplan „Schnell“ starten. Die anderen bleiben, wie sie sind.</p>
+            <p class="feature-card-title">Für den Test üben</p>
+            <p class="feature-card-text">Alle Karten eines Stapels, bis du jede einmal gewusst hast. Der Karteikasten bleibt, wie er ist.</p>
           </div>
           <div class="feature-card">
             <p class="feature-card-title">Vorlesen</p>

@@ -50,4 +50,11 @@ return [
     'round_size' => 20,
     'round_repeats' => 3,
 
+    // "Heute" adds at most this many new cards a day by itself; more on
+    // request ("Noch 20 neue Karten"). Counts every card started that day.
+    'new_per_day' => 20,
+
+    // "Für den Test üben": most questions in one round (cards × directions).
+    'test_max' => 200,
+
 ];

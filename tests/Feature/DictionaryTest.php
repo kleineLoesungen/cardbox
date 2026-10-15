@@ -99,7 +99,7 @@ it('übernimmt einen Treffer nur in eigene Stapel mit passenden Sprachen, mit He
     $anders = Deck::factory()->for($ich)->create(['name' => 'Französisch', 'front_language' => 'de', 'back_language' => 'fr']);
     $fremd = deDeck(User::factory()->create());
 
-    lookUp('bahnhof')->assertSee('Als Kopie in eigenen Stapel')->assertSee('„Reisen“', false)->assertDontSee('„Französisch“', false);
+    lookUp('bahnhof')->assertSee('Kopie in „Reisen“', false)->assertDontSee('„Französisch“', false);
 
     $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/adopt/{$original->id}", ['deck' => $passend->id])
         ->assertOk()->assertSee('übernommen');

@@ -25,7 +25,7 @@ describe('Sichtbarkeit', function () {
         Card::factory()->for($fremd)->create(['front' => ['Hund'], 'back' => ['dog']]);
         actingAsUser();
 
-        $this->get("/decks/{$fremd->id}")->assertOk()->assertSee('Tiere')->assertSee('Hund')->assertSee('Folgen');
+        $this->get("/decks/{$fremd->id}")->assertOk()->assertSee('Tiere')->assertSee('Hund')->assertSee('Lernen')->assertDontSee('Folgen');
         $this->post("/decks/{$fremd->id}", ['name' => 'Gekapert', 'front_language' => 'de', 'back_language' => 'en'])->assertNotFound();
         $this->post("/decks/{$fremd->id}/share", ['shared' => '0'])->assertNotFound();
         $this->post("/decks/{$fremd->id}/delete")->assertNotFound();
@@ -155,7 +155,7 @@ describe('Folgen und Kopieren', function () {
         expect($ich->followedDecks()->count())->toBe(1);
 
         $card->update(['back' => ['home']]);
-        $this->get("/decks/{$deck->id}")->assertSee('home')->assertSee('du folgst');
+        $this->get("/decks/{$deck->id}")->assertSee('home')->assertSee('lernst du');
     });
 
     it('lässt dem eigenen Stapel nicht folgen', function () {
@@ -279,7 +279,7 @@ it('nennt beim Löschen eines Kontos dessen Stapel und Folgende', function () {
     User::factory()->count(2)->create()->each(fn (User $u) => $u->followedDecks()->attach($deck));
 
     $this->get("/admin/users/{$weg->id}")
-        ->assertSee('Dabei werden 1 Stapel gelöscht, denen insgesamt 2 Personen folgen.', false);
+        ->assertSee('Dabei werden 1 Stapel gelöscht, mit denen insgesamt 2 Personen lernen.', false);
 });
 
 it('zeigt einen leeren Stapel ohne leeren Rahmen und bringt den Leerzustand nach dem Löschen der letzten Karte zurück', function () {

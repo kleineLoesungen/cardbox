@@ -17,27 +17,37 @@
     <div class="empty mt-6">
       <p class="empty-title">Los geht's mit deinem ersten Stapel</p>
       <p class="empty-hint">Ein Stapel sammelt Karten mit Wörtern – vorne zum Beispiel Deutsch, hinten Englisch.</p>
-      <a href="/decks?new=1" class="btn btn-primary btn-lg">Eigenen Stapel anlegen</a>
-      <a href="/decks?tab=discover" class="btn btn-secondary btn-lg">Geteilte Stapel entdecken</a>
+      {{-- Most children learn decks others shared, so finding one comes first. --}}
+      <a href="/decks?tab=discover" class="btn btn-primary btn-lg">Stapel finden</a>
+      <a href="/decks?new=1" class="btn btn-secondary btn-lg">Eigenen Stapel anlegen</a>
     </div>
   @else
     <div class="card mt-6">
       <div class="card-body stack text-center">
-        @if ($today['due'] > 0)
+        {{-- Due and new cards from every deck (docs/specs/einfacher-lernen.md, A). --}}
+        @php($waiting = $today['due'] + $today['new'])
+        @if ($waiting > 0)
           <p class="text-lg">
-            <strong class="text-2xl">{{ $today['due'] === 1 ? '1 Karte' : $today['due'].' Karten' }}</strong><br>
-            {{ $today['due'] === 1 ? 'wartet' : 'warten' }} auf dich
+            <strong class="text-2xl">{{ $waiting === 1 ? '1 Karte' : $waiting.' Karten' }}</strong><br>
+            {{ $waiting === 1 ? 'wartet' : 'warten' }} auf dich
           </p>
+          @if ($today['new'] > 0)
+            <p class="-mt-2 text-sm text-muted">davon {{ $today['new'] }} neu</p>
+          @endif
           <form method="post" action="/learn/round">
             @csrf
             <button type="submit" class="btn btn-primary btn-lg btn-block">Los geht's</button>
           </form>
         @else
           <p class="text-lg font-medium">Für heute alles geschafft.</p>
-          @if ($today['tomorrow'] > 0)
+          @if ($today['more_new'] > 0)
+            <form method="post" action="/learn/round">
+              @csrf
+              <input type="hidden" name="more" value="1">
+              <button type="submit" class="btn btn-secondary btn-block">Noch {{ min($today['more_new'], (int) config('learning.round_size')) }} neue Karten</button>
+            </form>
+          @elseif ($today['tomorrow'] > 0)
             <p class="text-sm text-muted">Morgen {{ $today['tomorrow'] === 1 ? 'ist 1 Karte' : 'sind '.$today['tomorrow'].' Karten' }} dran.</p>
-          @else
-            <p class="text-sm text-muted">Neue Karten lernst du in einem Stapel.</p>
           @endif
         @endif
       </div>

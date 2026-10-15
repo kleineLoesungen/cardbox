@@ -50,7 +50,7 @@ class DictionaryController extends Controller
     }
 
     /**
-     * htmx: "Folgen und diese Karte lernen" / "Diese Karte lernen" (issue #10):
+     * htmx: "Lernen" (issue #10, docs/specs/einfacher-lernen.md):
      * follows the card's deck if needed and makes the card active.
      */
     public function learn(Request $request, string $card): Response

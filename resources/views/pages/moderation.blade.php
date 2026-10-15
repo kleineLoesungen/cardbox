@@ -40,7 +40,7 @@
               <span class="block truncate font-medium">{{ $deck->name }}</span>
               <span class="block truncate text-sm text-muted">
                 von {{ $deck->user->name }} · {{ $deck->cards_count }} Karten ·
-                {{ $deck->followers_count === 1 ? '1 folgt' : $deck->followers_count.' folgen' }}
+                {{ $deck->followers_count === 1 ? '1 lernt mit' : $deck->followers_count.' lernen mit' }}
               </span>
             </span>
             <span aria-hidden="true" class="text-subtle">›</span>

@@ -86,47 +86,65 @@
   </figure>
 
   <section class="stack gap-2">
-    <h2 class="text-lg font-semibold">Lernen</h2>
+    <h2 class="text-lg font-semibold">So lernst du</h2>
+    <ol class="list-decimal stack gap-1 pl-5 text-muted">
+      <li>Unter <strong>Stapel → Entdecken</strong> den Stapel suchen, den dir jemand geteilt hat – oder einen eigenen anlegen.</li>
+      <li>Im Stapel auf <strong>Lernen</strong> tippen.</li>
+      <li>Jeden Tag unter <strong>Heute</strong> auf <strong>Los geht's</strong> tippen. Dort kommen alle Karten, die dran sind, und jeden Tag bis zu 20 neue.</li>
+    </ol>
     <p class="text-muted">
-      Unter <strong>Heute</strong> siehst du, wie viele Karten dran sind. Tippe auf
-      <strong>Los geht's</strong>. Lies die Karte, überlege die Antwort und tippe
-      auf <strong>Umdrehen</strong>. Dann sag ehrlich: <strong>Gewusst</strong>
-      oder <strong>Nochmal</strong> – oder wisch die Karte nach rechts oder links.
-      Was du nicht wusstest, kommt am Ende der Runde noch einmal.
-    </p>
-    <p class="text-muted">
-      <strong>Freies Üben</strong> fragt Karten ab, ohne dass etwas zählt – gut,
-      um vor einer Prüfung alles noch einmal durchzugehen.
-    </p>
-  </section>
-
-  <section class="stack gap-2">
-    <h2 class="text-lg font-semibold">Einen Stapel anders lernen</h2>
-    <p class="text-muted">
-      Bald ist eine Arbeit? Öffne den Stapel und tippe auf <strong>Mit anderem
-      Lernplan starten</strong>, zum Beispiel <strong>Schnell</strong>. Dann
-      kommen die Karten öfter dran. Deine anderen Stapel bleiben, wie sie sind.
-    </p>
-    <p class="text-muted">
-      Du kannst einen Stapel auch mit zwei Plänen gleichzeitig lernen. Jeder
-      Plan hat seinen eigenen Lernstand. Ändern lässt sich der Plan eines
-      begonnenen Stapels nicht – dafür gibt es im Stapel-Menü
-      <strong>Fortschritt zurücksetzen</strong>, danach startest du neu.
+      Lies die Karte, überlege die Antwort und tippe auf <strong>Umdrehen</strong>.
+      Dann sag ehrlich: <strong>Gewusst</strong> oder <strong>Nochmal</strong> –
+      oder wisch die Karte nach rechts oder links. Was du nicht wusstest, kommt
+      am Ende der Runde noch einmal. Hast du alles geschafft und willst mehr,
+      tippe auf <strong>Noch 20 neue Karten</strong>.
     </p>
   </section>
 
   <section class="stack gap-2">
-    <h2 class="text-lg font-semibold">Folgen oder kopieren?</h2>
+    <h2 class="text-lg font-semibold">Bald ist ein Test?</h2>
     <p class="text-muted">
-      Hat jemand einen Stapel mit allen geteilt, kannst du ihm <strong>folgen</strong>:
-      Du lernst mit, und wenn die Person einen Fehler korrigiert, siehst du das
-      sofort. Ändern kannst du den Stapel aber nicht.
+      Öffne den Stapel und tippe auf <strong>Für den Test üben</strong>. Dann
+      kommen alle Karten, bis du jede einmal gewusst hast. Das zählt nicht für
+      den Karteikasten – deine tägliche Wiederholung läuft normal weiter.
     </p>
     <p class="text-muted">
-      <strong>Kopieren</strong> gibt dir eine eigene Fassung, die du ändern
-      kannst. Dein bisheriger Lernstand kommt mit. Ändert die Person später
-      etwas am Original, zeigt dein Stapel das an – du entscheidest, ob du
-      es übernimmst.
+      Mit <strong>Nur diesen Stapel lernen</strong> lernst du außerdem neue
+      Karten aus diesem einen Stapel, ohne auf die anderen zu warten.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Auch rückwärts lernen</h2>
+    <p class="text-muted">
+      Normal fragt die App von vorne nach hinten, zum Beispiel Deutsch →
+      Englisch. Soll sie auch Englisch → Deutsch fragen, schalte im Stapel
+      unter <strong>⋯ → Auch rückwärts lernen</strong> ein.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Stapel von anderen lernen</h2>
+    <p class="text-muted">
+      Hat jemand einen Stapel mit allen geteilt, tippst du auf <strong>Lernen</strong>.
+      Korrigiert die Person einen Fehler, siehst du das sofort. Ändern kannst
+      du den Stapel nicht.
+    </p>
+    <p class="text-muted">
+      Willst du selbst etwas ändern, legst du unter <strong>⋯ → Eigene Fassung
+      anlegen</strong> eine Kopie an. Dein bisheriger Lernstand kommt mit.
+      Ändert die Person später etwas am Original, zeigt dein Stapel das an –
+      du entscheidest, ob du es übernimmst.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Lernplan</h2>
+    <p class="text-muted">
+      Wie oft Karten wiederkommen, stellst du unter <strong>Mein Konto →
+      Lernplan</strong> ein. Er gilt für Stapel, die du neu beginnst. Einen
+      begonnenen Stapel setzt du im Stapel-Menü mit <strong>Fortschritt
+      zurücksetzen</strong> zurück, dann beginnt er mit deinem jetzigen Plan neu.
     </p>
   </section>
 
@@ -145,14 +163,13 @@
   <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Wörterbuch</h2>
     <p class="text-muted">
-      Unter <strong>Mehr → Wörterbuch</strong> schlägst du ein Wort nach, ohne
+      Unter <strong>Wörterbuch</strong> schlägst du ein Wort nach, ohne
       zu lernen – in deinen Stapeln und in allen geteilten. Du siehst die
-      Übersetzung und kannst sie anhören. <strong>Folgen und diese Karte
-      lernen</strong> folgt dem Stapel, aus dem sie stammt, und schaltet erst
-      einmal nur diese Karte frei. Brauchst du eine eigene Fassung, geht auch
-      <strong>Als Kopie in eigenen Stapel</strong>. Steht das Wort in deinem
-      eigenen Stapel, kannst du die Karte mit <strong>Bearbeiten</strong>
-      gleich dort ändern oder löschen – steht es in mehreren, wählst du einen
+      Übersetzung und kannst sie anhören. <strong>Lernen</strong> nimmt das
+      Wort in deine Runde unter Heute auf – aus seinem Stapel erst einmal nur
+      dieses eine. Unter <strong>Mehr …</strong> kannst du eine Kopie in einen
+      eigenen Stapel legen und, steht das Wort in deinem eigenen Stapel, die
+      Karte bearbeiten oder löschen – steht es in mehreren, wählst du einen
       Stapel oder alle.
     </p>
   </section>

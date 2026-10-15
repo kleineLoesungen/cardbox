@@ -10,7 +10,9 @@ use App\Models\DeckRun;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -28,7 +30,10 @@ use Illuminate\Validation\ValidationException;
  * none; nothing is saved there.
  *
  * @phpstan-type RoundItem array{card: string, direction: string, repeat: bool, runs?: list<string>}
- * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, promoted: int, repeats: array<string, int>}
+ * Modes: `learn` (counts for the boxes), `practice` (one box, nothing
+ * saved) and `test` ("Für den Test üben": every card until known once,
+ * nothing saved; docs/specs/einfacher-lernen.md, F).
+ * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>}
  */
 class StudyRoundService
 {
@@ -37,20 +42,22 @@ class StudyRoundService
         private LeitnerService $leitner,
         private DeckRunService $runs,
         private CardSelectionService $selection,
+        private DeckPreferenceService $preferences,
     ) {}
 
     /**
-     * Learning one deck in one direction: due cards first, then new ones.
-     * Without a run id the deck's oldest run is used — the one the deck page
-     * shows first — and only a deck without any run starts one with the
-     * standard plan. Learning somebody else's shared deck follows it,
-     * so it shows up under "Meine Stapel".
+     * "Nur diesen Stapel lernen": due cards of one deck first, then new
+     * ones — front → back, and back → front too when the person switched
+     * that on. Without a run id the deck's oldest run is used — the one the
+     * deck page shows first — and only a deck without any run starts one
+     * with the standard plan. Learning somebody else's shared deck follows
+     * it, so it shows up under "Meine Stapel". Not limited by "new_per_day".
      *
      * @return Round
      *
      * @throws ModelNotFoundException<Deck|DeckRun>
      */
-    public function startForDeck(User $user, string $deckId, Direction $direction, ?string $runId = null): array
+    public function startForDeck(User $user, string $deckId, ?string $runId = null): array
     {
         $deck = $this->decks->getVisible($user, $deckId);
         $run = $runId !== null && $runId !== ''
@@ -63,45 +70,37 @@ class StudyRoundService
         $limit = (int) config('learning.round_size');
         $due = $this->dueQuery($user)
             ->where('card_progress.deck_run_id', $run->id)
-            ->where('card_progress.direction', $direction->value)
             ->orderBy('card_progress.due_on')
+            ->orderByRaw("card_progress.direction = 'backward'")
             ->limit($limit)
-            ->pluck('card_progress.card_id')
+            ->toBase()
+            ->get(['card_progress.card_id', 'card_progress.direction'])
+            ->map(fn (object $row) => ['card' => (string) $row->card_id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$run->id]])
             ->all();
 
-        [$active, $bindings] = $this->selection->activeCondition($user);
-        $new = $deck->cards()
-            // Paused cards (issue #10) are never started.
-            ->whereRaw($active, $bindings)
-            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('card_progress')
-                ->whereColumn('card_progress.card_id', 'cards.id')
-                ->where('card_progress.deck_run_id', $run->id)
-                ->where('card_progress.direction', $direction->value))
-            ->orderBy('created_at')
-            ->limit($limit - count($due))
-            ->pluck('id')
+        $new = $this->newCards($user, [$deck->id], $limit - count($due), $run->id)
+            ->map(fn (object $row) => ['card' => (string) $row->id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$run->id]])
             ->all();
 
-        $items = array_map(
-            fn (string $id) => ['card' => $id, 'direction' => $direction->value, 'repeat' => false, 'runs' => [$run->id]],
-            [...$due, ...$new],
-        );
-
-        return $this->newRound('learn', $deck->id, $items);
+        return $this->newRound('learn', $deck->id, [...$due, ...$new]);
     }
 
     /**
      * "Los geht's": due cards from all of the person's decks (own and
      * followed shared ones) and all their runs, oldest due date first. A
-     * card due in two runs comes up once; the answer counts for both. New
-     * cards are started deliberately inside a deck, not here.
+     * card due in two runs comes up once; the answer counts for both.
+     *
+     * Free places are filled with new cards, taken in turns from all decks,
+     * at most "new_per_day" a day — `$more` ("Noch 20 neue Karten") goes
+     * beyond that. A new card is learned in the deck's oldest run, started
+     * with the standard plan if there is none yet.
      *
      * @return Round
      */
-    public function startToday(User $user): array
+    public function startToday(User $user, bool $more = false): array
     {
-        $items = $this->dueQuery($user)
+        $limit = (int) config('learning.round_size');
+        $due = $this->dueQuery($user)
             ->toBase()
             ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
             ->groupBy('card_progress.card_id', 'card_progress.direction')
@@ -109,7 +108,7 @@ class StudyRoundService
             ->selectRaw("string_agg(card_progress.deck_run_id::text, ',' ORDER BY deck_runs.created_at, deck_runs.id) AS runs")
             ->orderByRaw('min(card_progress.due_on)')
             ->orderBy('card_progress.card_id')
-            ->limit((int) config('learning.round_size'))
+            ->limit($limit)
             ->get()
             ->map(fn (object $row) => [
                 'card' => (string) $row->card_id,
@@ -120,7 +119,138 @@ class StudyRoundService
             ->values()
             ->all();
 
-        return $this->newRound('learn', null, $items);
+        $room = $limit - count($due);
+        if (! $more) {
+            $room = min($room, $this->newAllowedToday($user));
+        }
+        $rows = $this->newCards($user, $this->decks->mineQuery($user)->pluck('id')->all(), $room);
+
+        $runs = [];
+        $new = [];
+        foreach ($rows as $row) {
+            $deckId = (string) $row->deck_id;
+            $runs[$deckId] ??= $this->runFor($user, $deckId)->id;
+            $new[] = ['card' => (string) $row->id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$runs[$deckId]]];
+        }
+
+        return $this->newRound('learn', null, [...$due, ...$new]);
+    }
+
+    /**
+     * How many new cards "Heute" may still start today by itself.
+     */
+    public function newAllowedToday(User $user): int
+    {
+        $startOfDay = $this->leitner->today()->utc();
+        $started = CardProgress::query()
+            ->where('user_id', $user->id)
+            ->where('created_at', '>=', $startOfDay)
+            ->distinct()
+            ->count(DB::raw('card_id::text || direction'));
+
+        return max(0, (int) config('learning.new_per_day') - $started);
+    }
+
+    /**
+     * New cards of the given decks, as rows {id, deck_id, direction}: active
+     * (issue #10), in a direction the person learns, never answered in it —
+     * in the given run, or else in any of the person's runs.
+     * Front → back comes first; within that, the decks take turns, each in
+     * the order of its cards.
+     *
+     * @param  list<string>  $deckIds
+     * @return Collection<int, \stdClass>
+     */
+    public function newCards(User $user, array $deckIds, int $limit, ?string $runId = null): Collection
+    {
+        if ($limit <= 0 || $deckIds === []) {
+            return collect();
+        }
+
+        return DB::query()
+            ->fromSub($this->newCardsQuery($user, $deckIds, $runId), 'ranked')
+            ->orderByRaw("direction = 'backward'")
+            ->orderBy('turn')
+            ->orderBy('deck_id')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * How many new cards the given decks hold for the person — counted up
+     * to `$max` at most, as "Heute" never shows more.
+     *
+     * @param  list<string>  $deckIds
+     */
+    public function newCardCount(User $user, array $deckIds, int $max): int
+    {
+        return $deckIds === [] ? 0 : DB::query()->fromSub($this->newCardsQuery($user, $deckIds)->limit($max), 'capped')->count();
+    }
+
+    /**
+     * @param  list<string>  $deckIds
+     */
+    private function newCardsQuery(User $user, array $deckIds, ?string $runId = null): QueryBuilder
+    {
+        [$active, $activeBindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user, 'dirs.direction');
+
+        return DB::table('cards')
+            ->crossJoin(DB::raw("(values ('forward'), ('backward')) as dirs(direction)"))
+            ->whereIn('cards.deck_id', $deckIds)
+            ->whereRaw($active, $activeBindings)
+            ->whereRaw($learned, $learnedBindings)
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('card_progress')
+                ->where('card_progress.user_id', $user->id)
+                ->when($runId !== null, fn ($q) => $q->where('card_progress.deck_run_id', $runId))
+                ->whereColumn('card_progress.card_id', 'cards.id')
+                ->whereColumn('card_progress.direction', 'dirs.direction'))
+            ->select('cards.id', 'cards.deck_id', 'dirs.direction')
+            ->selectRaw('row_number() over (partition by cards.deck_id, dirs.direction order by cards.created_at, cards.id) as turn');
+    }
+
+    /**
+     * "Für den Test üben": every active card of the deck in random order,
+     * both ways when back → front is switched on. Nothing is saved, and a
+     * card not known comes back until it is known.
+     *
+     * @return Round
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function startTest(User $user, string $deckId): array
+    {
+        $deck = $this->decks->getVisible($user, $deckId);
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        $directions = [Direction::Forward->value];
+        if ($this->preferences->withReverse($user, $deck)) {
+            $directions[] = Direction::Backward->value;
+        }
+
+        // Cut in the database, so a huge deck never loads every id.
+        $perDirection = intdiv((int) config('learning.test_max'), count($directions));
+        $items = [];
+        foreach ($deck->cards()->whereRaw($active, $bindings)->inRandomOrder()->limit($perDirection)->pluck('id') as $id) {
+            foreach ($directions as $direction) {
+                $items[] = ['card' => $id, 'direction' => $direction, 'repeat' => false];
+            }
+        }
+        shuffle($items);
+
+        return $this->newRound('test', $deck->id, $items);
+    }
+
+    /** The deck's oldest run of the person, or a new one with the standard plan. */
+    private function runFor(User $user, string $deckId): DeckRun
+    {
+        return DeckRun::query()
+            ->where('user_id', $user->id)
+            ->where('deck_id', $deckId)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->first()
+            ?? $this->runs->forStandard($user, Deck::findOrFail($deckId));
     }
 
     /**
@@ -259,6 +389,18 @@ class StudyRoundService
         $round['step']++;
         $key = $cardId.'|'.$current['direction']->value;
 
+        if ($round['mode'] === 'test') {
+            // Every card until known once: "known" counts cards done, "first" those known at once.
+            $round['answered'] += $current['repeat'] ? 0 : 1;
+            $round['known'] += $known ? 1 : 0;
+            $round['first'] += $known && ! $current['repeat'] ? 1 : 0;
+            if (! $known) {
+                $round['queue'][] = ['card' => $cardId, 'direction' => $current['direction']->value, 'repeat' => true];
+            }
+
+            return $round;
+        }
+
         if (! $current['repeat']) {
             $round['answered']++;
             $round['known'] += $known ? 1 : 0;
@@ -321,6 +463,7 @@ class StudyRoundService
     private function dueQuery(User $user): Builder
     {
         [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
 
         return CardProgress::query()
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
@@ -330,7 +473,9 @@ class StudyRoundService
             ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
             ->where('card_progress.due_on', '<=', $this->leitner->today()->toDateString())
             // Paused cards keep their progress but are not due (issue #10).
-            ->whereRaw($active, $bindings);
+            ->whereRaw($active, $bindings)
+            // Back → front switched off: kept, but not due (einfacher-lernen.md, C).
+            ->whereRaw($learned, $learnedBindings);
     }
 
     /**
@@ -347,6 +492,7 @@ class StudyRoundService
             'total' => count($items),
             'answered' => 0,
             'known' => 0,
+            'first' => 0,
             'promoted' => 0,
             'repeats' => [],
         ];

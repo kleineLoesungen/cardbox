@@ -1,9 +1,9 @@
 {{--
   Hits of the dictionary search. One hit per word pair: main meanings,
-  further ones as "auch: …", hint, read aloud, where it comes from. First
-  offer: learn the card in its deck (follow it, or switch it on); second:
-  a copy into an own deck with the same languages; then editing or
-  reporting it (issue #12, partials/dictionary-edit).
+  further ones as "auch: …", hint, read aloud, where it comes from. The one
+  visible action is "Lernen" (follow the deck, or switch the card on);
+  under "Mehr …" editing or reporting it (issue #12, partials/dictionary-edit)
+  and a copy into an own deck with the same languages.
 
   @param string $term
   @param array{hits: list<array{card: \App\Models\Card, decks: list<\App\Models\Deck>, targets: list<\App\Models\Deck>}>, more: bool} $result
@@ -57,40 +57,37 @@
               @endif
             </p>
 
-            {{-- First offer: learn the card where it is (issue #10); copying comes second. --}}
+            {{-- One visible action: "Lernen" (issue #10, docs/specs/einfacher-lernen.md, B); the rest is under "Mehr …". --}}
             @if ($hit['learn'] === 'active')
-              <p class="text-sm"><span class="badge badge-success">du lernst sie</span></p>
+              <p class="text-sm"><span class="badge badge-success">lernst du</span></p>
             @else
               <button type="button" class="btn btn-primary btn-block"
                       hx-post="/dictionary/learn/{{ $card->id }}" hx-target="this" hx-swap="outerHTML">
-                {{ $hit['learn'] === 'follow' ? 'Folgen und diese Karte lernen' : 'Diese Karte lernen' }}
+                Lernen
               </button>
               @if ($hit['learn'] === 'follow')
-                <p class="hint -mt-1">Du folgst „{{ $deck->name }}“, lernst aber erst einmal nur diese Karte. Weitere schaltest du im Stapel dazu.</p>
+                <p class="hint -mt-1">Kommt unter Heute dran. Aus „{{ $deck->name }}“ lernst du erst einmal nur dieses Wort.</p>
               @endif
-            @endif
-
-            @if ($hit['targets'] !== [])
-              <details>
-                <summary class="btn btn-ghost btn-sm cursor-pointer list-none">Als Kopie in eigenen Stapel</summary>
-                <div class="mt-2 stack gap-2">
-                  @foreach ($hit['targets'] as $target)
-                    <button type="button" class="btn btn-secondary btn-block justify-start"
-                            hx-post="/dictionary/adopt/{{ $card->id }}" hx-vals="{{ json_encode(['deck' => $target->id]) }}"
-                            hx-target="this" hx-swap="outerHTML">
-                      <span class="truncate">„{{ $target->name }}“</span>
-                    </button>
-                  @endforeach
-                </div>
-              </details>
             @endif
 
             {{-- Issue #12: edit own cards (moderation: also shared ones of others), otherwise report. --}}
             @php($canEdit = auth()->user()->hasRole(\App\Enums\Role::Moderator) || collect($hit['decks'])->contains(fn ($d) => $d->user_id === auth()->id()))
-            <button type="button" class="btn btn-ghost btn-sm self-start" hx-target="#dictionary-sheet-body"
-                    hx-get="{{ ! $canEdit && count($hit['decks']) === 1 ? "/decks/{$deck->id}/cards/{$card->id}/suggest?context=dictionary" : "/dictionary/cards/{$card->id}/edit" }}">
-              {{ $canEdit ? 'Bearbeiten' : 'Fehler melden' }}
-            </button>
+            <details>
+              <summary class="btn btn-ghost btn-sm cursor-pointer list-none">Mehr …</summary>
+              <div class="mt-2 stack gap-2">
+                <button type="button" class="btn btn-secondary btn-block justify-start" hx-target="#dictionary-sheet-body"
+                        hx-get="{{ ! $canEdit && count($hit['decks']) === 1 ? "/decks/{$deck->id}/cards/{$card->id}/suggest?context=dictionary" : "/dictionary/cards/{$card->id}/edit" }}">
+                  {{ $canEdit ? 'Bearbeiten' : 'Fehler melden' }}
+                </button>
+                @foreach ($hit['targets'] as $target)
+                  <button type="button" class="btn btn-secondary btn-block justify-start"
+                          hx-post="/dictionary/adopt/{{ $card->id }}" hx-vals="{{ json_encode(['deck' => $target->id]) }}"
+                          hx-target="this" hx-swap="outerHTML">
+                    <span class="truncate">Kopie in „{{ $target->name }}“</span>
+                  </button>
+                @endforeach
+              </div>
+            </details>
           </div>
         </li>
       @endforeach

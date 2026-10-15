@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Direction;
 use App\Services\LeitnerService;
 use App\Services\StudyRoundService;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +22,7 @@ class StudyRoundController extends Controller
 
     public function __construct(private StudyRoundService $rounds, private LeitnerService $leitner) {}
 
-    /** Starts a round: a deck (learn or practice) or, without a deck, "Los geht's". */
+    /** Starts a round: a deck (learn, practice, test) or, without a deck, "Los geht's". */
     public function start(Request $request): RedirectResponse
     {
         $user = $request->user();
@@ -40,8 +39,9 @@ class StudyRoundController extends Controller
                 $this->boxInput($request),
                 $run,
             ),
-            is_string($deck) && $deck !== '' => $this->rounds->startForDeck($user, $deck, Direction::tryFrom(is_string($direction) ? $direction : '') ?? Direction::Forward, $run),
-            default => $this->rounds->startToday($user),
+            $request->input('mode') === 'test' => $this->rounds->startTest($user, is_string($deck) ? $deck : ''),
+            is_string($deck) && $deck !== '' => $this->rounds->startForDeck($user, $deck, $run),
+            default => $this->rounds->startToday($user, $request->boolean('more')),
         };
 
         $request->session()->put(self::SESSION_KEY, $round);

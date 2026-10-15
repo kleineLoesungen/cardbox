@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Direction;
-use App\Enums\StudyPlan;
 use App\Services\CardCsvService;
 use App\Services\CardSelectionService;
 use App\Services\CardService;
 use App\Services\CardSuggestionService;
+use App\Services\DeckPreferenceService;
 use App\Services\DeckRunService;
 use App\Services\DeckService;
 use App\Services\LearningOverviewService;
@@ -30,6 +30,7 @@ class DeckController extends Controller
         private DeckRunService $runs,
         private CardSuggestionService $suggestions,
         private CardSelectionService $selection,
+        private DeckPreferenceService $preferences,
     ) {}
 
     /** "Meine" and "Entdecken" on one page, switched by ?tab=. */
@@ -60,33 +61,51 @@ class DeckController extends Controller
 
     /**
      * The deck page. ?run= picks one of the viewer's runs (unknown ids fall
-     * back to the oldest), ?direction= the direction.
+     * back to the oldest), ?direction= the direction of the box tiles.
      */
     public function show(Request $request, string $deck): View
     {
         $user = $request->user();
         $model = $this->decks->getVisible($user, $deck);
         $isOwner = $model->isOwnedBy($user);
-        $direction = Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward;
+        $withReverse = $this->preferences->withReverse($user, $model);
+        // Direction only switches the box tiles, and only when back → front is learned.
+        $direction = $withReverse ? (Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward) : Direction::Forward;
         $cards = $this->cards->listForDeck($model);
         $runs = $this->runs->listOwned($user, $model);
         // Learning only part of the deck (issue #10): null = every card.
         $activeIds = $this->selection->activeIds($user, $model);
         $run = $runs->firstWhere('id', $this->queryText($request, 'run')) ?? $runs->first();
+        $isFollowing = ! $isOwner && $this->decks->isFollowing($user, $model);
+
+        // Box tiles for one direction; "Nur diesen Stapel lernen" counts every learned one.
+        $boxes = null;
+        $learnable = 0;
+        if ($cards->isNotEmpty()) {
+            $count = $activeIds === null ? $cards->count() : count($activeIds);
+            // Other directions only matter for "Nur diesen Stapel lernen", shown to learners.
+            $directions = $withReverse && ($isOwner || $isFollowing) ? Direction::cases() : [$direction];
+            foreach ($directions as $d) {
+                $box = $this->overview->boxes($user, $model, $run, $d, $count);
+                $learnable += $box['due'] + $box['new'];
+                $boxes = $d === $direction ? $box : $boxes;
+            }
+        }
 
         return view('decks.show', [
             'deck' => $model,
             'direction' => $direction,
             'runs' => $runs,
             'run' => $run,
-            'standardKey' => $this->runs->standardKey($user),
-            'presets' => StudyPlan::cases(),
+            'withReverse' => $withReverse,
             // Only needed when there is something to learn.
             'activeIds' => $activeIds,
-            'boxes' => $cards->isEmpty() ? null : $this->overview->boxes($user, $model, $run, $direction, $activeIds === null ? $cards->count() : count($activeIds)),
+            'boxes' => $boxes,
+            'learns' => $isOwner || $isFollowing,
+            'learnable' => $learnable,
             'cards' => $cards,
             'isOwner' => $isOwner,
-            'isFollowing' => ! $isOwner && $this->decks->isFollowing($user, $model),
+            'isFollowing' => $isFollowing,
             'followerCount' => $this->decks->followerCount($model),
             'openAddSheet' => $isOwner && $request->boolean('new'),
             'changedOriginals' => $this->cards->pendingOriginalCount($user, $model),
@@ -125,14 +144,26 @@ class DeckController extends Controller
     {
         $model = $this->decks->follow($request->user(), $deck);
 
-        return redirect("/decks/{$model->id}")->with('toast', ['kind' => 'success', 'message' => 'Du folgst jetzt diesem Stapel.']);
+        return redirect("/decks/{$model->id}")->with('toast', ['kind' => 'success', 'message' => 'Du lernst diesen Stapel jetzt. Die Karten kommen unter Heute dran.']);
     }
 
     public function unfollow(Request $request, string $deck): RedirectResponse
     {
         $this->decks->unfollow($request->user(), $deck);
 
-        return redirect('/decks')->with('toast', ['kind' => 'success', 'message' => 'Du folgst dem Stapel nicht mehr.']);
+        return redirect('/decks')->with('toast', ['kind' => 'success', 'message' => 'Du lernst den Stapel nicht mehr.']);
+    }
+
+    /** "Auch rückwärts lernen" on or off, for the viewer and this deck. */
+    public function reverse(Request $request, string $deck): RedirectResponse
+    {
+        $on = $request->boolean('on');
+        $this->preferences->setReverse($request->user(), $deck, $on);
+
+        return redirect("/decks/{$deck}")->with('toast', [
+            'kind' => 'success',
+            'message' => $on ? 'Du lernst diesen Stapel jetzt auch rückwärts.' : 'Du lernst diesen Stapel nur noch vorwärts.',
+        ]);
     }
 
     /** htmx: the cards in one box of a run, for the sheet behind the box bar. */

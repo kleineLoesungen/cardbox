@@ -20,7 +20,7 @@
         @if ($isOwner)
           @if ($deck->is_shared)
             <span class="badge badge-brand">geteilt</span>
-            {{ $followerCount === 1 ? '1 Person folgt' : $followerCount.' Personen folgen' }}
+            {{ $followerCount === 1 ? '1 Person lernt mit' : $followerCount.' Personen lernen mit' }}
           @else
             <span class="badge badge-neutral">privat</span> nur für dich sichtbar
           @endif
@@ -30,7 +30,7 @@
         @else
           von {{ $deck->user->name }}
           @if ($isFollowing)
-            · <span class="badge badge-success">du folgst</span>
+            · <span class="badge badge-success">lernst du</span>
           @endif
         @endif
       </p>
@@ -63,20 +63,15 @@
     </a>
   @endif
 
-  {{-- Somebody else's deck the viewer does not follow yet: the two ways to use it. --}}
+  {{-- Somebody else's deck the viewer does not learn yet: one way in ("Lernen" = follow). Copying is in "⋯". --}}
   @if (! $isOwner && ! $isFollowing)
     <div class="card mb-4">
       <div class="card-body stack">
-        <p class="text-sm">Diesen Stapel hat {{ $deck->user->name }} geteilt. Wie möchtest du ihn nutzen?</p>
+        <p class="text-sm">Diesen Stapel hat {{ $deck->user->name }} geteilt.</p>
         <form method="post" action="/decks/{{ $deck->id }}/follow">
           @csrf
-          <button type="submit" class="btn btn-primary btn-lg btn-block">Folgen</button>
-          <p class="hint mt-1 text-center">Du lernst mit, {{ $deck->user->name }} hält ihn aktuell.</p>
-        </form>
-        <form method="post" action="/decks/{{ $deck->id }}/copy">
-          @csrf
-          <button type="submit" class="btn btn-secondary btn-lg btn-block">Kopieren</button>
-          <p class="hint mt-1 text-center">Du bekommst eine eigene Fassung zum Ändern.</p>
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Lernen</button>
+          <p class="hint mt-1 text-center">Die Karten kommen ab jetzt unter Heute dran.</p>
         </form>
       </div>
     </div>
@@ -139,6 +134,20 @@
 {{-- "⋯" menu: what the viewer may do with this deck. --}}
 <x-sheet id="deck-menu" :title="$deck->name">
   <div class="stack gap-1">
+    @if ($cards->isNotEmpty() && ($isOwner || $isFollowing))
+      {{-- Per person and deck (docs/specs/einfacher-lernen.md, C). --}}
+      <form method="post" action="/decks/{{ $deck->id }}/reverse">
+        @csrf
+        <input type="hidden" name="on" value="{{ $withReverse ? '0' : '1' }}">
+        <button type="submit" class="sheet-action flex items-center justify-between gap-3">
+          <span class="min-w-0">
+            Auch rückwärts lernen
+            <span class="block text-xs font-normal text-muted">Dann fragt die App auch {{ \App\Enums\Direction::Backward->label($deck) }}.</span>
+          </span>
+          <span class="badge {{ $withReverse ? 'badge-success' : 'badge-neutral' }} shrink-0">{{ $withReverse ? 'an' : 'aus' }}</span>
+        </button>
+      </form>
+    @endif
     @if ($cards->isNotEmpty())
       <a href="/decks/{{ $deck->id }}/selection" class="sheet-action">Karten auswählen (nur einen Teil lernen)</a>
     @endif
@@ -161,27 +170,32 @@
       @include('decks.partials.reset-action')
       <form method="post" action="/decks/{{ $deck->id }}/delete"
             data-confirm-action="Stapel löschen"
-            data-confirm="Stapel „{{ $deck->name }}“ mit {{ $cards->count() === 1 ? '1 Karte' : $cards->count().' Karten' }} löschen?{{ $followerCount > 0 ? ' '.($followerCount === 1 ? '1 Person folgt' : $followerCount.' Personen folgen').' ihm und verliert ihn auch.' : '' }}">
+            data-confirm="Stapel „{{ $deck->name }}“ mit {{ $cards->count() === 1 ? '1 Karte' : $cards->count().' Karten' }} löschen?{{ $followerCount > 0 ? ' '.($followerCount === 1 ? '1 Person lernt' : $followerCount.' Personen lernen').' mit und verliert ihn auch.' : '' }}">
         @csrf
         <button type="submit" class="sheet-action sheet-action-danger">Stapel löschen</button>
       </form>
     @else
       @if ($isFollowing)
         <form method="post" action="/decks/{{ $deck->id }}/unfollow"
-              data-confirm-action="Nicht mehr folgen"
-              data-confirm="Nicht mehr folgen? Dein Lernstand bleibt erhalten, falls du wieder folgst.">
+              data-confirm-action="Nicht mehr lernen"
+              data-confirm="Nicht mehr lernen? Dein Lernstand bleibt, falls du ihn wieder lernst.">
           @csrf
-          <button type="submit" class="sheet-action">Nicht mehr folgen</button>
+          <button type="submit" class="sheet-action">Nicht mehr lernen</button>
         </form>
       @else
         <form method="post" action="/decks/{{ $deck->id }}/follow">
           @csrf
-          <button type="submit" class="sheet-action">Folgen</button>
+          <button type="submit" class="sheet-action">Lernen</button>
         </form>
       @endif
       <form method="post" action="/decks/{{ $deck->id }}/copy">
         @csrf
-        <button type="submit" class="sheet-action">Als eigenen Stapel kopieren</button>
+        <button type="submit" class="sheet-action">
+          <span class="min-w-0">
+            Eigene Fassung anlegen
+            <span class="block text-xs font-normal text-muted">Du bekommst eine Kopie, die du selbst ändern kannst.</span>
+          </span>
+        </button>
       </form>
       <a href="/decks/{{ $deck->id }}/export" class="sheet-action" download>Als CSV exportieren</a>
       @include('decks.partials.reset-action')

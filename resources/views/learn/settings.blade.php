@@ -25,10 +25,11 @@
 @php($boxCount = is_scalar($oldCount) && is_numeric($oldCount) ? (int) $oldCount : $current['box_count'])
 
 <div class="mx-auto max-w-md">
-  <h1 class="text-2xl font-semibold tracking-tight">Lernplan</h1>
+  <a href="/account" class="text-sm text-muted hover:text-content">← Mein Konto</a>
+  <h1 class="mt-1 text-2xl font-semibold tracking-tight">Lernplan</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Wie oft Karten wiederkommen. Gilt für Stapel, die du neu startest – begonnene behalten ihren Plan.
-    Einen einzelnen Stapel kannst du in der Stapelansicht mit einem anderen Plan starten.
+    Soll ein begonnener Stapel den neuen Plan bekommen, setze ihn im Stapel unter ⋯ mit „Fortschritt zurücksetzen“ zurück.
   </p>
 
   <x-form-error />

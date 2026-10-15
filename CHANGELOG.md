@@ -7,6 +7,14 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.15.2
+- Einfacher lernen: „Heute“ → „Los geht's“ bringt jetzt auch neue Karten aus allen Stapeln, bis zu 20 am Tag – mehr mit „Noch 20 neue Karten“. Gelernt werden muss nicht mehr im Stapel
+- Geteilte Stapel und Wörter im Wörterbuch lernt man mit einem Knopf „Lernen“ (statt „Folgen“). Eine eigene Fassung („Kopieren“) und Übernehmen stehen im ⋯-Menü bzw. unter „Mehr …“
+- Stapelseite aufgeräumt: kein Lernplan-Wechsel und keine Richtungswahl mehr. Neu: „Nur diesen Stapel lernen“, „Für den Test üben“ (alle Karten, bis jede einmal gewusst ist – zählt nicht) und im ⋯-Menü „Auch rückwärts lernen“
+- Der Lernplan steht jetzt unter „Mein Konto“ statt im Menü. Schon gestartete zusätzliche Lernpläne eines Stapels laufen weiter
+- Wer schon rückwärts gelernt hat, behält das: „Auch rückwärts lernen“ ist für diese Stapel eingeschaltet
+- Migration: 2026_10_15_000000_create_deck_preferences_table.php
+
 ## 2026.10.15
 - Wörterbuch: Eigene Karten lassen sich direkt dort bearbeiten und löschen. Steht ein Wort in mehreren Stapeln, wählt man einen Stapel oder alle auf einmal. Bei fremden Karten gibt es „Fehler melden“
 - Moderation und Verwaltung können im Wörterbuch auch Karten in geteilten Stapeln anderer bearbeiten und löschen; jede solche Änderung wird protokolliert

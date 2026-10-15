@@ -23,7 +23,7 @@
   <form hx-post="/decks/{{ $deck->id }}/cards/{{ $card->id }}/delete"
         hx-target="#card-{{ $card->id }}" hx-swap="outerHTML"
         data-confirm-action="Karte löschen"
-        hx-confirm="{{ $deck->is_shared && $followerCount > 0 ? 'Karte löschen? Auch alle, die diesem Stapel folgen, verlieren sie samt Lernstand.' : 'Karte löschen?' }}">
+        hx-confirm="{{ $deck->is_shared && $followerCount > 0 ? 'Karte löschen? Auch alle, die mit diesem Stapel lernen, verlieren sie samt Lernstand.' : 'Karte löschen?' }}">
     <button type="submit" class="btn btn-ghost btn-block text-danger">Karte löschen</button>
   </form>
   @endunless

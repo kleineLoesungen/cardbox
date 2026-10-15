@@ -262,7 +262,7 @@ class DeckService
         $deck = $this->getVisible($user, $id);
 
         if ($deck->isOwnedBy($user)) {
-            throw ValidationException::withMessages(['deck' => 'Deinem eigenen Stapel kannst du nicht folgen.']);
+            throw ValidationException::withMessages(['deck' => 'Deinen eigenen Stapel lernst du schon.']);
         }
 
         $user->followedDecks()->syncWithoutDetaching([$deck->id]);
@@ -357,7 +357,8 @@ class DeckService
                     'last_reviewed_at' => $p->last_reviewed_at,
                     'review_count' => $p->review_count,
                     'correct_count' => $p->correct_count,
-                    'created_at' => $now,
+                    // Kept: created_at says when a card was started, for the daily new cards on "Heute".
+                    'created_at' => $p->created_at,
                     'updated_at' => $now,
                 ])
                 ->all();
@@ -365,6 +366,15 @@ class DeckService
             foreach (array_chunk($progress, 500) as $chunk) {
                 CardProgress::insert($chunk);
             }
+
+            // "Auch rückwärts lernen" goes along, or backward progress would be hidden.
+            DB::table('deck_preferences')->insertUsing(
+                ['user_id', 'deck_id', 'with_reverse', 'created_at', 'updated_at'],
+                DB::table('deck_preferences')
+                    ->where('user_id', $user->id)
+                    ->where('deck_id', $original->id)
+                    ->selectRaw('user_id, ?, with_reverse, ?, ?', [$copy->id, $now, $now]),
+            );
 
             return $copy;
         });

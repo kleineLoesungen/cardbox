@@ -70,12 +70,12 @@
                 <span class="block truncate text-xs text-subtle">
                   von {{ $deck->user->name }}
                   @if ($deck->followers_count > 0)
-                    · {{ $deck->followers_count === 1 ? '1 folgt' : $deck->followers_count.' folgen' }}
+                    · {{ $deck->followers_count === 1 ? '1 lernt mit' : $deck->followers_count.' lernen mit' }}
                   @endif
                 </span>
               </span>
               @if ($deck->followed_by_me)
-                <span class="badge badge-success shrink-0">du folgst</span>
+                <span class="badge badge-success shrink-0">lernst du</span>
               @endif
               <span aria-hidden="true" class="text-subtle">›</span>
             </a>

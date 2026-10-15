@@ -77,7 +77,9 @@ describe('Hilfe', function () {
         $this->get('/help')->assertOk()
             ->assertSee('So funktioniert der Karteikasten')
             ->assertSee('9 Tage')
-            ->assertSee('Folgen oder kopieren?')
+            ->assertSee('So lernst du')
+            ->assertSee('Stapel von anderen lernen')
+            ->assertSee('Für den Test üben')
             ->assertSee('Zum Home-Bildschirm');
     });
 
@@ -85,10 +87,11 @@ describe('Hilfe', function () {
         $this->get('/help')->assertRedirect('/login');
     });
 
-    it('steht mit dem Lernplan im Menü', function () {
+    it('steht im Menü, der Lernplan im Konto', function () {
         actingAsUser();
 
-        $this->get('/learn')->assertSee('href="/learn/settings"', false)->assertSee('href="/help"', false);
+        $this->get('/learn')->assertDontSee('href="/learn/settings"', false)->assertSee('href="/help"', false);
+        $this->get('/account')->assertSee('href="/learn/settings"', false)->assertSee('Normal – Für jeden Tag. Passt meistens.');
     });
 });
 

@@ -42,7 +42,7 @@ einzelnen Abläufen weiter unten gelten sie zuerst.
    | vorwärts / rückwärts | „Deutsch → Englisch" / „Englisch → Deutsch" |
    | Übungsmodus | **Freies Üben** (zählt nicht) |
    | öffentlich | **Mit allen teilen** |
-   | abonnieren / Live-Verweis | **Folgen** |
+   | abonnieren / Live-Verweis / folgen | **Lernen** (seit [einfacher-lernen.md](einfacher-lernen.md); im Code weiter `follow`) |
    | Fork / Duplikat | **Kopieren** |
    | CSV-Import | **Liste einfügen** |
 

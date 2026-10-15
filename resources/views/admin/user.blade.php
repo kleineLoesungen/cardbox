@@ -123,7 +123,7 @@
                     <span class="block text-muted">
                       {{ $deck->frontLabel() }} → {{ $deck->backLabel() }} ·
                       {{ $deck->is_shared ? 'geteilt' : 'privat' }} ·
-                      {{ $deck->cards_count }} {{ $deck->cards_count === 1 ? 'Karte' : 'Karten' }}@if ($deck->is_shared) · {{ $deck->followers_count }} folgen @endif
+                      {{ $deck->cards_count }} {{ $deck->cards_count === 1 ? 'Karte' : 'Karten' }}@if ($deck->is_shared) · {{ $deck->followers_count }} lernen mit @endif
                     </span>
                   </span>
                 </label>
@@ -134,7 +134,7 @@
             <label class="label" for="to_username">An Konto (Benutzername)</label>
             <input class="input" type="text" id="to_username" name="to_username" value="{{ old('to_username') }}" required
                    autocapitalize="none" autocorrect="off" spellcheck="false">
-            <p class="hint">Die neue Besitzerin kann die Stapel danach bearbeiten, teilen und löschen. Geteilten Stapeln folgt {{ $edited->name }} danach und lernt weiter; private sieht {{ $edited->name }} nicht mehr.</p>
+            <p class="hint">Die neue Besitzerin kann die Stapel danach bearbeiten, teilen und löschen. Geteilte Stapel lernt {{ $edited->name }} danach weiter; private sieht {{ $edited->name }} nicht mehr.</p>
           </div>
           <button type="submit" class="btn btn-secondary">Übertragen</button>
         </form>
@@ -155,7 +155,7 @@
         @else
           <form method="post" action="/admin/users/{{ $edited->id }}/delete"
                 data-confirm-action="Konto löschen"
-                data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?{{ $deckSummary['decks'] > 0 ? ' Dabei werden '.$deckSummary['decks'].' Stapel gelöscht' : '' }}{{ $deckSummary['followers'] > 0 ? ', denen insgesamt '.$deckSummary['followers'].' Personen folgen' : '' }}{{ $deckSummary['decks'] > 0 ? '. Stapel lassen sich vorher übertragen.' : '' }}">
+                data-confirm="Konto „{{ $edited->name }}“ endgültig löschen?{{ $deckSummary['decks'] > 0 ? ' Dabei werden '.$deckSummary['decks'].' Stapel gelöscht' : '' }}{{ $deckSummary['followers'] > 0 ? ', mit denen insgesamt '.$deckSummary['followers'].' Personen lernen' : '' }}{{ $deckSummary['decks'] > 0 ? '. Stapel lassen sich vorher übertragen.' : '' }}">
             @csrf
             <button type="submit" class="btn btn-danger">Konto löschen</button>
           </form>

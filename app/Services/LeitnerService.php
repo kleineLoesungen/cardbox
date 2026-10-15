@@ -111,9 +111,10 @@ class LeitnerService
         // would otherwise collide on the unique index.
         DB::statement(
             'INSERT INTO card_progress (id, user_id, deck_run_id, card_id, direction, box, review_count, correct_count, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, 0, 0, 0, now(), now())
+             VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?)
              ON CONFLICT (deck_run_id, card_id, direction) DO NOTHING',
-            [(string) Str::uuid(), $user->id, $run->id, $card->id, $direction->value],
+            // The application clock, not the database's: created_at says when a card was started ("new_per_day").
+            [(string) Str::uuid(), $user->id, $run->id, $card->id, $direction->value, now(), now()],
         );
 
         $progress = CardProgress::query()

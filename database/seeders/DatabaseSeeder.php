@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\Direction;
+use App\Enums\StudyPlan;
 use App\Enums\SuggestionStatus;
 use App\Enums\SuggestionType;
 use App\Models\Card;
@@ -76,7 +77,9 @@ class DatabaseSeeder extends Seeder
         ]);
         $runs = app(DeckRunService::class);
         $normal = $runs->forStandard($bea, $englisch);
-        $schnell = $runs->start($bea, $englisch->id, 'quick');
+        // A second plan as started before plans moved to the account; the deck page still switches between them.
+        $schnell = DeckRun::create(['user_id' => $bea->id, 'deck_id' => $englisch->id, 'plan' => StudyPlan::Quick->value,
+            'box_count' => StudyPlan::Quick->boxCount(), 'day_gaps' => StudyPlan::Quick->dayGaps()]);
         $cards = $englisch->cards()->orderBy('created_at')->get();
         // Normal: two due today, one tomorrow, one later, one mastered; the rest new.
         $this->progress($normal, $cards[0], 1, 0);

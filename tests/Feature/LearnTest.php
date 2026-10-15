@@ -43,9 +43,9 @@ function progressOf(User $user, Card $card, Direction $direction = Direction::Fo
 }
 
 /** Starts a round for a deck and returns the card ids in queue order. */
-function startRound(Deck $deck, string $direction = 'forward'): array
+function startRound(Deck $deck): array
 {
-    test()->post('/learn/round', ['deck' => $deck->id, 'direction' => $direction])->assertRedirect('/learn/round');
+    test()->post('/learn/round', ['deck' => $deck->id])->assertRedirect('/learn/round');
 
     return array_column(session('study_round')['queue'], 'card');
 }
@@ -130,15 +130,20 @@ describe('Karteikasten', function () {
         $this->get("/decks/{$deck->id}")->assertSee('Kann ich: 0 Karten')->assertSee('Mein Plan');
     });
 
-    it('führt Fortschritt je Richtung getrennt', function () {
+    it('führt Fortschritt je Richtung getrennt, rückwärts erst nach dem Einschalten', function () {
         $ich = actingAsUser();
         $card = Card::factory()->for(Deck::factory()->for($ich))->create();
 
-        startRound($card->deck, 'backward');
-        answer($card, true);
+        expect(startRound($card->deck))->toBe([$card->id]);
+        $this->post("/decks/{$card->deck_id}/reverse", ['on' => '1'])->assertRedirect();
+        expect(startRound($card->deck))->toBe([$card->id, $card->id])
+            ->and(array_column(session('study_round')['queue'], 'direction'))->toBe(['forward', 'backward']);
 
-        expect(progressOf($ich, $card, Direction::Backward)->box)->toBe(1)
-            ->and(progressOf($ich, $card, Direction::Forward))->toBeNull();
+        answer($card, true);
+        expect(progressOf($ich, $card, Direction::Forward)->box)->toBe(1)
+            ->and(progressOf($ich, $card, Direction::Backward))->toBeNull();
+        answer($card, false);
+        expect(progressOf($ich, $card, Direction::Backward)->box)->toBe(1);
     });
 
     it('rechnet „heute“ in der Lern-Zeitzone, nicht in UTC', function () {
@@ -276,8 +281,10 @@ describe('Los geht\'s', function () {
 
         $this->post('/learn/round')->assertRedirect('/learn/round');
 
-        expect(array_column(session('study_round')['queue'], 'card'))
-            ->toEqualCanonicalizing([$eigen->id, $gefolgt->id]);
+        // Due ones first, then new ones (docs/specs/einfacher-lernen.md, A).
+        $queue = array_column(session('study_round')['queue'], 'card');
+        expect(array_slice($queue, 0, 2))->toEqualCanonicalizing([$eigen->id, $gefolgt->id])
+            ->and(array_slice($queue, 2))->toBe([$neu->id]);
     });
 
     it('zeigt auf „Heute“ fällige Karten, morgen fällige und die Lernserie', function () {

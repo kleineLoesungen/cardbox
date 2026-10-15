@@ -127,9 +127,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/selection', [DeckSelectionController::class, 'update']);
         Route::post('/selection/all', [DeckSelectionController::class, 'all']);
         Route::get('/export', [DeckController::class, 'export']);
-        // Deck runs: a deck learned with one plan. There is deliberately no
-        // route that changes a run's plan — reset and start again instead.
-        Route::post('/runs', [DeckRunController::class, 'store']);
+        // "Auch rückwärts lernen", per person and deck.
+        Route::post('/reverse', [DeckController::class, 'reverse']);
+        // Deck runs: a deck learned with one plan. New runs start only with
+        // the standard plan (StudyRoundService); here they are only reset.
         Route::post('/runs/{run}/reset', [DeckRunController::class, 'reset'])->whereUuid('run');
         Route::get('/box/{box}', [DeckController::class, 'box'])->where('box', '[0-9]{1,2}');
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\LearningSettingsService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -10,19 +11,23 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
- * Own account: change display name and password. The username is shown
- * but only an administrator may change it.
+ * Own account: change display name and password, link to the learning
+ * plan. The username is shown but only an administrator may change it.
  *
  * Zwei Formulare auf einer Seite — deshalb getrennte Fehler-Taschen
  * ("profile", "password"), sonst erschiene ein Fehler bei beiden.
  */
 class AccountController extends Controller
 {
-    public function __construct(private UserService $users) {}
+    public function __construct(private UserService $users, private LearningSettingsService $learning) {}
 
     public function show(Request $request): View
     {
-        return view('pages.account', ['user' => $request->user()]);
+        return view('pages.account', [
+            'user' => $request->user(),
+            // "Lernplan" lives here since it left the menu (docs/specs/einfacher-lernen.md, D).
+            'plan' => $this->learning->current($request->user()),
+        ]);
     }
 
     public function updateProfile(Request $request): RedirectResponse
