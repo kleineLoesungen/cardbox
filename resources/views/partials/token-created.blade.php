@@ -12,7 +12,7 @@
   </div>
 
   <div class="row gap-2">
-    <input class="input font-mono text-xs" id="token-value" value="{{ $plaintext }}" readonly>
+    <input class="input font-mono text-base sm:text-xs" id="token-value" value="{{ $plaintext }}" readonly>
     <button type="button" class="btn btn-secondary shrink-0" data-copy-token>Kopieren</button>
   </div>
 </div>
