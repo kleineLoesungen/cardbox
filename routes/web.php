@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CardOriginController;
 use App\Http\Controllers\CardSuggestionController;
+use App\Http\Controllers\ChildController;
 use App\Http\Controllers\DeckBundleController;
 use App\Http\Controllers\DeckCardController;
 use App\Http\Controllers\DeckController;
@@ -107,6 +108,16 @@ Route::middleware('auth')->group(function () {
     // Cards per round (docs/specs/runden-und-knifflige-woerter.md, A).
     Route::post('/account/round-size', [AccountController::class, 'updateRoundSize']);
     Route::post('/account/push-subscriptions', [AccountController::class, 'storePushSubscription'])->middleware('throttle:10,1');
+
+    // Parents see the progress (docs/specs/eltern-ansicht.md). The link is
+    // checked in GuardianService: children not linked answer 404, for admins too.
+    Route::post('/account/guardian-code', [AccountController::class, 'createGuardianCode']);
+    Route::post('/account/guardians/{user}/delete', [AccountController::class, 'removeGuardian'])->whereUuid('user');
+    // Own prefix, so the limit counts code attempts only: 10 per hour and account.
+    Route::post('/account/children', [AccountController::class, 'addChild'])->middleware('throttle:10,60,guardian-code');
+    Route::post('/account/children/{user}/delete', [AccountController::class, 'removeChild'])->whereUuid('user');
+    Route::get('/children', [ChildController::class, 'index']);
+    Route::get('/children/{user}', [ChildController::class, 'show'])->whereUuid('user');
 
     // Decks and cards. Ownership and visibility are checked in DeckService /
     // CardService: other people's private decks answer 404.

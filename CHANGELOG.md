@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.18.2
+- Eltern sehen den Fortschritt: Das Kind erzeugt unter Mein Konto → Eltern einen Code (gilt 24 Stunden, nur einmal). Ein Elternteil gibt ihn unter „Kind hinzufügen“ ein und sieht dann unter „Meine Kinder“ Lerntage der letzten vier Wochen, Tagesziel, Wortschatz, Stapel mit Fortschritt und knifflige Wörter – nur ansehen, keine einzelnen Antworten. Das Kind sieht, wer zuschaut, und kann es jederzeit beenden. Kein Admin nötig, keine neue Rolle
+- Migration: 2026_10_18_100000_create_guardian_tables.php
+
 ## 2026.10.18
 - Karten je Runde: Unter Mein Konto wählbar (5, 10 oder 20). Kürzere Runden sind schneller geschafft
 - Knifflige Wörter: Karten, die dreimal falsch waren, sind im Stapel markiert und lassen sich mit „Knifflige Wörter üben“ gezielt wiederholen. Am Rundenende ein Anstoß zur Eselsbrücke

@@ -31,7 +31,7 @@
 
       {{-- Breite Bildschirme: Navigation direkt in der Kopfzeile. --}}
       <nav class="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
-        <x-nav-links link-class="nav-link" :pending="$pendingUserCount" />
+        <x-nav-links link-class="nav-link" :pending="$pendingUserCount" :children="$hasChildren" />
       </nav>
 
       <div class="ml-auto flex items-center gap-1">
@@ -141,7 +141,7 @@
     <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-border-strong" aria-hidden="true"></div>
 
     <nav class="container-app flex max-h-[70dvh] flex-col gap-1 overflow-y-auto py-3">
-      <x-nav-links link-class="nav-link-mobile" :pending="$pendingUserCount" />
+      <x-nav-links link-class="nav-link-mobile" :pending="$pendingUserCount" :children="$hasChildren" />
 
       <div class="my-2 border-t border-border"></div>
 

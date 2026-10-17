@@ -79,23 +79,76 @@ class LearningOverviewService
      */
     public function hardCardIds(User $user, Deck $deck): array
     {
-        [$active, $bindings] = $this->selection->activeCondition($user);
-        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
-
-        return DB::table('card_progress')
-            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
-            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
-            ->where('card_progress.user_id', $user->id)
+        return $this->hardRows($user)
             ->where('cards.deck_id', $deck->id)
-            ->whereRaw('card_progress.review_count - card_progress.correct_count >= ?', [(int) config('learning.hard_wrong')])
-            ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
-            ->whereRaw($active, $bindings)
-            ->whereRaw($learned, $learnedBindings)
             ->distinct()
             ->pluck('cards.id')
             ->map(fn ($id) => (string) $id)
             ->values()
             ->all();
+    }
+
+    /**
+     * "Knifflige Wörter" across "Meine Stapel", most often wrong first, for
+     * the parents' view (eltern-ansicht.md, B5).
+     *
+     * @return list<array{word: string, deck: string}>
+     */
+    public function hardWords(User $user, int $limit): array
+    {
+        $ids = $this->hardRows($user)
+            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->groupBy('cards.id')
+            ->select('cards.id')
+            ->orderByRaw('max(card_progress.review_count - card_progress.correct_count) desc')
+            ->orderBy('cards.id')
+            ->limit($limit)
+            ->pluck('cards.id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $cards = Card::with('deck')->whereKey($ids)->get()->keyBy('id');
+
+        return array_values(array_filter(array_map(fn (string $id) => ($card = $cards->get($id)) === null ? null : [
+            'word' => $card->frontText().' – '.$card->backText(),
+            'deck' => $card->deck->name,
+        ], $ids)));
+    }
+
+    /**
+     * The cards that got to "Kann ich" last, as "front – back", for the
+     * parents' view (eltern-ansicht.md, B3). Same scope as vocabulary().
+     *
+     * @return list<string>
+     */
+    public function recentlyMastered(User $user, int $limit): array
+    {
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
+
+        $ids = DB::table('card_progress')
+            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
+            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
+            ->where('card_progress.user_id', $user->id)
+            ->whereColumn('card_progress.box', '>=', 'deck_runs.box_count')
+            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->whereRaw($active, $bindings)
+            ->whereRaw($learned, $learnedBindings)
+            ->groupBy('card_progress.card_id')
+            ->select('card_progress.card_id')
+            ->orderByRaw('max(card_progress.last_reviewed_at) desc nulls last')
+            ->orderBy('card_progress.card_id')
+            ->limit($limit)
+            ->pluck('card_progress.card_id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $cards = Card::whereKey($ids)->get()->keyBy('id');
+
+        return array_values(array_filter(array_map(
+            fn (string $id) => ($card = $cards->get($id)) === null ? null : $card->frontText().' – '.$card->backText(),
+            $ids,
+        )));
     }
 
     /**
@@ -308,6 +361,22 @@ class LearningOverviewService
         usort($result, fn (array $a, array $b) => ($a['days'] ?? 0) <=> ($b['days'] ?? 0));
 
         return ['run' => $run, 'entries' => $result];
+    }
+
+    /** Progress rows that make a card "knifflig", joined with cards and runs. */
+    private function hardRows(User $user): Builder
+    {
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
+
+        return DB::table('card_progress')
+            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
+            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
+            ->where('card_progress.user_id', $user->id)
+            ->whereRaw('card_progress.review_count - card_progress.correct_count >= ?', [(int) config('learning.hard_wrong')])
+            ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
+            ->whereRaw($active, $bindings)
+            ->whereRaw($learned, $learnedBindings);
     }
 
     /**

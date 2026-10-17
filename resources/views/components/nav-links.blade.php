@@ -5,7 +5,7 @@
   Das Ausblenden nach Rolle ist reine Anzeige. Die Absicherung ist die
   Routengruppe in routes/web.php.
 --}}
-@props(['linkClass', 'pending' => 0])
+@props(['linkClass', 'pending' => 0, 'children' => false])
 
 @php($user = auth()->user())
 
@@ -13,6 +13,10 @@
 <a href="/decks" class="{{ $linkClass }} {{ request()->is('decks*') ? 'nav-link-active' : '' }}">Stapel</a>
 <a href="/dictionary" class="{{ $linkClass }} {{ request()->is('dictionary') ? 'nav-link-active' : '' }}">Wörterbuch</a>
 <a href="/help" class="{{ $linkClass }} {{ request()->is('help') ? 'nav-link-active' : '' }}">Hilfe</a>
+
+@if ($children)
+  <a href="/children" class="{{ $linkClass }} {{ request()->is('children*') ? 'nav-link-active' : '' }}">Meine Kinder</a>
+@endif
 
 @if ($user?->hasRole(\App\Enums\Role::Moderator))
   <a href="/moderation" class="{{ $linkClass }} {{ request()->is('moderation*') ? 'nav-link-active' : '' }}">Moderation</a>

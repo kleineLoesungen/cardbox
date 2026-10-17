@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\GuardianService;
 use App\Services\LeitnerService;
 use App\Services\PushSender;
 use App\Services\UserService;
@@ -51,6 +52,12 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
             'pendingUserCount',
             auth()->user()?->isAdmin() ? app(UserService::class)->pendingCount() : 0,
+        ));
+
+        // "Meine Kinder" in the menu only for accounts with children (eltern-ansicht.md, B).
+        View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
+            'hasChildren',
+            auth()->user() !== null && app(GuardianService::class)->hasChildren(auth()->user()),
         ));
     }
 }

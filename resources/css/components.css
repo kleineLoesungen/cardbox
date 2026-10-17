@@ -401,6 +401,16 @@
   .goal-ring > * { @apply relative; }
   .goal-ring-done { --ring: var(--color-success); }
 
+  /* --- Learning days for parents: four weeks as rows ------------------ */
+  .day-strip { @apply grid grid-cols-7 gap-1.5; }
+  .day-strip-head { @apply text-center text-xs text-subtle; }
+  .day { @apply block aspect-square rounded-ui border border-border bg-surface-sunken; }
+  .day-goal { @apply border-success bg-success; }
+  .day-learned { @apply border-success/50 bg-success/30; }
+  .day-future { @apply border-dashed bg-transparent; }
+  .day-today { @apply ring-2 ring-brand ring-offset-2 ring-offset-surface-raised; }
+  .day-legend { @apply inline-block size-3 align-middle; }
+
   /* --- Typed answers: the letters that were wrong ---------------------- */
   .answer-diff { @apply rounded-sm bg-warning/25 text-content underline decoration-warning decoration-2; }
 

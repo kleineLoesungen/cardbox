@@ -63,6 +63,7 @@ return [
         'back_language' => 'Sprache hinten',
         'body' => 'Text',
         'box_count' => 'Anzahl Fächer',
+        'code' => 'Code',
         'current_password' => 'Aktuelles Passwort',
         'daily_goal' => 'Tagesziel',
         'day_gaps' => 'Tage je Fach',

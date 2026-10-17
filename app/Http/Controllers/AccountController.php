@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\GuardianService;
 use App\Services\LearningSettingsService;
 use App\Services\LeitnerService;
 use App\Services\ReminderService;
@@ -27,6 +28,7 @@ class AccountController extends Controller
         private LearningSettingsService $learning,
         private ReminderService $reminders,
         private LeitnerService $leitner,
+        private GuardianService $guardians,
     ) {}
 
     public function show(Request $request): View
@@ -41,7 +43,48 @@ class AccountController extends Controller
                 'publicKey' => (string) config('push.vapid.public_key'),
                 ...$this->reminders->status($request->user()),
             ] : null,
+            // Parents see the progress (docs/specs/eltern-ansicht.md, A).
+            'guardians' => $this->guardians->guardiansOf($request->user()),
+            'children' => $this->guardians->childrenOf($request->user()),
+            'guardianCode' => session('guardian_code'),
+            'codeExpiry' => $this->guardians->codeExpiry($request->user()),
         ]);
+    }
+
+    /** "Code für Eltern erzeugen": shown once, right after the redirect. */
+    public function createGuardianCode(Request $request): RedirectResponse
+    {
+        $code = $this->guardians->createCode($request->user());
+
+        return redirect('/account#eltern')->with('guardian_code', $code);
+    }
+
+    /** "Nicht mehr zeigen" by the child. */
+    public function removeGuardian(Request $request, string $user): RedirectResponse
+    {
+        $guardian = $this->guardians->unlinkAsChild($request->user(), $user);
+
+        return redirect('/account#eltern')->with('toast', ['kind' => 'success', 'message' => "{$guardian->name} sieht deinen Fortschritt nicht mehr."]);
+    }
+
+    /** "Kind hinzufügen" with the child's code. */
+    public function addChild(Request $request): RedirectResponse
+    {
+        try {
+            $child = $this->guardians->redeem($request->user(), $request->input('code'));
+        } catch (ValidationException $e) {
+            throw $e->errorBag('children')->redirectTo('/account#kinder');
+        }
+
+        return redirect("/children/{$child->id}")->with('toast', ['kind' => 'success', 'message' => "{$child->name} ist jetzt in deiner Liste."]);
+    }
+
+    /** "Entfernen" by the guardian. */
+    public function removeChild(Request $request, string $user): RedirectResponse
+    {
+        $child = $this->guardians->unlinkAsGuardian($request->user(), $user);
+
+        return redirect('/account#kinder')->with('toast', ['kind' => 'success', 'message' => "{$child->name} ist nicht mehr in deiner Liste."]);
     }
 
     /** Cards per round. */

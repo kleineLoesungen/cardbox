@@ -144,6 +144,23 @@
     </p>
   </section>
 
+  <section class="stack gap-2 scroll-mt-20" id="eltern">
+    <h2 class="text-lg font-semibold">Eltern schauen zu</h2>
+    <p class="text-muted">
+      Unter <strong>Mein Konto → Eltern</strong> erzeugst du einen Code und gibst
+      ihn deinen Eltern. Sie tippen ihn in ihrem eigenen Konto unter
+      <strong>Kind hinzufügen</strong> ein. Danach sehen sie, an welchen Tagen du
+      lernst, ob du dein Tagesziel schaffst, wie viele Wörter du kannst, welche
+      Stapel du lernst und welche Wörter knifflig sind. Deine einzelnen Antworten
+      sehen sie nicht, und ändern können sie nichts.
+    </p>
+    <p class="text-muted">
+      Der Code gilt 24 Stunden und nur einmal. Wer zuschaut, steht unter
+      <strong>Mein Konto → Eltern</strong>. Mit <strong>Nicht mehr zeigen</strong>
+      beendest du das sofort.
+    </p>
+  </section>
+
   <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Bald ist ein Test?</h2>
     <p class="text-muted">
