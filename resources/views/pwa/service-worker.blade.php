@@ -85,8 +85,11 @@ self.addEventListener("notificationclick", (event) => {
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
       const open = windows.find((w) => w.url.startsWith(self.location.origin));
       if (!open) return self.clients.openWindow(url);
-      // navigate() only works on windows this worker controls; otherwise open a new one.
-      return open.focus().then(() => open.navigate(url)).catch(() => self.clients.openWindow(url));
+      // The page goes there itself (layouts/base): WindowClient.navigate() is
+      // missing or ignored in some browsers (Safari on iOS), and focus() alone
+      // would leave the app on the last page.
+      open.postMessage({ type: "open", url });
+      return open.focus().catch(() => {});
     })
   );
 });

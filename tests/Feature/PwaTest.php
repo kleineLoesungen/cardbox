@@ -21,6 +21,16 @@ it('liefert den Service Worker ungecacht und ohne Seiten im Zwischenspeicher', f
         ->not->toContain('/dashboard');
 });
 
+it('öffnet beim Antippen einer Erinnerung die Seite über die App selbst', function () {
+    // Safari ignores WindowClient.navigate(): the worker asks the page, the page goes there.
+    expect($this->get('/sw.js')->getContent())->toContain('open.postMessage({ type: "open", url })')
+        ->toContain('self.clients.openWindow(url)');
+
+    actingAsUser();
+    $this->get('/learn')->assertSee('navigator.serviceWorker.addEventListener("message"', false)
+        ->assertSee('target.origin === location.origin', false);
+});
+
 it('zeigt die Offline-Seite ohne Anmeldung', function () {
     $this->get('/offline')->assertOk()->assertSee('Keine Verbindung');
 });

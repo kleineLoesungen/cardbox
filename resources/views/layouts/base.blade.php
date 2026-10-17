@@ -110,6 +110,12 @@
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js").catch(() => {});
       });
+      // Tapping a reminder (sw.js): go to the page it names — only pages of this app.
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type !== "open" || typeof event.data.url !== "string") return;
+        const target = new URL(event.data.url, location.origin);
+        if (target.origin === location.origin && target.href !== location.href) location.href = target.href;
+      });
     }
 
     // --- Meldungen ---------------------------------------------------------
