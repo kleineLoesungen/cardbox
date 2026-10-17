@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.17.3
+- Erinnerung: Unter Mein Konto lässt sich eine tägliche Mitteilung einschalten („12 Karten warten auf dich“), zu einer wählbaren Uhrzeit. Sie kommt nur, wenn Karten warten und das Tagesziel offen ist. Auf dem iPhone nur, wenn Cardbox auf dem Home-Bildschirm liegt
+- Betrieb: Für Erinnerungen braucht es VAPID-Schlüssel (php artisan push:keys), REMINDER_TOKEN und einen Aufruf alle 15 Minuten (z. B. Cronicle → POST /api/v1/reminders/run mit X-Cron-Token). Ohne Einrichtung bleibt die Funktion aus. Anleitung in docs/INSTALL-WEBSPACE.md
+- Migration: 2026_10_17_100000_create_push_subscriptions_table.php
+
 ## 2026.10.17.2
 - Antworten eintippen: Im Stapel unter ⋯ einschaltbar. Statt umzudrehen schreibt man die Antwort; Groß/Klein ist egal, jede Bedeutung zählt, Teile in Klammern sind freiwillig. Bei kleinen Tippfehlern sagt die App „Fast!“ und zeigt die richtige Schreibweise – beim Lernen zählt das als gewusst, beim Test üben kommt das Wort noch einmal
 - Migration: 2026_10_17_000000_add_type_answers_to_deck_preferences.php

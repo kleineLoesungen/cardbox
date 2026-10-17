@@ -33,7 +33,7 @@ RUN tailwindcss -i resources/css/app.css -o /out/app.css --minify
 FROM dunglas/frankenphp:1-php8.5-bookworm AS runtime
 
 # pdo_pgsql fuer Postgres, intl fuer Datums- und Zahlenformate, opcache fuer Tempo.
-RUN install-php-extensions pdo_pgsql intl opcache zip \
+RUN install-php-extensions pdo_pgsql intl opcache zip bcmath \
     && apt-get update && apt-get install -y --no-install-recommends curl unzip \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --create-home app

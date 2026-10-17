@@ -61,3 +61,32 @@ self.addEventListener("fetch", (event) => {
 
   // Alles andere (API, htmx-Fragmente) bleibt unangetastet.
 });
+
+// Daily reminder (docs/specs/schreiben-und-erinnern.md, B): show it; nothing
+// is cached. Only paths of this app are opened.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) {}
+  event.waitUntil(self.registration.showNotification(data.title || @js(config('app.name')), {
+    body: data.body || "",
+    icon: "/icons/icon-192.png",
+    tag: "reminder",
+    data: { url: typeof data.url === "string" ? data.url : "/learn" },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  // Only pages of this app ("/\\evil.com" would otherwise leave it).
+  let url = new URL(event.notification.data?.url || "/learn", self.location.origin);
+  if (url.origin !== self.location.origin) url = new URL("/learn", self.location.origin);
+  url = url.href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => w.url.startsWith(self.location.origin));
+      if (!open) return self.clients.openWindow(url);
+      // navigate() only works on windows this worker controls; otherwise open a new one.
+      return open.focus().then(() => open.navigate(url)).catch(() => self.clients.openWindow(url));
+    })
+  );
+});

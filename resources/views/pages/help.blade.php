@@ -129,6 +129,18 @@
   </section>
 
   <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Erinnerung</h2>
+    <p class="text-muted">
+      Unter <strong>Mein Konto → Erinnerung</strong> lässt du dich jeden Tag zu
+      einer Uhrzeit erinnern – nur, wenn noch Karten warten und dein Tagesziel
+      offen ist. Auf dem iPhone geht das, wenn Cardbox auf dem Home-Bildschirm
+      liegt. Die Mitteilung läuft über den Dienst deines Browsers (Apple, Google
+      oder Mozilla) und enthält nur, wie viele Karten warten und wie lang deine
+      Lernserie ist.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Bald ist ein Test?</h2>
     <p class="text-muted">
       Öffne den Stapel und tippe auf <strong>Für den Test üben</strong>. Dann
@@ -352,7 +364,7 @@
     </p>
   </section>
 
-  <section class="stack gap-2">
+  <section class="stack gap-2 scroll-mt-20" id="app">
     <h2 class="text-lg font-semibold">Als App auf den Startbildschirm</h2>
     <p class="text-muted">
       <strong>iPhone und iPad:</strong> In Safari unten auf <em>Teilen</em> tippen

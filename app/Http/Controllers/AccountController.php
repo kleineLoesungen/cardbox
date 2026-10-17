@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\LearningSettingsService;
+use App\Services\ReminderService;
 use App\Services\UserService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +21,11 @@ use Illuminate\View\View;
  */
 class AccountController extends Controller
 {
-    public function __construct(private UserService $users, private LearningSettingsService $learning) {}
+    public function __construct(
+        private UserService $users,
+        private LearningSettingsService $learning,
+        private ReminderService $reminders,
+    ) {}
 
     public function show(Request $request): View
     {
@@ -27,7 +33,46 @@ class AccountController extends Controller
             'user' => $request->user(),
             // "Lernplan" lives here since it left the menu (docs/specs/einfacher-lernen.md, D).
             'plan' => $this->learning->current($request->user()),
+            'reminder' => $this->reminders->enabled() ? [
+                'times' => $this->reminders->times(),
+                'publicKey' => (string) config('push.vapid.public_key'),
+                ...$this->reminders->status($request->user()),
+            ] : null,
         ]);
+    }
+
+    /** "Speichern" with a time, or "Ausschalten". */
+    public function updateReminder(Request $request): RedirectResponse
+    {
+        if ($request->boolean('off')) {
+            $this->reminders->turnOff($request->user());
+
+            return redirect('/account')->with('toast', ['kind' => 'success', 'message' => 'Erinnerung ausgeschaltet.']);
+        }
+
+        try {
+            $this->reminders->setTime($request->user(), $request->input('reminder_time'));
+        } catch (ValidationException $e) {
+            throw $e->errorBag('reminder');
+        }
+
+        return redirect('/account')->with('toast', ['kind' => 'success', 'message' => 'Erinnerung gespeichert.']);
+    }
+
+    /**
+     * JSON from the page's script: this browser's push subscription. Errors
+     * as JSON too — web routes would otherwise redirect, and fetch() would
+     * follow the redirect as if all went well.
+     */
+    public function storePushSubscription(Request $request): JsonResponse
+    {
+        try {
+            $this->reminders->subscribe($request->user(), $request->all());
+        } catch (ValidationException $e) {
+            return response()->json(['message' => $e->validator->errors()->first()], 422);
+        }
+
+        return response()->json(['ok' => true], 201);
     }
 
     public function updateProfile(Request $request): RedirectResponse

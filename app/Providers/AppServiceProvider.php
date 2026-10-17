@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Services\LeitnerService;
+use App\Services\PushSender;
 use App\Services\UserService;
+use App\Services\WebPushSender;
 use App\Support\Branding;
 use App\Support\Changelog;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // One instance per request: caches the learning plan between services.
         $this->app->scoped(LeitnerService::class);
+
+        // Daily reminders; tests swap in a fake sender.
+        $this->app->bind(PushSender::class, WebPushSender::class);
     }
 
     public function boot(): void

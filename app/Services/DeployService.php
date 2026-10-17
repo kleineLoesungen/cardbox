@@ -130,6 +130,12 @@ class DeployService
             'detail' => extension_loaded('zip') ? 'geladen' : 'fehlt (freiwillig) – ohne sie kein Export/Import mehrerer Stapel als ZIP',
         ];
 
+        // Optional: reminders (Web Push) work without, but gmp or bcmath make them much faster.
+        $checks['ext-gmp-bcmath'] = [
+            'ok' => true,
+            'detail' => extension_loaded('gmp') || extension_loaded('bcmath') ? 'geladen' : 'fehlt (freiwillig) – Erinnerungen werden langsamer',
+        ];
+
         foreach (['storage' => storage_path(), 'bootstrap/cache' => base_path('bootstrap/cache')] as $name => $path) {
             $checks['writable-'.$name] = [
                 'ok' => is_writable($path),

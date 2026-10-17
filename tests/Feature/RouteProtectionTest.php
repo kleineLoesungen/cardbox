@@ -27,6 +27,9 @@ const PUBLIC_ROUTES = [
     // Guarded by DEPLOY_HOOK_TOKEN (middleware deploy.token), not by a login
     // or app token — it has to run on the first deploy with an empty database.
     'POST api/v1/deploy',
+    // Guarded by REMINDER_TOKEN (middleware reminder.token), called by an outside
+    // scheduler (Cronicle, cron-job.org) — no person behind it. Answers numbers only.
+    'POST api/v1/reminders/run',
 ];
 
 /** @return array<string, Route> */

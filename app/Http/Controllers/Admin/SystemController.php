@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TestMail;
+use App\Services\ReminderService;
 use App\Services\UpdateCheck;
 use App\Support\Changelog;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,7 @@ use Illuminate\View\View;
  */
 class SystemController extends Controller
 {
-    public function __construct(private UpdateCheck $updates) {}
+    public function __construct(private UpdateCheck $updates, private ReminderService $reminders) {}
 
     public function index(Request $request): View
     {
@@ -51,6 +52,13 @@ class SystemController extends Controller
             'trustProxy' => (bool) config('app.trust_proxy'),
             'debug' => (bool) config('app.debug'),
             'testMailTo' => old('to', ''),
+            // Never the secrets, only whether they are set.
+            'reminders' => [
+                'keys' => $this->reminders->enabled(),
+                'error' => $this->reminders->configError(),
+                'token' => $this->reminders->tokenConfigured(),
+                'last' => $this->reminders->lastRun(),
+            ],
         ]);
     }
 

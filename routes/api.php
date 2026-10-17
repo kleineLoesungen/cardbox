@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\DeployController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\NoteController;
+use App\Http\Controllers\Api\V1\ReminderController;
 use App\Http\Controllers\Api\V1\TokenController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,11 @@ Route::get('/health', HealthController::class);
 // Not an app token: it must work on the first deploy with an empty database.
 // Off (404) unless DEPLOY_HOOK_TOKEN is set; every wrong token is 404 too.
 Route::post('/deploy', DeployController::class)->middleware(['deploy.throttle:10,1', 'deploy.token']);
+
+// Daily reminders (docs/specs/schreiben-und-erinnern.md, B3): called every 15
+// minutes by Cronicle, cron-job.org or the host's cron with X-Cron-Token.
+// Off (404) unless REMINDER_TOKEN is set; every wrong token is 404 too.
+Route::post('/reminders/run', ReminderController::class)->middleware(['throttle:10,1', 'reminder.token']);
 
 Route::get('/token', TokenController::class)->middleware('api.token');
 

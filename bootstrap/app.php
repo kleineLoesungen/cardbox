@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\LogoutInactiveUsers;
 use App\Http\Middleware\RequireDeployToken;
+use App\Http\Middleware\RequireReminderToken;
 use App\Http\Middleware\RequireScope;
 use App\Http\Middleware\ThrottleDeployHook;
 use App\Http\Middleware\TrustProxies;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'scope' => RequireScope::class,
             'deploy.token' => RequireDeployToken::class,
             'deploy.throttle' => ThrottleDeployHook::class,
+            'reminder.token' => RequireReminderToken::class,
         ]);
 
         // Gesperrte Konten bei der naechsten Anfrage abmelden — an ALLEN Web-Routen.

@@ -1,6 +1,6 @@
 # Schreiben und Erinnern
 
-Status: Teil A **umgesetzt** (17.10.2026) · Teil B Entwurf
+Status: Teil A und B **umgesetzt** (17.10.2026)
 
 Die nächsten zwei Schritte aus der Vorschlagsliste vom 16.10.2026:
 
@@ -173,6 +173,16 @@ Unter **Mein Konto** gibt es neu den Abschnitt **„Erinnerung“**:
 - **Antippen** öffnet „Heute“ (`/learn`), in der App, falls installiert.
 - Kann der Push-Dienst ein Gerät nicht mehr erreichen (abgemeldet,
   deinstalliert: Antwort 404/410), wird es gelöscht.
+- **Nur echte Push-Dienste:** Ein Gerät wird nur angenommen, wenn seine
+  Adresse bei einem Push-Dienst der Browser liegt (`fcm.googleapis.com`,
+  `push.apple.com`, `push.services.mozilla.com`, `notify.windows.com` samt
+  Unteradressen, `push.endpoint_hosts`). Sonst könnte jemand den Server
+  dazu bringen, an beliebige Rechner zu senden (SSRF).
+- Der letzte Lauf (Zeit, Zahlen) steht in der Tabelle `settings` unter
+  `reminders_last_run` und wird auf der Systemseite gezeigt.
+- Antwortet die Anmeldung eines Geräts mit einem Fehler, kommt er als JSON
+  (422) zurück, nicht als Weiterleitung. Das Skript zeigt dann „Das hat nicht
+  geklappt“.
 
 ### B3. Auslöser
 
@@ -198,10 +208,24 @@ Unter **Mein Konto** gibt es neu den Abschnitt **„Erinnerung“**:
   und Docker-Host mit eigenem Cron.
 - Zwei Aufrufe gleichzeitig verschicken nichts doppelt: Je Person wird
   `reminder_sent_on` vor dem Senden mit Sperre gesetzt.
-- Die Mitteilungen gehen nacheinander raus. Bei vielen Konten ist das eine
-  lange Anfrage; Grenze siehe Risiken.
-- `docs/INSTALL-WEBSPACE.md`, `INSTALL-WEBSERVER.md` und `INSTALL-DOCKER.md`
-  bekommen je einen Abschnitt „Erinnerungen einrichten“.
+- Die Mitteilungen gehen nacheinander raus, je Anfrage mit 5 s Zeitlimit,
+  höchstens 100 je Aufruf (`push.max_messages`) und höchstens 40 s lang
+  (`push.time_budget`, unter den 60 s von Cronicle). Was nicht mehr drankam,
+  oder alles, wenn der Versand als Ganzes scheitert (Schlüssel, Umgebung),
+  wird für den nächsten Aufruf wieder freigegeben (`failed`).
+- Höchstens 5 Geräte je Konto (`push.max_devices`); ein neues ersetzt das
+  älteste.
+- Mehr als 2 Stunden verspätet (Aufrufer ausgefallen) wird für den Tag
+  nichts mehr verschickt (`push.catch_up_hours`), damit kein Kind abends
+  spät noch eine Mitteilung bekommt.
+- Ein Gerät, das die Bibliothek nicht vorbereiten kann, gilt als „weg“ und
+  wird gelöscht. Scheitern gleich die ersten drei so, liegt es an der
+  Umgebung: Dann wird nichts gelöscht und alles kommt wieder.
+- Antworten 403 (z. B. nach einem Schlüsselwechsel) löschen das Gerät
+  nicht; sie stehen nur im Log (Host und Status, nie die Adresse).
+- `docs/INSTALL-WEBSPACE.md` bekommt den Abschnitt „Erinnerungen
+  einrichten“ mit Cronicle-Beispiel, `INSTALL-WEBSERVER.md` den Cronjob,
+  auch für Docker (`docker compose exec app php artisan reminders:send`).
 
 ### B4. Konfiguration
 
@@ -281,10 +305,12 @@ deshalb gleich die nächste Karte.
 
 **B:**
 - `config/push.php`, `.env.example`, `composer.json`.
-- `app/Services/PushSubscriptionService.php` (anmelden, abmelden,
-  bereinigen), `app/Services/ReminderService.php` (wer ist dran, Text,
-  Senden über `minishlink/web-push`, `reminder_sent_on`).
-- `app/Console/Commands/SendReminders.php`, `GeneratePushKeys.php`.
+- `app/Services/ReminderService.php` (Geräte anmelden und abmelden,
+  Uhrzeit, wer ist dran, Text, `reminder_sent_on`, Prüfung der
+  Konfiguration), `PushSender` (Schnittstelle) und `WebPushSender`
+  (`minishlink/web-push`, Guzzle mit Zeitlimit).
+- `routes/console.php`: `reminders:send`, `push:keys`.
+- `Dockerfile`: `bcmath` für schnellere Verschlüsselung.
 - `app/Http/Controllers/AccountController` (Uhrzeit, Geräte),
   `Api/V1/ReminderController`, Middleware `RequireReminderToken`.
 - `routes/web.php`, `routes/api.php`, `bootstrap/app.php` (Middleware-Alias).
@@ -334,7 +360,7 @@ deshalb gleich die nächste Karte.
 - Vor der Uhrzeit → nichts; Berliner Zeit statt UTC.
 - Gesperrte/nicht freigegebene Konten → nichts.
 - Antwort 410 → Gerät gelöscht.
-- Aufruf-URL: ohne/falsches Token 404 bzw. 403, ohne gesetztes Token 404,
+- Aufruf-URL: ohne, mit falschem oder zu kurzem Token 404 (wie der Deploy-Hook),
   mit Token 200 und Zahlen; `reminders:send` gleichwertig.
 - Ohne VAPID-Schlüssel kein Abschnitt im Konto, Sender sendet nichts.
 - Routentest: neue öffentliche Route nur mit Eintrag.
@@ -355,11 +381,14 @@ deshalb gleich die nächste Karte.
   nur nach ausdrücklichem Einschalten und gehört in die Hilfe. Die
   Produktseite bleibt ohne Dritte.
 - **Lange Anfrage beim Senden:** Jede Mitteilung ist eine HTTP-Anfrage an
-  einen Push-Dienst. `minishlink/web-push` schickt sie gebündelt und
-  parallel. Bei einigen Hundert Konten passt das in die Laufzeit einer
-  Anfrage auf dem Webspace; darüber bräuchte es Teillieferungen (Grenze je
-  Aufruf, z. B. 200, Rest beim nächsten Aufruf). Die Grenze wird gleich mit
-  eingebaut (`push.batch_size`).
+  einen Push-Dienst; `minishlink/web-push` v11 schickt sie nacheinander.
+  Deshalb die Grenzen oben (100 Nachrichten, 40 s je Aufruf). Für eine
+  Familie oder eine Klasse reicht das weit; bei Tausenden Konten bräuchte es
+  einen parallelen Versand.
+- **Ungetestet ohne Gerät:** Verschlüsselung und Antworten der Push-Dienste
+  sind mit einem nachgestellten Push-Dienst getestet (Guzzle-MockHandler),
+  nicht mit echten Diensten. Die erste echte Erinnerung auf einem Handy ist
+  der eigentliche Test.
 - **iOS:** Mitteilungen nur für installierte Web-Apps ab iOS 16.4. Ist die
   App nur im Safari-Tab offen, gibt es keine Erinnerung; der Hinweis sagt
   das.

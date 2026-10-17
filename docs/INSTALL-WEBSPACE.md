@@ -163,6 +163,45 @@ Administrator.** Weitere Konten melden sich selbst an und warten unter
 
 ---
 
+## Erinnerungen einrichten (freiwillig)
+
+Wer möchte, bekommt jeden Tag eine Mitteilung aufs Handy („12 Karten warten
+auf dich“). Auf dem Webspace läuft kein Hintergrundprozess, deshalb ruft ein
+Dienst von außen alle 15 Minuten eine geschützte Adresse auf.
+
+1. Lokal Schlüssel erzeugen und in die `.env` auf dem Webspace eintragen:
+
+   ```bash
+   php artisan push:keys
+   ```
+
+   Dazu `VAPID_SUBJECT="mailto:admin@example.com"` und ein Token:
+   `REMINDER_TOKEN=` mit der Ausgabe von `openssl rand -hex 32`.
+
+2. Einen Aufrufer einrichten, z. B. **Cronicle** (auf einer NAS) oder
+   cron-job.org:
+
+   | Feld | Wert |
+   |---|---|
+   | Plugin / Art | HTTP Request |
+   | Methode | `POST` |
+   | URL | `https://cardbox.example.com/api/v1/reminders/run` |
+   | Kopfzeile | `X-Cron-Token: <REMINDER_TOKEN>` |
+   | Zeitplan | alle 15 Minuten |
+   | Zeitlimit | 60 Sekunden |
+
+   Antwort bei Erfolg: `{"sent": 3, "skipped": 5, "removed": 0}`. Ein 404
+   heißt: Token fehlt, ist kürzer als 32 Zeichen oder falsch.
+
+3. Unter **Mehr → System** steht danach, wann zuletzt verschickt wurde.
+
+Der Kopf heißt bewusst `X-Cron-Token` statt `Authorization`, weil PHP über
+FastCGI den `Authorization`-Kopf oft verliert. Die Mitteilungen laufen über
+die Push-Dienste der Browser-Hersteller (Apple, Google, Mozilla); übertragen
+werden nur die Kartenzahl und die Lernserie, verschlüsselt.
+
+---
+
 ## Aktualisieren
 
 ```bash

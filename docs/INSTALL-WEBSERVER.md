@@ -280,6 +280,19 @@ Der Container räumt beim Start die Anmeldebremse auf. Auf dem Webserver
 15 3 * * * cd /var/www/cardbox && php artisan login-attempts:prune >/dev/null 2>&1
 ```
 
+**Erinnerungen** (freiwillig): `php artisan push:keys` ausführen, die zwei
+Zeilen und `VAPID_SUBJECT` in die `.env` übernehmen, dann:
+
+```cron
+# Fällige Erinnerungen verschicken, alle 15 Minuten
+*/15 * * * * cd /var/www/cardbox && php artisan reminders:send >/dev/null 2>&1
+```
+
+Statt des Cronjobs geht auch ein Aufruf von außen (Cronicle, cron-job.org),
+siehe [INSTALL-WEBSPACE.md](INSTALL-WEBSPACE.md#erinnerungen-einrichten-freiwillig).
+Im Docker-Betrieb ebenso: `docker compose exec app php artisan reminders:send`
+vom Cron des Hosts, oder der Aufruf von außen.
+
 ---
 
 ## 9. Erstes Konto

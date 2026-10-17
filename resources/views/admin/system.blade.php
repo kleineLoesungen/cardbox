@@ -215,6 +215,51 @@
     </div>
   </section>
 
+  {{-- --- Reminders (docs/specs/schreiben-und-erinnern.md, B4) ------------ --}}
+  <section class="card h-fit">
+    <div class="card-header"><h2 class="card-title">Erinnerungen</h2></div>
+    <div class="card-body stack">
+      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
+        <dt class="text-muted">Schlüssel</dt>
+        <dd class="min-w-0">
+          @if ($reminders['keys'] && $reminders['error'])
+            <span class="badge badge-warning">ungültig</span>
+          @else
+            <span class="badge {{ $reminders['keys'] ? 'badge-success' : 'badge-neutral' }}">{{ $reminders['keys'] ? 'gesetzt' : 'fehlen' }}</span>
+          @endif
+          <code class="code ml-1">VAPID_PUBLIC_KEY</code> <code class="code">VAPID_PRIVATE_KEY</code>
+          @if ($reminders['keys'] && $reminders['error'])
+            <span class="block text-xs text-danger">{{ $reminders['error'] }}</span>
+          @endif
+        </dd>
+
+        <dt class="text-muted">Aufruf-Token</dt>
+        <dd class="min-w-0">
+          <span class="badge {{ $reminders['token'] ? 'badge-success' : 'badge-neutral' }}">{{ $reminders['token'] ? 'gesetzt' : 'fehlt' }}</span>
+          <code class="code ml-1">REMINDER_TOKEN</code>
+        </dd>
+
+        <dt class="text-muted">Zuletzt</dt>
+        <dd class="min-w-0">
+          @if ($reminders['last'])
+            <x-datetime :value="\Illuminate\Support\Carbon::parse($reminders['last']['at'])" /> ·
+            {{ $reminders['last']['sent'] }} verschickt, {{ $reminders['last']['skipped'] }} übersprungen,
+            {{ $reminders['last']['removed'] }} Geräte entfernt
+            @if (($reminders['last']['failed'] ?? 0) > 0)
+              · {{ $reminders['last']['failed'] }} nicht zugestellt (kommen wieder)
+            @endif
+          @else
+            noch nie
+          @endif
+        </dd>
+      </dl>
+      <p class="hint">
+        Alle 15 Minuten <code class="code">POST /api/v1/reminders/run</code> mit dem Kopf
+        <code class="code">X-Cron-Token</code> aufrufen (z. B. Cronicle) oder <code class="code">php artisan reminders:send</code>.
+      </p>
+    </div>
+  </section>
+
   {{-- --- Sicherheit -------------------------------------------------------- --}}
   <section class="card h-fit">
     <div class="card-header"><h2 class="card-title">Sicherheit</h2></div>
