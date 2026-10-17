@@ -25,6 +25,11 @@ htmx statt Nuxt.
 | Stapel und Karten: anlegen, Liste einfügen, folgen, kopieren | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
 | Lernen: Karteikasten, Lernrunde, freies Üben, Lernserie | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
 | Feinschliff: Lernplan, Hilfe, Vorlesen, Wischgesten | ✅ fertig | [vokabelkarten.md](docs/specs/vokabelkarten.md) |
+| Einfacher lernen: „Los geht's“ über alle Stapel, Für den Test üben | ✅ fertig | [einfacher-lernen.md](docs/specs/einfacher-lernen.md) |
+| Motivation: neue Wörter zuerst zeigen, Tagesziel, Wortschatz | ✅ fertig | [motivierender-start.md](docs/specs/motivierender-start.md) |
+| Antworten eintippen, tägliche Erinnerung | ✅ fertig | [schreiben-und-erinnern.md](docs/specs/schreiben-und-erinnern.md) |
+| Karten je Runde, knifflige Wörter | ✅ fertig | [runden-und-knifflige-woerter.md](docs/specs/runden-und-knifflige-woerter.md) |
+| Eltern sehen den Fortschritt | ✅ fertig | [eltern-ansicht.md](docs/specs/eltern-ansicht.md) |
 
 Alle drei Stufen der Spezifikation sind umgesetzt. Offen ist ein Test auf
 echten Telefonen.
@@ -51,11 +56,31 @@ Stapel einer anderen Person gibt es zwei Wege:
 - Nicht gewusst: Die Karte geht zurück in Fach 1 und kommt am Ende der Runde
   noch einmal.
 
-Gelernt wird in beide Richtungen getrennt. „Freies Üben“ fragt zufällige Karten
-ab, ohne dass etwas gezählt wird, auf Wunsch auch nur ein Fach. In der Runde
-kann man wischen (rechts gewusst, links nochmal) und sich die Karte vorlesen
-lassen. Unter **Mehr → Lernplan** wählt jede Person Normal, Schnell, Gründlich
-oder einen eigenen Plan. **Mehr → Hilfe** erklärt alles in einfachen Worten.
+Gelernt wird in beide Richtungen getrennt. **Heute → „Los geht's“** nimmt die
+fälligen Karten aller Stapel und ein paar neue. Neue Wörter zeigt die App zuerst
+offen und fragt sie ein paar Karten später ab. In der Runde kann man wischen
+(rechts gewusst, links nochmal) und sich die Karte vorlesen lassen. Im Stapel
+lässt sich **Antworten eintippen** einschalten; kleine Tippfehler gelten als
+„Fast!“. **Für den Test üben** fragt alle Karten eines Stapels ab, ohne den
+Karteikasten zu verändern. Karten, die dreimal falsch waren, sind **knifflig**
+und lassen sich gezielt üben.
+
+Unter **Mein Konto** wählt jede Person ihren Lernplan (Normal, Schnell,
+Gründlich oder eigener), das Tagesziel, die Karten je Runde (5, 10 oder 20) und
+eine tägliche **Erinnerung** als Mitteilung aufs Handy (Einrichtung:
+[docs/INSTALL-WEBSPACE.md](docs/INSTALL-WEBSPACE.md#erinnerungen-einrichten-freiwillig)).
+**Mehr → Hilfe** erklärt alles in einfachen Worten.
+
+**Motivation ohne Punkte.** Ein Ring unter **Heute** zeigt das Tagesziel, dazu
+die Lernserie und der wachsende Wortschatz („Du kannst schon 124 Wörter“).
+Abzeichen, Ranglisten oder Vergleiche gibt es nicht.
+
+**Eltern.** Ein Kind erzeugt unter **Mein Konto → Eltern** einen Code (gilt
+24 Stunden, nur einmal). Ein Elternteil gibt ihn im eigenen Konto unter **Kind
+hinzufügen** ein und sieht dann unter **Meine Kinder** Lerntage, Tagesziel,
+Wortschatz, Stapel mit Fortschritt und knifflige Wörter – nur ansehen, keine
+einzelnen Antworten. Das Kind sieht, wer zuschaut, und kann es jederzeit
+beenden. Dafür braucht es weder eine eigene Rolle noch einen Administrator.
 
 **Rollen.**
 
