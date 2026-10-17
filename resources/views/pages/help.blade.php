@@ -224,6 +224,23 @@
       auseinanderzuhalten. Er ist schon vor dem Umdrehen zu sehen – schreib
       also nicht die Lösung hinein.
     </p>
+    <p class="text-muted">
+      Teile in <strong>Klammern</strong> sind beim Eintippen freiwillig: Bei
+      „(to) miss“ ist „miss“ richtig und „to miss“ auch, bei „colo(u)r“ beides,
+      „color“ und „colour“.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Antworten eintippen</h2>
+    <p class="text-muted">
+      Im Vokabeltest musst du die Wörter schreiben. Schalte im Stapel unter
+      <strong>⋯ → Antworten eintippen</strong> ein, dann tippst du die Antwort,
+      statt die Karte umzudrehen. Groß- und Kleinschreibung ist egal, jede
+      Bedeutung zählt. Bei einem kleinen Tippfehler sagt die App
+      <strong>Fast!</strong> und zeigt, wie man es schreibt – beim Lernen zählt
+      das als gewusst, beim Test üben kommt das Wort noch einmal.
+    </p>
   </section>
 
   <section class="stack gap-2">

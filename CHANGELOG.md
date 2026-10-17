@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.17.2
+- Antworten eintippen: Im Stapel unter ⋯ einschaltbar. Statt umzudrehen schreibt man die Antwort; Groß/Klein ist egal, jede Bedeutung zählt, Teile in Klammern sind freiwillig. Bei kleinen Tippfehlern sagt die App „Fast!“ und zeigt die richtige Schreibweise – beim Lernen zählt das als gewusst, beim Test üben kommt das Wort noch einmal
+- Migration: 2026_10_17_000000_add_type_answers_to_deck_preferences.php
+
 ## 2026.10.17
 - Neue Wörter zeigt die App zuerst offen (vorne und hinten, zum Anhören) und fragt sie ein paar Karten später ab – niemand muss mehr ein Wort raten, das er nie gesehen hat
 - Tagesziel: Ein Ring unter „Heute“ zeigt, wie viele Karten heute gewusst wurden (auch beim Test üben; eine Karte zählt je Runde einmal, „Nochmal“ zählt nicht). Das Ziel – 10, 20 oder 30 Karten – steht unter Mein Konto → Lernplan

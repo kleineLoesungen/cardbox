@@ -1,6 +1,6 @@
 # Schreiben und Erinnern
 
-Status: **Entwurf** – wartet auf Freigabe
+Status: Teil A **umgesetzt** (17.10.2026) · Teil B Entwurf
 
 Die nächsten zwei Schritte aus der Vorschlagsliste vom 16.10.2026:
 
@@ -64,7 +64,10 @@ offen, dort wird nichts getippt. „Fach üben“ bleibt beim Umdrehen.
 2. Darunter steht ein **Eingabefeld** („Deine Antwort“) mit der Sprache der
    Antwortseite (`lang`). Autokorrektur, Großschreibung und
    Rechtschreibprüfung sind aus, damit das Gerät nicht mitschreibt. Das Feld
-   hat beim Erscheinen den Fokus.
+   hat beim Erscheinen den Fokus. Auf dem iPhone öffnet sich die Tastatur
+   dabei vermutlich nicht von selbst, weil der Fokus nach einer Antwort des
+   Servers kommt. Dann tippt man einmal ins Feld (auf einem echten Gerät zu
+   prüfen).
 3. Darunter stehen **„Prüfen“** als Hauptknopf (auch Enter) und ein
    schlichter Knopf **„Weiß ich nicht“**.
 4. Nach „Prüfen“ zeigt dieselbe Stelle das **Ergebnis**:
@@ -76,7 +79,10 @@ offen, dort wird nichts getippt. „Fach üben“ bleibt beim Umdrehen.
    - **Falsch** oder „Weiß ich nicht“ (neutral, nicht rot): „Richtig ist:“
      mit allen Bedeutungen, darunter „Du hast geschrieben: …“ (bei „Weiß ich
      nicht“ entfällt das).
-   - Ein Knopf **„Weiter“** (auch Enter). Vorlesen der Antwort ist möglich.
+   - Ein Knopf **„Weiter“** (auch Enter), ein normaler Link auf die Runde.
+     Vorlesen der Antwort ist möglich. Die Ergebniszeile bekommt den Fokus,
+     damit Screenreader sie vorlesen. Die markierten Buchstaben werden für
+     Screenreader zusätzlich genannt („Anders als bei dir: ei“).
 5. Wie das Ergebnis zählt:
 
 | Ergebnis | Lernen (Karteikasten) | Test üben |
@@ -95,10 +101,15 @@ Verglichen wird mit **jeder Bedeutung** der Antwortseite. Die beste
 Übereinstimmung zählt. Vorher werden beide Seiten gleich behandelt:
 
 - Groß/Klein egal; Leerzeichen am Rand weg, mehrere innen zu einem.
-- Satzzeichen am Ende (`. ! ? ,`) egal.
-- **Teile in Klammern sind freiwillig:** „(to) miss“ ist mit „miss“ und mit
-  „to miss“ richtig. Steht auf der Karte „der Hund“, braucht es den Artikel.
-  Soll er freiwillig sein, schreibt man „(der) Hund“.
+- Satzzeichen am Rand egal: am Ende `. ! ? , ; :`, am Anfang `¿ ¡`. Sie
+  werden auch nie markiert.
+- Gleiche Zeichen in verschiedener Unicode-Form (z. B. „é“ als „e“ plus
+  Akzent, etwa aus PDFs) gelten als gleich (NFC, sofern `intl` vorhanden).
+- **Teile in Klammern sind freiwillig, jede für sich:** „(to) miss“ ist mit
+  „miss“ und „to miss“ richtig, „colo(u)r“ mit „color“ und „colour“, „(to)
+  look (at)“ mit allen vier Formen. Ab fünf Klammern gelten nur alle oder
+  keine. Steht auf der Karte „der Hund“, braucht es den Artikel. Soll er
+  freiwillig sein, schreibt man „(der) Hund“.
 - Bei Rechenkarten (Sprachen `formula`/`result`) zählt nur der Wortlaut nach
   dieser Vereinheitlichung. Es gibt kein „fast richtig“, denn „12“ und „13“
   sind nicht fast gleich.
@@ -246,9 +257,10 @@ mit einem anderen Konto an und schaltet die Erinnerung ein, wechselt der
 - `learning_settings.reminder_time` – `time`, nullable (aus = null).
 - `learning_settings.reminder_sent_on` – `date`, nullable.
 
-Die Rundendaten in der Session bekommen bei getippten Antworten den Eintrag
-`checked` (Karte, Richtung, Eingabe, Ergebnis) für die Anzeige des
-Ergebnisses.
+Das Ergebnis einer getippten Antwort wird nicht in der Session gespeichert.
+Es kommt als Antwort auf „Prüfen“ (htmx-Fragment). „Weiter“ lädt die aktuelle
+Karte (`hx-get="/learn/round"` mit `hx-select="#round"`). Ein Neuladen zeigt
+deshalb gleich die nächste Karte.
 
 ## Betroffene Stellen
 
@@ -258,8 +270,10 @@ Ergebnisses.
   Akzent-Faltung, markierte Unterschiede (als Liste von Abschnitten, nicht
   als HTML).
 - `DeckPreferenceService`: `typeAnswers()`, `setTypeAnswers()`.
-- `StudyRoundService`: Einträge kennen `typed` je Stapel. `answerTyped()`
-  prüft, wertet nach Tabelle A2 und legt `checked` ab.
+- `StudyRoundService`: `current()` liefert `typed` je Stapel der Karte (nie
+  bei Einführungen und beim Fach üben). `answerTyped()` prüft, wertet nach
+  Tabelle A2 über `answer()` und gibt das Ergebnis zurück. Für das
+  Tagesziel zählt nur „gewusst“ (Rückmeldung vom 17.10.2026).
 - `StudyRoundController`, `DeckController::typing`, `routes/web.php`.
 - `learn/partials/round-body.blade.php`: Eingabe- und Ergebnisansicht.
   `layouts/focus.blade.php`: Enter auf dem Ergebnis = Weiter.
@@ -282,8 +296,8 @@ Ergebnisses.
 - `docs/INSTALL-*.md`, Hilfe („Erinnerung“).
 - `tests/Feature/RouteProtectionTest.php`: `PUBLIC_ROUTES` + Begründung.
 
-**Beide:** `CHANGELOG.md` mit `Migration:`-Zeilen, `lang/de/validation.php`
-(`reminder_time`, `typed`).
+**Beide:** `CHANGELOG.md` mit `Migration:`-Zeilen. **B:**
+`lang/de/validation.php` (`reminder_time`).
 
 ## Tests
 

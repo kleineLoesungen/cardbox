@@ -98,6 +98,7 @@ class DeckController extends Controller
             'runs' => $runs,
             'run' => $run,
             'withReverse' => $withReverse,
+            'typeAnswers' => $this->preferences->typeAnswers($user, $model),
             // Only needed when there is something to learn.
             'activeIds' => $activeIds,
             'boxes' => $boxes,
@@ -152,6 +153,18 @@ class DeckController extends Controller
         $this->decks->unfollow($request->user(), $deck);
 
         return redirect('/decks')->with('toast', ['kind' => 'success', 'message' => 'Du lernst den Stapel nicht mehr.']);
+    }
+
+    /** "Antworten eintippen" on or off, for the viewer and this deck. */
+    public function typing(Request $request, string $deck): RedirectResponse
+    {
+        $on = $request->boolean('on');
+        $this->preferences->setTypeAnswers($request->user(), $deck, $on);
+
+        return redirect("/decks/{$deck}")->with('toast', [
+            'kind' => 'success',
+            'message' => $on ? 'Bei diesem Stapel tippst du die Antworten jetzt ein.' : 'Bei diesem Stapel drehst du die Karten jetzt wieder um.',
+        ]);
     }
 
     /** "Auch rückwärts lernen" on or off, for the viewer and this deck. */

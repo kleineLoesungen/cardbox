@@ -47,6 +47,7 @@ class StudyRoundService
         private DeckRunService $runs,
         private CardSelectionService $selection,
         private DeckPreferenceService $preferences,
+        private AnswerCheckService $checker,
     ) {}
 
     /**
@@ -422,7 +423,7 @@ class StudyRoundService
      * free practice never count as changed.
      *
      * @param  Round  $round
-     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, intro: bool, runs: list<DeckRun>, changed: bool}|null}
+     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, intro: bool, typed: bool, runs: list<DeckRun>, changed: bool}|null}
      */
     public function current(User $user, array $round): array
     {
@@ -450,6 +451,8 @@ class StudyRoundService
                     'direction' => Direction::from($item['direction']),
                     'repeat' => $item['repeat'],
                     'intro' => $item['intro'] ?? false,
+                    // "Antworten eintippen" of the card's deck; never for intros or practising a box.
+                    'typed' => ! ($item['intro'] ?? false) && $round['mode'] !== 'practice' && $this->preferences->typeAnswers($user, $card->deck),
                     'runs' => $runs,
                     'changed' => $this->changedSinceReview($card, $item['direction'], $runs),
                 ]];
@@ -532,6 +535,38 @@ class StudyRoundService
         }
 
         return $round;
+    }
+
+    /**
+     * A typed answer for the card that is up (docs/specs/schreiben-und-erinnern.md,
+     * A2): checked against every meaning of the answer side, then rated
+     * like a tap — "fast richtig" counts as known when learning, not in a
+     * test round. An empty answer is "Weiß ich nicht". A stale answer
+     * (other card or step) changes nothing and returns no check.
+     *
+     * @param  Round  $round
+     * @return array{0: Round, 1: (array{card: Card, direction: Direction}&array<string, mixed>)|null}
+     */
+    public function answerTyped(User $user, array $round, string $cardId, int $step, string $typed): array
+    {
+        [$round, $current] = $this->current($user, $round);
+        if ($current === null || ! $current['typed'] || $current['card']->id !== $cardId || $step !== $round['step']) {
+            return [$round, null];
+        }
+
+        // Checked and shown are the same, cut-off text (AnswerCheckService looks at 500 characters).
+        $typed = trim(mb_substr($typed, 0, 500));
+        $card = $current['card'];
+        $direction = $current['direction'];
+        $answer = $direction === Direction::Forward ? $card->back : $card->front;
+        $language = $direction->answerLanguage($card->deck);
+        $check = $this->checker->check($answer, $typed, in_array($language, ['formula', 'result'], true));
+        $known = $check['verdict'] === 'right' || ($check['verdict'] === 'close' && $round['mode'] === 'learn');
+
+        return [
+            $this->answer($user, $round, $cardId, $step, $known),
+            ['card' => $card, 'direction' => $direction, 'typed' => $typed, 'known' => $known] + $check,
+        ];
     }
 
     /**

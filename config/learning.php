@@ -64,4 +64,9 @@ return [
     // A new card is shown first; it is asked this many cards later.
     'intro_gap' => 3,
 
+    // "Antworten eintippen": a typo is "fast richtig" from this length on;
+    // from the second length on two typos (docs/specs/schreiben-und-erinnern.md, A3).
+    'typo_min_length' => 4,
+    'typo_two_length' => 9,
+
 ];

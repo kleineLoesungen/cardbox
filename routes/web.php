@@ -129,6 +129,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/export', [DeckController::class, 'export']);
         // "Auch rückwärts lernen", per person and deck.
         Route::post('/reverse', [DeckController::class, 'reverse']);
+        // "Antworten eintippen", per person and deck.
+        Route::post('/typing', [DeckController::class, 'typing']);
         // Deck runs: a deck learned with one plan. New runs start only with
         // the standard plan (StudyRoundService); here they are only reset.
         Route::post('/runs/{run}/reset', [DeckRunController::class, 'reset'])->whereUuid('run');

@@ -148,6 +148,20 @@
         </button>
       </form>
     @endif
+    @if ($cards->isNotEmpty() && ($isOwner || $isFollowing))
+      {{-- Per person and deck (docs/specs/schreiben-und-erinnern.md, A1). --}}
+      <form method="post" action="/decks/{{ $deck->id }}/typing">
+        @csrf
+        <input type="hidden" name="on" value="{{ $typeAnswers ? '0' : '1' }}">
+        <button type="submit" class="sheet-action flex items-center justify-between gap-3">
+          <span class="min-w-0">
+            Antworten eintippen
+            <span class="block text-xs font-normal text-muted">Statt umzudrehen schreibst du die Antwort.</span>
+          </span>
+          <span class="badge {{ $typeAnswers ? 'badge-success' : 'badge-neutral' }} shrink-0">{{ $typeAnswers ? 'an' : 'aus' }}</span>
+        </button>
+      </form>
+    @endif
     @if ($cards->isNotEmpty())
       <a href="/decks/{{ $deck->id }}/selection" class="sheet-action">Karten auswählen (nur einen Teil lernen)</a>
     @endif

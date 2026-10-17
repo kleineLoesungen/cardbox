@@ -69,6 +69,13 @@
   document.addEventListener("pointercancel", () => endDrag(false));
 
   document.addEventListener("keydown", (e) => {
+    // Result of a typed answer: Enter goes on — not the key press that sent the answer.
+    const result = document.querySelector("[data-result-screen]");
+    if (result && !e.repeat && e.key === "Enter" && !e.target.closest("a, button, input, textarea")) {
+      e.preventDefault();
+      result.querySelector("[data-result-next]")?.click();
+      return;
+    }
     // An intro of a new word: Enter or space goes on — once per key press.
     const intro = document.querySelector("[data-intro-screen]");
     if (intro && !e.repeat && (e.key === " " || e.key === "Enter") && !e.target.closest("a, button, input, textarea")) {

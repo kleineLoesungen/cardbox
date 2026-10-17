@@ -8,6 +8,7 @@
   @param int        $streak    days in a row (end screen only)
   @param list<string> $mastered  words that reached "Kann ich" in this round (end screen only)
   @param array{answers: int, goal: int, goal_met: bool}|null $day  today's daily goal (end screen only)
+  @param array|null $checked   result of a typed answer, shown before the next card (StudyRoundService::answerTyped)
 --}}
 @php($practice = $round['mode'] === 'practice')
 {{-- "Für den Test üben": every card until known once, nothing saved. --}}
@@ -15,7 +16,70 @@
 <div id="round" class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-3"
      style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))">
 
-@if ($current && $current['intro'])
+@php($checked ??= null)
+@if ($checked)
+  {{--
+    Result of a typed answer (schreiben-und-erinnern.md, A2). Already rated;
+    "Weiter" loads the card that is up now. Enter goes on as well (layouts/focus).
+  --}}
+  @php($card = $checked['card'])
+  @php($direction = $checked['direction'])
+  @php($question = $direction === \App\Enums\Direction::Forward ? $card->front : $card->back)
+  @php($answer = $direction === \App\Enums\Direction::Forward ? $card->back : $card->front)
+  @php($qLang = \App\Enums\Language::tryFrom($direction->questionLanguage($card->deck)))
+  @php($aLang = \App\Enums\Language::tryFrom($direction->answerLanguage($card->deck)))
+  @php($others = array_values(array_filter($answer, fn ($m) => $m !== $checked['meaning'])))
+  @php($markedText = implode(', ', array_column(array_filter($checked['parts'], fn ($p) => $p['diff']), 'text')))
+  <div class="contents" id="round-step-{{ $round['step'] }}-result" data-result-screen>
+    <div class="flex items-center gap-3">
+      <a href="/learn" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
+      <div class="flex-1"></div>
+    </div>
+
+    <div class="my-4 flex flex-1 flex-col justify-center stack gap-4 text-center" aria-live="polite">
+      <p class="text-lg text-muted" lang="{{ $qLang?->tag() }}">{{ $question[0] ?? '' }}</p>
+
+      {{-- Focused after the swap, so screen readers read the result (and Enter still goes on). --}}
+      @if ($checked['verdict'] === 'right')
+        <p class="text-2xl font-semibold text-success" tabindex="-1" autofocus>Richtig!</p>
+      @elseif ($checked['verdict'] === 'close')
+        <p class="text-2xl font-semibold text-warning" tabindex="-1" autofocus>Fast! So schreibt man es:</p>
+      @else
+        <p class="text-xl font-semibold" tabindex="-1" autofocus>Richtig ist:</p>
+      @endif
+
+      {{-- One line on purpose: whitespace between the parts would split the word. --}}
+      <p class="text-3xl font-semibold break-words" lang="{{ $aLang?->tag() }}">@foreach ($checked['parts'] as $part)<span @class(['answer-diff' => $part['diff']])>{{ $part['text'] }}</span>@endforeach</p>
+      @if ($markedText !== '')
+        <p class="sr-only">Anders als bei dir: {{ $markedText }}</p>
+      @endif
+      @if ($others !== [])
+        <p class="text-base text-muted">auch: <span lang="{{ $aLang?->tag() }}">{{ implode(', ', $others) }}</span></p>
+      @endif
+      @if ($checked['verdict'] !== 'right' && $checked['typed'] !== '')
+        <p class="text-sm text-muted">Du hast geschrieben: <span lang="{{ $aLang?->tag() }}" class="font-medium text-content">{{ $checked['typed'] }}</span></p>
+      @endif
+      @if ($checked['verdict'] === 'close' && ! $checked['known'])
+        <p class="text-sm text-muted">Im Test zählt die Rechtschreibung – das Wort kommt noch einmal.</p>
+      @endif
+
+      <div class="flex min-h-11 justify-center">
+        <button type="button" class="btn btn-ghost" data-speak hidden aria-label="{{ $checked['expected'] }} vorlesen"
+                data-speak-text="{{ $checked['expected'] }}" data-speak-lang="{{ $aLang?->tag() }}">
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+          </svg>
+          Vorlesen
+        </button>
+      </div>
+    </div>
+
+    {{-- A plain link: robust when the round is over or the session expired. --}}
+    <a href="/learn/round" class="btn btn-primary btn-lg btn-block" data-result-next>Weiter</a>
+  </div>
+
+@elseif ($current && $current['intro'])
   {{--
     A new word, shown open before it is asked (docs/specs/motivierender-start.md, A).
     No [data-card-screen]: nothing to flip, swipe or rate; "Weiter" is no answer.
@@ -95,7 +159,8 @@
     to the next card while settling — otherwise the new card would start
     flipped and turn back, showing its answer for a moment.
   --}}
-  <div class="contents" id="round-step-{{ $round['step'] }}" data-card-screen>
+  {{-- Typed answers (schreiben-und-erinnern.md, A) have nothing to flip: no data-card-screen. --}}
+  <div class="contents" id="round-step-{{ $round['step'] }}" @unless ($current['typed']) data-card-screen @endunless>
 
   {{-- Top: leave, progress --}}
   <div class="flex items-center gap-3">
@@ -123,10 +188,10 @@
     @endif
   </div>
 
-  {{-- The card: tap to flip --}}
+  {{-- The card: tap to flip (typed: only the question, the answer is not in the page) --}}
   <div class="flashcard my-4 flex flex-1 flex-col justify-center">
-    <div class="flashcard-inner cursor-pointer" data-flip role="button" tabindex="0"
-         aria-label="Karte umdrehen">
+    <div @class(['flashcard-inner', 'cursor-pointer' => ! $current['typed']])
+         @unless ($current['typed']) data-flip role="button" tabindex="0" aria-label="Karte umdrehen" @endunless>
       <div class="flashcard-face">
         <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $qLang?->label() }}</p>
         <p class="flashcard-text {{ $size }}" lang="{{ $qLang?->tag() }}">{{ $question[0] ?? '' }}</p>
@@ -135,6 +200,7 @@
         @endif
       </div>
       {{-- Hidden from screen readers until flipped (flip() removes aria-hidden). --}}
+      @unless ($current['typed'])
       <div class="flashcard-face flashcard-back" aria-hidden="true" data-back>
         <p class="text-sm text-muted" lang="{{ $qLang?->tag() }}">{{ $question[0] ?? '' }}@if ($card->hint) {{ $card->hint }}@endif</p>
         <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $aLang?->label() }}</p>
@@ -144,6 +210,7 @@
           <p class="text-base text-muted">auch: <span lang="{{ $aLang?->tag() }}">{{ implode(', ', \App\Models\Card::alternatives($answer)) }}</span></p>
         @endif
       </div>
+      @endunless
     </div>
 
     {{--
@@ -155,7 +222,7 @@
     <div class="mt-3 flex min-h-11 justify-center">
       <button type="button" class="btn btn-ghost" data-speak hidden
               data-question="{{ $question[0] ?? '' }}" data-question-lang="{{ $qLang?->tag() }}"
-              data-answer="{{ $answer[0] ?? '' }}" data-answer-lang="{{ $aLang?->tag() }}">
+              @unless ($current['typed']) data-answer="{{ $answer[0] ?? '' }}" data-answer-lang="{{ $aLang?->tag() }}" @endunless>
         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>
@@ -169,6 +236,19 @@
     </div>
   </div>
 
+  @if ($current['typed'])
+    {{-- Type the answer; the server checks it (AnswerCheckService). --}}
+    <form class="stack gap-2" hx-post="/learn/round/answer" hx-target="#round" hx-swap="outerHTML"
+          hx-disabled-elt="find button" hx-sync="this:drop">
+      <input type="hidden" name="card" value="{{ $card->id }}">
+      <input type="hidden" name="step" value="{{ $round['step'] }}">
+      <input class="input input-lg" type="text" name="typed" maxlength="500" lang="{{ $aLang?->tag() }}"
+             placeholder="Deine Antwort" aria-label="Deine Antwort ({{ $aLang?->label() }})"
+             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" autofocus>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Prüfen</button>
+      <button type="submit" name="skip" value="1" class="btn btn-ghost btn-block">Weiß ich nicht</button>
+    </form>
+  @else
   {{-- Under the thumbs: flip first, then rate --}}
   <div data-before-flip>
     <button type="button" class="btn btn-primary btn-lg btn-block" data-flip>Umdrehen</button>
@@ -181,6 +261,7 @@
     <button type="submit" name="known" value="0" class="btn btn-secondary btn-lg">Nochmal</button>
     <button type="submit" name="known" value="1" class="btn btn-primary btn-lg">Gewusst</button>
   </form>
+  @endif
   </div>
 
 @else

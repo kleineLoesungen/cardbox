@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Per person and deck: "Auch rückwärts lernen" (docs/specs/einfacher-lernen.md).
+ * Per person and deck: "Auch rückwärts lernen" (docs/specs/einfacher-lernen.md)
+ * and "Antworten eintippen" (docs/specs/schreiben-und-erinnern.md).
  * Only for decks the person learns: own ones and followed shared ones.
  */
 class DeckPreferenceService
@@ -24,10 +25,40 @@ class DeckPreferenceService
             ->exists();
     }
 
+    /** "Antworten eintippen" (docs/specs/schreiben-und-erinnern.md, A). */
+    public function typeAnswers(User $user, Deck $deck): bool
+    {
+        return DB::table('deck_preferences')
+            ->where('user_id', $user->id)
+            ->where('deck_id', $deck->id)
+            ->where('type_answers', true)
+            ->exists();
+    }
+
     /**
      * @throws ModelNotFoundException<Deck>
      */
     public function setReverse(User $user, string $deckId, bool $on): Deck
+    {
+        return $this->set($user, $deckId, 'with_reverse', $on);
+    }
+
+    /**
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function setTypeAnswers(User $user, string $deckId, bool $on): Deck
+    {
+        return $this->set($user, $deckId, 'type_answers', $on);
+    }
+
+    /**
+     * One switch of a deck the person learns: own or followed; others are 404.
+     *
+     * @param  'with_reverse'|'type_answers'  $column
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    private function set(User $user, string $deckId, string $column, bool $on): Deck
     {
         $deck = $this->decks->getVisible($user, $deckId);
         if (! $deck->isOwnedBy($user) && ! $this->decks->isFollowing($user, $deck)) {
@@ -35,9 +66,9 @@ class DeckPreferenceService
         }
 
         DB::table('deck_preferences')->upsert(
-            [['user_id' => $user->id, 'deck_id' => $deck->id, 'with_reverse' => $on, 'created_at' => now(), 'updated_at' => now()]],
+            [['user_id' => $user->id, 'deck_id' => $deck->id, $column => $on, 'created_at' => now(), 'updated_at' => now()]],
             ['user_id', 'deck_id'],
-            ['with_reverse', 'updated_at'],
+            [$column, 'updated_at'],
         );
 
         return $deck;

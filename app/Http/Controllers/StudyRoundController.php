@@ -69,15 +69,17 @@ class StudyRoundController extends Controller
                 : redirect('/learn');
         }
 
-        $card = $request->input('card');
-        $step = $request->input('step');
-        $round = $this->rounds->answer(
-            $request->user(),
-            $round,
-            is_string($card) ? $card : '',
-            is_numeric($step) ? (int) $step : -1,
-            $request->boolean('known'),
-        );
+        $card = is_string($card = $request->input('card')) ? $card : '';
+        $step = is_numeric($step = $request->input('step')) ? (int) $step : -1;
+        $checked = null;
+
+        // A typed answer ("Prüfen", or "Weiß ich nicht" = empty); otherwise a tap.
+        if ($request->has('typed') || $request->boolean('skip')) {
+            $typed = $request->boolean('skip') ? '' : $request->input('typed');
+            [$round, $checked] = $this->rounds->answerTyped($request->user(), $round, $card, $step, is_string($typed) ? $typed : '');
+        } else {
+            $round = $this->rounds->answer($request->user(), $round, $card, $step, $request->boolean('known'));
+        }
 
         if (! $request->headers->has('HX-Request')) {
             $request->session()->put(self::SESSION_KEY, $round);
@@ -85,7 +87,8 @@ class StudyRoundController extends Controller
             return redirect('/learn/round');
         }
 
-        return view('learn.partials.round-body', $this->state($request, $round));
+        // After "Prüfen" the result comes first; "Weiter" then loads the card that is up.
+        return view('learn.partials.round-body', ['checked' => $checked] + $this->state($request, $round));
     }
 
     /**

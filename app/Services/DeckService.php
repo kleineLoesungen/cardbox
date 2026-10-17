@@ -367,13 +367,14 @@ class DeckService
                 CardProgress::insert($chunk);
             }
 
-            // "Auch rückwärts lernen" goes along, or backward progress would be hidden.
+            // The person's switches go along ("Auch rückwärts lernen", "Antworten eintippen"),
+            // or backward progress would be hidden.
             DB::table('deck_preferences')->insertUsing(
-                ['user_id', 'deck_id', 'with_reverse', 'created_at', 'updated_at'],
+                ['user_id', 'deck_id', 'with_reverse', 'type_answers', 'created_at', 'updated_at'],
                 DB::table('deck_preferences')
                     ->where('user_id', $user->id)
                     ->where('deck_id', $original->id)
-                    ->selectRaw('user_id, ?, with_reverse, ?, ?', [$copy->id, $now, $now]),
+                    ->selectRaw('user_id, ?, with_reverse, type_answers, ?, ?', [$copy->id, $now, $now]),
             );
 
             return $copy;
