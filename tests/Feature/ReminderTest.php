@@ -192,6 +192,22 @@ describe('Verschicken', function () {
         runReminders()->assertJson(['sent' => 1]);
     });
 
+    it('verschickt auch, wenn der Aufruf einen Moment vor der Uhrzeit ankommt', function () {
+        $push = fakePush();
+        $ich = remindable();
+        $this->post('/account/reminder', ['reminder_time' => '13:30']);
+
+        // Cronicle calls at 13:30:00, the server clock says 13:29:59 (Berlin).
+        $this->travelTo(Carbon::parse('2026-10-14 11:29:59', 'UTC'));
+        runReminders()->assertJson(['sent' => 1]);
+
+        // Too early is still too early.
+        $this->post('/account/reminder', ['reminder_time' => '17:00']);
+        $this->travelTo(Carbon::parse('2026-10-15 14:50:00', 'UTC'));   // 16:50 Berlin
+        runReminders()->assertJson(['sent' => 0]);
+        expect($push->sent)->toHaveCount(1);
+    });
+
     it('nennt eine laufende Lernserie', function () {
         $push = fakePush();
         $ich = remindable();

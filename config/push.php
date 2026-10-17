@@ -48,6 +48,11 @@ return [
     'max_devices' => 5,
     'timeout' => 5,
 
+    // A reminder counts as due this many seconds before its time. Calls come
+    // on the quarter hour like the times one can choose; without this a
+    // server clock slightly behind the scheduler skips every reminder.
+    'early_seconds' => 120,
+
     // Seconds one call may spend sending; the rest comes on the next call.
     // Below the 60 s a scheduler (Cronicle) waits by default.
     'time_budget' => 40,

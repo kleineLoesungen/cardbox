@@ -163,6 +163,10 @@ Unter **Mein Konto** gibt es neu den Abschnitt **„Erinnerung“**:
 - **Wann:** einmal am Tag, sobald die gewählte Uhrzeit in der Lern-Zeitzone
   erreicht ist (Genauigkeit: Abstand der Aufrufe, also bis zu 15 Minuten
   später).
+  Bis zu 2 Minuten früher zählt schon als erreicht (`push.early_seconds`):
+  Aufrufe kommen genau zur Viertelstunde, wie die wählbaren Uhrzeiten, und
+  eine Server-Uhr, die einen Moment nachgeht, hätte sonst jede Erinnerung
+  übersprungen (Fehler vom 17.10.2026).
 - **Nur wenn sinnvoll:** Ist das Tagesziel schon erreicht oder wartet nichts
   (keine fälligen und keine neuen Karten im Tageskontingent), kommt nichts.
   Der Tag gilt dann als erledigt.

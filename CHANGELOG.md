@@ -11,6 +11,7 @@ Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 - Karten je Runde: Unter Mein Konto wählbar (5, 10 oder 20). Kürzere Runden sind schneller geschafft
 - Knifflige Wörter: Karten, die dreimal falsch waren, sind im Stapel markiert und lassen sich mit „Knifflige Wörter üben“ gezielt wiederholen. Am Rundenende ein Anstoß zur Eselsbrücke
 - Antworten eintippen auf dem iPhone: Nach „Weiter“ bleibt die Tastatur offen, man muss nicht mehr jedes Mal ins Feld tippen
+- Erinnerung: kommt jetzt auch, wenn der Aufruf (z. B. Cronicle) genau zur eingestellten Uhrzeit kommt und die Server-Uhr einen Moment nachgeht. Vorher wurde sie dann still übersprungen
 - Migration: 2026_10_18_000000_add_round_size_to_learning_settings.php
 
 ## 2026.10.17.3

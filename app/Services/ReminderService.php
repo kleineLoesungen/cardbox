@@ -213,7 +213,9 @@ class ReminderService
         $due = DB::table('learning_settings as s')
             ->join('users as u', 'u.id', '=', 's.user_id')
             ->whereNotNull('s.reminder_time')
-            ->where('s.reminder_time', '<=', $now->format('H:i:s'))
+            // A little early is fine: schedulers call on the quarter hour, exactly when reminders
+            // are due, and a server clock a moment behind would otherwise miss every one.
+            ->where('s.reminder_time', '<=', $now->addSeconds((int) config('push.early_seconds'))->format('H:i:s'))
             ->where(fn ($q) => $q->whereNull('s.reminder_sent_on')->orWhere('s.reminder_sent_on', '<', $today))
             // Locked or not yet approved accounts get nothing.
             ->whereNotNull('u.approved_at')
