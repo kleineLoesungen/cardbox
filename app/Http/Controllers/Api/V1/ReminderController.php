@@ -15,6 +15,13 @@ class ReminderController extends Controller
 {
     public function __invoke(ReminderService $reminders): JsonResponse
     {
-        return response()->json($reminders->run());
+        // A configuration problem must show in the scheduler (no "sent" → Cronicle reports an error),
+        // not as a quiet run with nothing sent.
+        $error = $reminders->enabled() ? $reminders->configError() : 'VAPID_PUBLIC_KEY und VAPID_PRIVATE_KEY fehlen.';
+        if ($error !== null) {
+            return response()->json(['error' => $error], 503);
+        }
+
+        return response()->json($reminders->run() + ['scheduled' => $reminders->scheduledCount()]);
     }
 }

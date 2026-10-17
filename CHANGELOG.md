@@ -12,6 +12,7 @@ Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 - Knifflige Wörter: Karten, die dreimal falsch waren, sind im Stapel markiert und lassen sich mit „Knifflige Wörter üben“ gezielt wiederholen. Am Rundenende ein Anstoß zur Eselsbrücke
 - Antworten eintippen auf dem iPhone: Nach „Weiter“ bleibt die Tastatur offen, man muss nicht mehr jedes Mal ins Feld tippen
 - Erinnerung: kommt jetzt auch, wenn der Aufruf (z. B. Cronicle) genau zur eingestellten Uhrzeit kommt und die Server-Uhr einen Moment nachgeht. Vorher wurde sie dann still übersprungen
+- Erinnerung: Ist die Einrichtung fehlerhaft (Schlüssel oder VAPID_SUBJECT), antwortet die Aufruf-Adresse jetzt mit Fehler 503 und dem Grund, statt still nichts zu verschicken. Die Antwort nennt zusätzlich, wie viele Konten Erinnerungen bekommen (scheduled)
 - Migration: 2026_10_18_000000_add_round_size_to_learning_settings.php
 
 ## 2026.10.17.3

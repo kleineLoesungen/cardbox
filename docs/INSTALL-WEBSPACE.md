@@ -190,8 +190,12 @@ Dienst von außen alle 15 Minuten eine geschützte Adresse auf.
    | Zeitplan | alle 15 Minuten |
    | Zeitlimit | 60 Sekunden |
 
-   Antwort bei Erfolg: `{"sent": 3, "skipped": 5, "removed": 0}`. Ein 404
-   heißt: Token fehlt, ist kürzer als 32 Zeichen oder falsch.
+   Antwort bei Erfolg: `{"sent": 3, "skipped": 5, "removed": 0, "failed": 0, "scheduled": 9}`
+   – `scheduled` ist die Zahl der Konten, die überhaupt eine Erinnerung
+   eingeschaltet haben. Ein **404** heißt: Token fehlt, ist kürzer als 32
+   Zeichen oder falsch. Ein **503** nennt den Fehler in der Einrichtung
+   (z. B. `VAPID_SUBJECT muss mit mailto: oder https:// beginnen.`).
+   Als „Success Match“ in Cronicle eignet sich `"sent":\d+`.
 
 3. Unter **Mehr → System** steht danach, wann zuletzt verschickt wurde.
 

@@ -299,6 +299,22 @@ class ReminderService
     }
 
     /**
+     * Accounts that get reminders at all (time set, a device, approved and
+     * active) — a count for the scheduler's log, to tell "nobody signed up"
+     * from "nobody due now".
+     */
+    public function scheduledCount(): int
+    {
+        return DB::table('learning_settings as s')
+            ->join('users as u', 'u.id', '=', 's.user_id')
+            ->whereNotNull('s.reminder_time')
+            ->whereNotNull('u.approved_at')
+            ->where('u.is_active', true)
+            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('push_subscriptions as p')->whereColumn('p.user_id', 's.user_id'))
+            ->count();
+    }
+
+    /**
      * Last run for the system page.
      *
      * @return array{at: string, sent: int, skipped: int, removed: int, failed?: int}|null

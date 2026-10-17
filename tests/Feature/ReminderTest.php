@@ -175,11 +175,11 @@ describe('Verschicken', function () {
         $ich = remindable(['name' => 'Anna Geheim']);
 
         $this->travelTo(Carbon::parse('2026-10-14 14:50:00', 'UTC'));   // 16:50 Berlin
-        runReminders()->assertOk()->assertExactJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
+        runReminders()->assertOk()->assertJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
 
         $this->travelTo(Carbon::parse('2026-10-14 15:05:00', 'UTC'));   // 17:05 Berlin
-        runReminders()->assertExactJson(['sent' => 1, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
-        runReminders()->assertExactJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
+        runReminders()->assertJson(['sent' => 1, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
+        runReminders()->assertJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
 
         expect($push->sent)->toHaveCount(1);
         $payload = json_decode($push->sent[0]['payload'], true);
@@ -223,7 +223,7 @@ describe('Verschicken', function () {
         $ich = remindable();
         DB::table('study_days')->insert(['user_id' => $ich->id, 'day' => '2026-10-14', 'reviews' => 0, 'correct' => 0, 'answers' => 20, 'goal_met' => true]);
 
-        runReminders()->assertExactJson(['sent' => 0, 'skipped' => 1, 'removed' => 0, 'failed' => 0]);
+        runReminders()->assertJson(['sent' => 0, 'skipped' => 1, 'removed' => 0, 'failed' => 0]);
         expect($push->sent)->toBe([])
             ->and(DB::table('learning_settings')->where('user_id', $ich->id)->value('reminder_sent_on'))->toStartWith('2026-10-14');
     });
@@ -235,7 +235,7 @@ describe('Verschicken', function () {
         $wartend = remindable();
         $wartend->forceFill(['approved_at' => null])->save();
 
-        runReminders()->assertExactJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
+        runReminders()->assertJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
         expect($push->sent)->toBe([]);
     });
 
@@ -243,7 +243,7 @@ describe('Verschicken', function () {
         $ich = remindable();
         $push = fakePush(['https://fcm.googleapis.com/fcm/send/'.$ich->id]);
 
-        runReminders()->assertExactJson(['sent' => 1, 'skipped' => 0, 'removed' => 1, 'failed' => 0]);
+        runReminders()->assertJson(['sent' => 1, 'skipped' => 0, 'removed' => 1, 'failed' => 0]);
         expect(DB::table('push_subscriptions')->count())->toBe(0);
     });
 
@@ -334,7 +334,7 @@ describe('Fehler und Grenzfälle', function () {
         fakePush(throw: true);
         remindable();
 
-        runReminders()->assertExactJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 1]);
+        runReminders()->assertJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 1]);
 
         $push = fakePush();
         runReminders()->assertJson(['sent' => 1]);
@@ -393,7 +393,7 @@ describe('Fehler und Grenzfälle', function () {
         remindable();
         config(['push.vapid.subject' => '']);
 
-        runReminders()->assertJson(['sent' => 0]);
+        runReminders()->assertStatus(503)->assertJson(['error' => 'VAPID_SUBJECT muss mit mailto: oder https:// beginnen.']);
         $this->artisan('reminders:send')->expectsOutputToContain('VAPID_SUBJECT')->assertFailed();
         actingAsAdmin();
         $this->get('/admin/system')->assertSee('ungültig')->assertSee('VAPID_SUBJECT muss mit mailto: oder https:// beginnen.');
@@ -414,13 +414,21 @@ describe('Aufruf', function () {
         expect(DB::table('learning_settings')->whereNotNull('reminder_sent_on')->count())->toBe(0);
     });
 
-    it('schickt ohne Schlüssel nichts', function () {
+    it('meldet fehlende Schlüssel als Fehler, damit der Aufrufer es merkt', function () {
         $push = fakePush();
         remindable();
         config(['push.vapid.private_key' => null]);
 
-        runReminders()->assertExactJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0]);
+        runReminders()->assertStatus(503)->assertExactJson(['error' => 'VAPID_PUBLIC_KEY und VAPID_PRIVATE_KEY fehlen.']);
         expect($push->sent)->toBe([]);
+    });
+
+    it('nennt, wie viele Konten überhaupt Erinnerungen bekommen', function () {
+        fakePush();
+        remindable();
+        $this->travelTo(Carbon::parse('2026-10-14 14:00:00', 'UTC'));   // 16:00 Berlin, vor 17:00
+
+        runReminders()->assertExactJson(['sent' => 0, 'skipped' => 0, 'removed' => 0, 'failed' => 0, 'scheduled' => 1]);
     });
 
     it('macht mit reminders:send dasselbe und zeigt den letzten Lauf in der Verwaltung', function () {
