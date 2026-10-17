@@ -42,7 +42,7 @@ class LearningOverviewService
      *
      * `answers`, `goal`, `goal_met`: today's daily goal (motivierender-start.md, B).
      *
-     * @return array{due: int, tomorrow: int, streak: int, new: int, more_new: int, answers: int, goal: int, goal_met: bool}
+     * @return array{due: int, tomorrow: int, streak: int, new: int, more_new: int, answers: int, goal: int, goal_met: bool, round_size: int}
      */
     public function today(User $user): array
     {
@@ -56,7 +56,7 @@ class LearningOverviewService
 
         // Enough to show today's share and "Noch 20 neue Karten" — never more.
         $available = $this->rounds->newCardCount($user, $this->decks->mineQuery($user)->pluck('id')->all(),
-            (int) config('learning.new_per_day') + (int) config('learning.round_size'));
+            (int) config('learning.new_per_day') + $this->leitner->roundSize($user));
         $new = min($available, $this->rounds->newAllowedToday($user));
 
         return [
@@ -66,7 +66,36 @@ class LearningOverviewService
             'new' => $new,
             'more_new' => $available - $new,
             ...$this->leitner->dayStatus($user),
+            'round_size' => $this->leitner->roundSize($user),
         ];
+    }
+
+    /**
+     * "Knifflige Wörter" of a deck (runden-und-knifflige-woerter.md, B):
+     * active cards the person got wrong at least "hard_wrong" times in a
+     * learned direction and run, and not yet in "Kann ich" there.
+     *
+     * @return list<string>
+     */
+    public function hardCardIds(User $user, Deck $deck): array
+    {
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
+
+        return DB::table('card_progress')
+            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
+            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
+            ->where('card_progress.user_id', $user->id)
+            ->where('cards.deck_id', $deck->id)
+            ->whereRaw('card_progress.review_count - card_progress.correct_count >= ?', [(int) config('learning.hard_wrong')])
+            ->whereColumn('card_progress.box', '<', 'deck_runs.box_count')
+            ->whereRaw($active, $bindings)
+            ->whereRaw($learned, $learnedBindings)
+            ->distinct()
+            ->pluck('cards.id')
+            ->map(fn ($id) => (string) $id)
+            ->values()
+            ->all();
     }
 
     /**

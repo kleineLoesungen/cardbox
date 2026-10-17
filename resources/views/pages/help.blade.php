@@ -99,6 +99,10 @@
       am Ende der Runde noch einmal. Hast du alles geschafft und willst mehr,
       tippe auf <strong>Noch 20 neue Karten</strong>.
     </p>
+    <p class="text-muted">
+      Eine Runde zu lang? Unter <strong>Mein Konto → Karten je Runde</strong>
+      wählst du 5, 10 oder 20 Karten.
+    </p>
   </section>
 
   <section class="stack gap-2">
@@ -150,6 +154,12 @@
     <p class="text-muted">
       Mit <strong>Nur diesen Stapel lernen</strong> lernst du außerdem neue
       Karten aus diesem einen Stapel, ohne auf die anderen zu warten.
+    </p>
+    <p class="text-muted">
+      Wörter, die du schon dreimal falsch hattest, sind <strong>knifflig</strong>.
+      Mit <strong>Knifflige Wörter üben</strong> im Stapel nimmst du dir nur
+      die vor. Denk dir dazu eine Eselsbrücke aus – ein Bild im Kopf oder einen
+      Reim hilft oft mehr als noch eine Wiederholung.
     </p>
   </section>
 

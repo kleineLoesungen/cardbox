@@ -11,6 +11,7 @@ use App\Services\DeckPreferenceService;
 use App\Services\DeckRunService;
 use App\Services\DeckService;
 use App\Services\LearningOverviewService;
+use App\Services\LeitnerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -31,6 +32,7 @@ class DeckController extends Controller
         private CardSuggestionService $suggestions,
         private CardSelectionService $selection,
         private DeckPreferenceService $preferences,
+        private LeitnerService $leitner,
     ) {}
 
     /** "Meine" and "Entdecken" on one page, switched by ?tab=. */
@@ -99,6 +101,8 @@ class DeckController extends Controller
             'run' => $run,
             'withReverse' => $withReverse,
             'typeAnswers' => $this->preferences->typeAnswers($user, $model),
+            // Cards often answered wrong (runden-und-knifflige-woerter.md, B).
+            'hardIds' => $isOwner || $isFollowing ? $this->overview->hardCardIds($user, $model) : [],
             // Only needed when there is something to learn.
             'activeIds' => $activeIds,
             'boxes' => $boxes,
@@ -192,6 +196,7 @@ class DeckController extends Controller
             'boxCount' => $result['run']->box_count,
             'box' => (int) $box,
             'entries' => $result['entries'],
+            'roundSize' => $this->leitner->roundSize($request->user()),
         ]);
     }
 

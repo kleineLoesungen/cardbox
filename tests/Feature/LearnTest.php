@@ -467,7 +467,8 @@ describe('Grenzfälle', function () {
 
         $this->withHeaders(['HX-Request' => 'true'])->post('/learn/round/answer', ['card' => 'x', 'step' => 0])
             ->assertHeader('HX-Redirect', '/learn');
-        $this->get('/learn/round')->assertRedirect('/learn');
+        $this->get('/learn/round')->assertHeader('HX-Redirect', '/learn');
+        $this->flushHeaders()->get('/learn/round')->assertRedirect('/learn');
     });
 
     it('nimmt bei „Los geht\'s“ höchstens 20 Karten, älteste Fälligkeit zuerst', function () {

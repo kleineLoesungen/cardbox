@@ -86,7 +86,8 @@
       <x-card-row :card="$card" :deck="$deck" :editable="$isOwner"
                   :can-suggest="! $isOwner && $deck->is_shared" :can-moderate="$canModerate"
                   :suggestion="$mySuggestions[$card->id] ?? null"
-                  :paused="$activeIds !== null && ! in_array($card->id, $activeIds, true)" />
+                  :paused="$activeIds !== null && ! in_array($card->id, $activeIds, true)"
+                  :hard="in_array($card->id, $hardIds, true)" />
     @endforeach
   </ul>
 

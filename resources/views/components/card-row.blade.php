@@ -6,9 +6,10 @@
   read only; tapping unfolds all meanings and, in shared decks, "Fehler
   melden" (#suggest-sheet) or the status of the viewer's own suggestion.
   For moderation also "Bearbeiten (Moderation)" (#card-sheet); showing it
-  is display only, the role:moderator routes decide.
+  is display only, the role:moderator routes decide. "knifflig": often
+  answered wrong (runden-und-knifflige-woerter.md, B).
 --}}
-@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null, 'paused' => false])
+@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null, 'paused' => false, 'hard' => false])
 @php($more = count($card->front) + count($card->back) - 2)
 {{-- Paused (issue #10): shown faded, with a badge; editing and suggesting still work. --}}
 <li id="card-{{ $card->id }}" @class(['opacity-60' => $paused])>
@@ -18,7 +19,7 @@
             hx-target="#card-sheet-body"
             aria-label="Karte {{ $card->frontText() }} bearbeiten">
       <span class="card-row-sides">
-        <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif @if ($paused)<span class="badge badge-neutral ml-1">pausiert</span>@endif</span>
+        <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif @if ($paused)<span class="badge badge-neutral ml-1">pausiert</span>@endif @if ($hard)<span class="badge badge-warning ml-1">knifflig</span>@endif</span>
         <span class="text-muted" lang="{{ \App\Enums\Language::tryFrom($deck->back_language)?->tag() }}">
           {{ $card->backText() }}
           @if ($more > 0)<span class="badge badge-neutral ml-1">+{{ $more }}</span>@endif
@@ -29,7 +30,7 @@
     <details class="group">
       <summary class="list-row cursor-pointer list-none">
         <span class="card-row-sides">
-          <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif @if ($paused)<span class="badge badge-neutral ml-1">pausiert</span>@endif</span>
+          <span lang="{{ \App\Enums\Language::tryFrom($deck->front_language)?->tag() }}">{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif @if ($paused)<span class="badge badge-neutral ml-1">pausiert</span>@endif @if ($hard)<span class="badge badge-warning ml-1">knifflig</span>@endif</span>
           <span class="text-muted" lang="{{ \App\Enums\Language::tryFrom($deck->back_language)?->tag() }}">
             {{ $card->backText() }}
             @if ($more > 0)<span class="badge badge-neutral ml-1">+{{ $more }}</span>@endif

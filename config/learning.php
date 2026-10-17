@@ -50,6 +50,14 @@ return [
     'round_size' => 20,
     'round_repeats' => 3,
 
+    // Cards per round a person may choose under "Mein Konto"; round_size
+    // above is the default (docs/specs/runden-und-knifflige-woerter.md).
+    'round_sizes' => [5, 10, 20],
+
+    // "Knifflig": a card answered wrong this many times and not yet in
+    // "Kann ich" (in any direction and run).
+    'hard_wrong' => 3,
+
     // "Heute" adds at most this many new cards a day by itself; more on
     // request ("Noch 20 neue Karten"). Counts every card started that day.
     'new_per_day' => 20,

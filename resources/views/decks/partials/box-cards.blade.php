@@ -24,7 +24,7 @@
       {{ count($entries) === 1 ? 'Diese Karte üben' : 'Diese '.count($entries).' Karten üben' }}
     </button>
     <p class="hint mt-1 text-center">
-      Freies Üben – zählt nicht.@if (count($entries) > (int) config('learning.round_size')) Je Runde {{ config('learning.round_size') }} zufällige Karten.@endif
+      Freies Üben – zählt nicht.@if (count($entries) > $roundSize) Je Runde {{ $roundSize }} zufällige Karten.@endif
     </p>
   </form>
 

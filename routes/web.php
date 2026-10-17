@@ -104,6 +104,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/password', [AccountController::class, 'updatePassword']);
     // Daily reminder (docs/specs/schreiben-und-erinnern.md, B): time or off, and this device.
     Route::post('/account/reminder', [AccountController::class, 'updateReminder']);
+    // Cards per round (docs/specs/runden-und-knifflige-woerter.md, A).
+    Route::post('/account/round-size', [AccountController::class, 'updateRoundSize']);
     Route::post('/account/push-subscriptions', [AccountController::class, 'storePushSubscription'])->middleware('throttle:10,1');
 
     // Decks and cards. Ownership and visibility are checked in DeckService /

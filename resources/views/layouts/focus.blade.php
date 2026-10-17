@@ -10,6 +10,36 @@
   @yield('main')
 </main>
 
+{{--
+  Keeps the iPhone's keyboard open between typed answers: iOS only opens it
+  for a focus inside a tap, and the next card arrives later. So the tap on
+  "Weiter" focuses this field at once, and the new card's field takes over.
+  16px, or iOS would zoom.
+--}}
+<input id="keyboard-keeper" type="text" tabindex="-1" aria-hidden="true" autocomplete="off"
+       class="pointer-events-none fixed top-0 left-0 h-px w-px text-base opacity-0">
+
+<script>
+  // --- Keyboard on phones between typed answers (see #keyboard-keeper) -----
+  const keeper = document.getElementById("keyboard-keeper");
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-keep-keyboard]")) keeper.focus({ preventScroll: true });
+  }, true);
+  document.body.addEventListener("htmx:afterSettle", () => {
+    if (document.activeElement !== keeper) return;
+    const field = document.querySelector("#round input[name=typed]");
+    field ? field.focus({ preventScroll: true }) : keeper.blur();
+  });
+  // An answer that is no round (session expired → login page): go there instead of swapping it in.
+  document.body.addEventListener("htmx:beforeSwap", (e) => {
+    const url = e.detail.xhr.responseURL;
+    if (url && !new URL(url).pathname.startsWith("/learn/round")) {
+      e.detail.shouldSwap = false;
+      window.location.href = url;
+    }
+  });
+</script>
+
 <script>
   // --- Learning round: flip, rate, keyboard -----------------------------
   // Event delegation, because htmx swaps the whole round after each answer.

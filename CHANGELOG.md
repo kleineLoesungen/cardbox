@@ -7,6 +7,12 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.18
+- Karten je Runde: Unter Mein Konto wählbar (5, 10 oder 20). Kürzere Runden sind schneller geschafft
+- Knifflige Wörter: Karten, die dreimal falsch waren, sind im Stapel markiert und lassen sich mit „Knifflige Wörter üben“ gezielt wiederholen. Am Rundenende ein Anstoß zur Eselsbrücke
+- Antworten eintippen auf dem iPhone: Nach „Weiter“ bleibt die Tastatur offen, man muss nicht mehr jedes Mal ins Feld tippen
+- Migration: 2026_10_18_000000_add_round_size_to_learning_settings.php
+
 ## 2026.10.17.3
 - Erinnerung: Unter Mein Konto lässt sich eine tägliche Mitteilung einschalten („12 Karten warten auf dich“), zu einer wählbaren Uhrzeit. Sie kommt nur, wenn Karten warten und das Tagesziel offen ist. Auf dem iPhone nur, wenn Cardbox auf dem Home-Bildschirm liegt
 - Betrieb: Für Erinnerungen braucht es VAPID-Schlüssel (php artisan push:keys), REMINDER_TOKEN und einen Aufruf alle 15 Minuten (z. B. Cronicle → POST /api/v1/reminders/run mit X-Cron-Token). Ohne Einrichtung bleibt die Funktion aus. Anleitung in docs/INSTALL-WEBSPACE.md

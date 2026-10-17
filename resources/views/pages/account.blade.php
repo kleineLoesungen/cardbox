@@ -29,6 +29,28 @@
     </div>
   </a>
 
+  {{-- --- Cards per round (docs/specs/runden-und-knifflige-woerter.md, A) -- --}}
+  <div class="card h-fit">
+    <div class="card-header"><h2 class="card-title">Karten je Runde</h2></div>
+    <form class="card-body stack" method="post" action="/account/round-size">
+      @csrf
+      <x-form-error bag="round" />
+      <fieldset class="field">
+        <legend class="sr-only">Karten je Runde</legend>
+        <div class="grid grid-cols-3 gap-2">
+          @foreach (config('learning.round_sizes') as $size)
+            <label class="choice-card min-h-12 items-center justify-center">
+              <input type="radio" name="round_size" value="{{ $size }}" @checked($roundSize === (int) $size) class="mt-0">
+              <span class="font-semibold">{{ $size }}</span>
+            </label>
+          @endforeach
+        </div>
+        <p class="hint">Kürzere Runden sind schneller geschafft. Danach geht es mit der nächsten weiter.</p>
+      </fieldset>
+      <button type="submit" class="btn btn-secondary">Speichern</button>
+    </form>
+  </div>
+
   {{-- --- Daily reminder (docs/specs/schreiben-und-erinnern.md, B) --------- --}}
   @if ($reminder)
     <div class="card h-fit" data-reminder data-public-key="{{ $reminder['publicKey'] }}">

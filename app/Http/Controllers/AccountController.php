@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\LearningSettingsService;
+use App\Services\LeitnerService;
 use App\Services\ReminderService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class AccountController extends Controller
         private UserService $users,
         private LearningSettingsService $learning,
         private ReminderService $reminders,
+        private LeitnerService $leitner,
     ) {}
 
     public function show(Request $request): View
@@ -33,12 +35,25 @@ class AccountController extends Controller
             'user' => $request->user(),
             // "Lernplan" lives here since it left the menu (docs/specs/einfacher-lernen.md, D).
             'plan' => $this->learning->current($request->user()),
+            'roundSize' => $this->leitner->roundSize($request->user()),
             'reminder' => $this->reminders->enabled() ? [
                 'times' => $this->reminders->times(),
                 'publicKey' => (string) config('push.vapid.public_key'),
                 ...$this->reminders->status($request->user()),
             ] : null,
         ]);
+    }
+
+    /** Cards per round. */
+    public function updateRoundSize(Request $request): RedirectResponse
+    {
+        try {
+            $size = $this->learning->setRoundSize($request->user(), $request->input('round_size'));
+        } catch (ValidationException $e) {
+            throw $e->errorBag('round');
+        }
+
+        return redirect('/account')->with('toast', ['kind' => 'success', 'message' => "Eine Runde hat jetzt {$size} Karten."]);
     }
 
     /** "Speichern" with a time, or "Ausschalten". */

@@ -73,7 +73,7 @@
           <form method="post" action="/learn/round">
             @csrf
             <input type="hidden" name="more" value="1">
-            <button type="submit" class="btn btn-secondary btn-block">Noch {{ min($today['more_new'], (int) config('learning.round_size')) }} neue Karten</button>
+            <button type="submit" class="btn btn-secondary btn-block">Noch {{ min($today['more_new'], $today['round_size']) }} neue Karten</button>
           </form>
         @elseif ($today['tomorrow'] > 0)
           <p class="text-sm text-muted">Morgen {{ $today['tomorrow'] === 1 ? 'ist 1 Karte' : 'sind '.$today['tomorrow'].' Karten' }} dran.</p>

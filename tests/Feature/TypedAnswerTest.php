@@ -134,8 +134,9 @@ it('wertet doppeltes Prüfen einmal und führt nach dem Ergebnis weiter', functi
     $this->withHeaders(['HX-Request' => 'true'])->post('/learn/round/answer', $input)->assertDontSee('Richtig ist:');
 
     expect(CardProgress::where('card_id', $first->id)->sole())->box->toBe(1)->review_count->toBe(2);
-    // Reloading the result goes to the next card.
-    $this->get('/learn/round')->assertSee('name="typed"', false)->assertDontSee('Richtig ist:');
+    // "Weiter" (htmx) brings only the next card, reloading the whole page as well.
+    $this->get('/learn/round')->assertSee('name="typed"', false)->assertDontSee('Richtig ist:')->assertDontSee('<html', false);
+    $this->flushHeaders()->get('/learn/round')->assertSee('name="typed"', false)->assertSee('keyboard-keeper', false);
 });
 
 it('führt neue Wörter offen ein und tippt erst bei der Abfrage', function () {

@@ -84,6 +84,34 @@ class LearningSettingsService
     }
 
     /**
+     * Cards per round (docs/specs/runden-und-knifflige-woerter.md, A).
+     *
+     * @throws ValidationException
+     */
+    public function setRoundSize(User $user, mixed $size): int
+    {
+        $sizes = array_map('intval', (array) config('learning.round_sizes'));
+        Validator::make(['round_size' => $size], [
+            'round_size' => ['required', 'string', Rule::in(array_map('strval', $sizes))],
+        ], [
+            'round_size.*' => 'Bitte '.implode(', ', array_slice($sizes, 0, -1)).' oder '.end($sizes).' wählen.',
+        ])->validate();
+
+        $plan = $this->leitner->plan($user);
+        DB::table('learning_settings')->insertOrIgnore([
+            'user_id' => $user->id,
+            'box_count' => $plan['box_count'],
+            'day_gaps' => json_encode($plan['day_gaps']),
+            'daily_goal' => $this->leitner->dailyGoal($user),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('learning_settings')->where('user_id', $user->id)->update(['round_size' => (int) $size, 'updated_at' => now()]);
+
+        return (int) $size;
+    }
+
+    /**
      * Only the first N−1 intervals count: the form keeps fields for the
      * largest plan so the "−"/"+" buttons work without a round trip.
      *

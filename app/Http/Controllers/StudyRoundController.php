@@ -39,7 +39,7 @@ class StudyRoundController extends Controller
                 $this->boxInput($request),
                 $run,
             ),
-            $request->input('mode') === 'test' => $this->rounds->startTest($user, is_string($deck) ? $deck : ''),
+            $request->input('mode') === 'test' => $this->rounds->startTest($user, is_string($deck) ? $deck : '', $request->input('only') === 'hard'),
             is_string($deck) && $deck !== '' => $this->rounds->startForDeck($user, $deck, $run),
             default => $this->rounds->startToday($user, $request->boolean('more')),
         };
@@ -49,14 +49,17 @@ class StudyRoundController extends Controller
         return redirect('/learn/round');
     }
 
-    public function show(Request $request): View|RedirectResponse
+    /** The round in full screen; for htmx ("Weiter" after a typed answer) only the card. */
+    public function show(Request $request): View|Response|RedirectResponse
     {
         $round = $this->stored($request);
         if ($round === null) {
-            return redirect('/learn');
+            return $request->headers->has('HX-Request')
+                ? response('', 200)->header('HX-Redirect', '/learn')
+                : redirect('/learn');
         }
 
-        return view('learn.round', $this->state($request, $round));
+        return view($request->headers->has('HX-Request') ? 'learn.partials.round-body' : 'learn.round', $this->state($request, $round));
     }
 
     /** htmx: rates the card that is up and answers with the next one (or the end). */
@@ -141,6 +144,7 @@ class StudyRoundController extends Controller
             'position' => $this->rounds->position($round),
             'streak' => $current === null ? $this->leitner->streak($user) : 0,
             'mastered' => $current === null ? $this->rounds->masteredWords($user, $round) : [],
+            'hard' => $current === null ? $this->rounds->hardWords($user, $round) : [],
             'day' => $current === null ? $this->leitner->dayStatus($user) : null,
         ];
     }

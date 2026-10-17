@@ -37,7 +37,7 @@ use Illuminate\Validation\ValidationException;
  * Modes: `learn` (counts for the boxes), `practice` (one box, nothing
  * saved) and `test` ("Für den Test üben": every card until known once,
  * nothing saved; docs/specs/einfacher-lernen.md, F).
- * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>, mastered?: list<string>, counted?: list<string>, goal_before?: bool}
+ * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>, mastered?: list<string>, counted?: list<string>, missed?: list<string>, goal_before?: bool, only?: string|null}
  */
 class StudyRoundService
 {
@@ -72,7 +72,7 @@ class StudyRoundService
             $user->followedDecks()->syncWithoutDetaching([$deck->id]);
         }
 
-        $limit = (int) config('learning.round_size');
+        $limit = $this->leitner->roundSize($user);
         $due = $this->dueQuery($user)
             ->where('card_progress.deck_run_id', $run->id)
             ->orderBy('card_progress.due_on')
@@ -104,7 +104,7 @@ class StudyRoundService
      */
     public function startToday(User $user, bool $more = false): array
     {
-        $limit = (int) config('learning.round_size');
+        $limit = $this->leitner->roundSize($user);
         $due = $this->dueQuery($user)
             ->toBase()
             ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
@@ -224,7 +224,7 @@ class StudyRoundService
      *
      * @throws ModelNotFoundException<Deck>
      */
-    public function startTest(User $user, string $deckId): array
+    public function startTest(User $user, string $deckId, bool $hardOnly = false): array
     {
         $deck = $this->decks->getVisible($user, $deckId);
         [$active, $bindings] = $this->selection->activeCondition($user);
@@ -236,14 +236,19 @@ class StudyRoundService
         // Cut in the database, so a huge deck never loads every id.
         $perDirection = intdiv((int) config('learning.test_max'), count($directions));
         $items = [];
-        foreach ($deck->cards()->whereRaw($active, $bindings)->inRandomOrder()->limit($perDirection)->pluck('id') as $id) {
+        $cards = $deck->cards()->whereRaw($active, $bindings);
+        // "Knifflige Wörter üben": only cards often answered wrong (runden-und-knifflige-woerter.md, B).
+        if ($hardOnly) {
+            $cards->whereKey($this->overview()->hardCardIds($user, $deck));
+        }
+        foreach ($cards->inRandomOrder()->limit($perDirection)->pluck('id') as $id) {
             foreach ($directions as $direction) {
                 $items[] = ['card' => $id, 'direction' => $direction, 'repeat' => false];
             }
         }
         shuffle($items);
 
-        return $this->newRound($user, 'test', $deck->id, $items);
+        return ['only' => $hardOnly ? 'hard' : null] + $this->newRound($user, 'test', $deck->id, $items);
     }
 
     /**
@@ -337,6 +342,40 @@ class StudyRoundService
         return $words;
     }
 
+    /**
+     * Cards missed in this round that count as "knifflig" now, as "front –
+     * back" for the end screen (runden-und-knifflige-woerter.md, B).
+     *
+     * @param  Round  $round
+     * @return list<string>
+     */
+    public function hardWords(User $user, array $round): array
+    {
+        $missed = array_values(array_unique($round['missed'] ?? []));
+        if ($missed === []) {
+            return [];
+        }
+
+        $words = [];
+        $cards = Card::with('deck')->whereIn('deck_id', $this->decks->visibleTo($user)->select('id'))->whereKey($missed)->get();
+        foreach ($cards->groupBy('deck_id') as $inDeck) {
+            $hard = $this->overview()->hardCardIds($user, $inDeck->first()->deck);
+            foreach ($inDeck as $card) {
+                if (in_array($card->id, $hard, true)) {
+                    $words[] = $card->frontText().' – '.$card->backText();
+                }
+            }
+        }
+
+        return $words;
+    }
+
+    /** Resolved late: LearningOverviewService itself depends on this service. */
+    private function overview(): LearningOverviewService
+    {
+        return app(LearningOverviewService::class);
+    }
+
     /** The deck's oldest run of the person, or a new one with the standard plan. */
     private function runFor(User $user, string $deckId): DeckRun
     {
@@ -399,7 +438,7 @@ class StudyRoundService
 
         $items = $cards
             ->inRandomOrder()
-            ->limit((int) config('learning.round_size'))
+            ->limit($this->leitner->roundSize($user))
             ->pluck('id')
             ->map(fn (string $id) => [
                 'card' => $id,
@@ -505,6 +544,9 @@ class StudyRoundService
             $round['answered'] += $current['repeat'] ? 0 : 1;
             $round['known'] += $known ? 1 : 0;
             $round['first'] += $known && ! $current['repeat'] ? 1 : 0;
+            if (! $known && ! $current['repeat']) {
+                $round['missed'][] = $cardId;
+            }
             if (! $known) {
                 $round['queue'][] = ['card' => $cardId, 'direction' => $current['direction']->value, 'repeat' => true];
             }
@@ -515,6 +557,9 @@ class StudyRoundService
         if (! $current['repeat']) {
             $round['answered']++;
             $round['known'] += $known ? 1 : 0;
+            if (! $known) {
+                $round['missed'][] = $cardId;
+            }
 
             if ($round['mode'] === 'learn') {
                 $move = $this->leitner->review($user, $current['runs'], $current['card'], $current['direction'], $known);
@@ -646,6 +691,7 @@ class StudyRoundService
             'repeats' => [],
             'mastered' => [],
             'counted' => [],
+            'missed' => [],
             // The end screen says "Tagesziel geschafft!" only for the round that reached it.
             'goal_before' => $day['answers'] >= $day['goal'],
         ];

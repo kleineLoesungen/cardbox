@@ -138,6 +138,14 @@ class LeitnerService
         return ['from' => $from, 'to' => $to];
     }
 
+    /** Cards per round, chosen under "Mein Konto" (runden-und-knifflige-woerter.md). */
+    public function roundSize(User $user): int
+    {
+        $size = DB::table('learning_settings')->where('user_id', $user->id)->value('round_size');
+
+        return $size === null ? (int) config('learning.round_size') : (int) $size;
+    }
+
     /**
      * The person's daily goal: answers a day (docs/specs/motivierender-start.md, B).
      */

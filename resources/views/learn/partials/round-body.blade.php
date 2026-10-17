@@ -75,8 +75,12 @@
       </div>
     </div>
 
-    {{-- A plain link: robust when the round is over or the session expired. --}}
-    <a href="/learn/round" class="btn btn-primary btn-lg btn-block" data-result-next>Weiter</a>
+    {{--
+      htmx keeps the page (and with it the iPhone's keyboard, see layouts/focus);
+      the href still works without JavaScript.
+    --}}
+    <a href="/learn/round" class="btn btn-primary btn-lg btn-block" data-result-next data-keep-keyboard
+       hx-get="/learn/round" hx-target="#round" hx-swap="outerHTML">Weiter</a>
   </div>
 
 @elseif ($current && $current['intro'])
@@ -139,7 +143,7 @@
       <input type="hidden" name="card" value="{{ $card->id }}">
       <input type="hidden" name="step" value="{{ $round['step'] }}">
       <p class="hint text-center">Merk es dir – gleich fragt die App danach.</p>
-      <button type="submit" class="btn btn-primary btn-lg btn-block" data-intro-next>Weiter</button>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" data-intro-next data-keep-keyboard>Weiter</button>
     </form>
   </div>
 
@@ -285,6 +289,13 @@
           {{ $round['promoted'] === 1 ? '1 Karte ist' : $round['promoted'].' Karten sind' }} ein Fach weiter.
         </p>
       @endif
+      @if (($hard ?? []) !== [])
+        {{-- Often wrong (runden-und-knifflige-woerter.md, B): a nudge towards a mnemonic. --}}
+        <div class="stack gap-1">
+          <p class="text-base"><span class="font-semibold text-warning">Knifflig:</span> {{ implode(', ', array_slice($hard, 0, 5)) }}@if (count($hard) > 5) und {{ count($hard) - 5 }} weitere @endif</p>
+          <p class="text-sm text-muted">Denk dir eine Eselsbrücke aus – zum Beispiel ein Bild im Kopf oder einen Reim.</p>
+        </div>
+      @endif
       @if ($mastered !== [])
         {{-- The growing vocabulary (docs/specs/motivierender-start.md, C). --}}
         <p class="text-base">
@@ -309,6 +320,9 @@
         @csrf
         <input type="hidden" name="mode" value="test">
         <input type="hidden" name="deck" value="{{ $round['deck'] }}">
+        @if (($round['only'] ?? null) === 'hard')
+          <input type="hidden" name="only" value="hard">
+        @endif
         <button type="submit" class="btn btn-secondary btn-lg btn-block">Nochmal üben</button>
       </form>
     @endif

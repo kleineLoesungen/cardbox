@@ -14,6 +14,7 @@
   @param list<string>|null $activeIds  active cards when only part is learned (issue #10)
   @param \Illuminate\Support\Collection $cards  all cards of the deck
   @param array $boxes  from LearningOverviewService::boxes
+  @param list<string> $hardIds  cards often answered wrong ("Knifflige Wörter üben")
 --}}
 @php($n = $boxes['box_count'])
 @php($runParam = $run ? '&run='.$run->id : '')
@@ -96,6 +97,16 @@
     <button type="submit" class="btn btn-ghost btn-block">Für den Test üben</button>
     <p class="hint text-center">Alle Karten, bis du jede einmal gewusst hast. Zählt nicht für den Karteikasten.</p>
   </form>
+  @if ($hardIds !== [])
+    {{-- Cards often answered wrong (runden-und-knifflige-woerter.md, B). --}}
+    <form method="post" action="/learn/round">
+      @csrf
+      <input type="hidden" name="mode" value="test">
+      <input type="hidden" name="only" value="hard">
+      <input type="hidden" name="deck" value="{{ $deck->id }}">
+      <button type="submit" class="btn btn-ghost btn-block">Knifflige Wörter üben ({{ count($hardIds) }})</button>
+    </form>
+  @endif
 </section>
 
 <x-sheet id="box-sheet" title="Karten im Fach"></x-sheet>

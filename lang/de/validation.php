@@ -85,6 +85,8 @@ return [
         'proposed_back' => 'Rückseite',
         'proposed_front' => 'Vorderseite',
         'role' => 'Rolle',
+        'reminder_time' => 'Uhrzeit',
+        'round_size' => 'Karten je Runde',
         'scopes' => 'Berechtigungen',
         'text' => 'Liste',
         'title' => 'Titel',
