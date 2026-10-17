@@ -114,7 +114,8 @@
     <h2 class="text-lg font-semibold">Tagesziel und Lernserie</h2>
     <p class="text-muted">
       Der Ring unter <strong>Heute</strong> zeigt, wie viele Karten du heute
-      geschafft hast. Jede Antwort zählt, auch beim Test üben. Ist er voll,
+      gewusst hast – beim Lernen und beim Test üben. Eine Karte, die du erst
+      bei der Wiederholung weißt, zählt auch; „Nochmal“ allein zählt nicht. Ist er voll,
       hast du dein <strong>Tagesziel</strong> erreicht – weiterlernen darfst
       du trotzdem. Wie groß das Ziel ist (10, 20 oder 30 Karten), stellst du
       unter <strong>Mein Konto → Lernplan</strong> ein.

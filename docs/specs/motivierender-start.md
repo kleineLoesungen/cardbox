@@ -15,9 +15,10 @@ Entscheidungen (Rückfragen vom 16.10.2026):
 - Das Tagesziel ist **wählbar: 10, 20 oder 30 Karten**, Vorgabe 20.
 - Ein Tag zählt für die **Lernserie**, wenn das Tagesziel erreicht ist **oder**
   „Heute“ nichts mehr anbietet. Bisherige Tage zählen weiter.
-- **Jede Antwort in einer Runde** zählt für das Tagesziel, auch „Für den Test
-  üben“ und Wiederholungen. Der Karteikasten bleibt davon unberührt, wie
-  bisher.
+- Für das Tagesziel zählen **gewusste Karten** aus jeder Runde, auch „Für den
+  Test üben“. Der Karteikasten bleibt davon unberührt. (Zuerst hieß es „jede
+  Antwort“; geändert am 17.10.2026, weil sonst 20-mal „Nochmal“ das Ziel
+  füllte. Es sollen Erfolge nötig sein.)
 
 Leitlinie 6 bleibt: keine Punkte, keine Abzeichen, keine Ranglisten.
 
@@ -98,9 +99,10 @@ darin, z. B. „15 / 20“, und darunter „Karten heute“.
   Tag für die Serie zählt. Der Ring bleibt leer.
 - Die Lernserie („🔥 3 Tage in Folge“) steht wie bisher unter der Begrüßung.
 
-**Was zählt:** Jede Antwort („Gewusst“ oder „Nochmal“) in jeder Runde: Lernen,
-Wiederholungen am Rundenende, „Für den Test üben“, Fach üben. Einführungen
-(A) zählen nicht. Gezählt wird je Kalendertag in der Lern-Zeitzone, wie die
+**Was zählt:** jede **gewusste** Karte in jeder Runde (Lernen, „Für den Test
+üben“, Fach üben), je Runde höchstens einmal je Karte und Richtung. Auch eine
+Karte, die erst bei der Wiederholung gewusst wird, zählt dann. „Nochmal“
+zählt nicht, Einführungen (A) auch nicht. Der Ring heißt „heute gewusst“. Gezählt wird je Kalendertag in der Lern-Zeitzone, wie die
 Fälligkeit.
 
 **Ziel wählen:** Unter **Mein Konto → Lernplan** steht oben neu
@@ -186,7 +188,7 @@ Eine Migration: `2026_10_16_000000_add_daily_goal_and_goal_met.php`.
 
 - **`learning_settings.daily_goal`**: `smallInteger`, Vorgabe 20. Personen
   ohne Zeile nutzen `learning.default_daily_goal` (20).
-- **`study_days.answers`**: `integer`, Vorgabe 0. Alle Antworten des Tages.
+- **`study_days.answers`**: `integer`, Vorgabe 0. Die für das Tagesziel gezählten (gewussten) Karten des Tages; der Name stammt aus der ersten Fassung.
   Die bisherige Spalte `reviews` bleibt und zählt weiter nur die Antworten,
   die ein Fach bewegen.
 - **`study_days.goal_met`**: `boolean`, Vorgabe `false`.
@@ -215,7 +217,8 @@ weiter.
   - `StudyRoundService`:
     - Einführungen beim Zusammenstellen von Lernrunden, `answer()` für
       Einführungen ohne Bewertung.
-    - Jede Antwort in jedem Modus zählt für das Tagesziel.
+    - Jede in einer Runde erstmals gewusste Karte (je Richtung) zählt für das
+      Tagesziel (`counted` in der Runde).
     - `mastered` wird mitgeschrieben, am Rundenende wird „nichts mehr da?“
       geprüft.
   - `LeitnerService`:

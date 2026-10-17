@@ -52,7 +52,7 @@
           </label>
         @endforeach
       </div>
-      <p class="hint">So viele Karten möchtest du jeden Tag schaffen.</p>
+      <p class="hint">So viele Karten möchtest du jeden Tag wissen.</p>
       @error('daily_goal')
         <p class="error">{{ $message }}</p>
       @enderror

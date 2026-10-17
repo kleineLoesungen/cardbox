@@ -149,8 +149,9 @@ class LeitnerService
     }
 
     /**
-     * Counts one answer of any round (learning, repeats, practice, test)
-     * for today's goal; reaching the goal makes the day count for the streak.
+     * Counts one card known today, from any kind of round, for the daily
+     * goal (the caller decides what counts); reaching the goal makes the day
+     * count for the streak.
      */
     public function countAnswer(User $user): void
     {

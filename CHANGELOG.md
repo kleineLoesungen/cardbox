@@ -9,7 +9,7 @@ Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
 ## 2026.10.17
 - Neue Wörter zeigt die App zuerst offen (vorne und hinten, zum Anhören) und fragt sie ein paar Karten später ab – niemand muss mehr ein Wort raten, das er nie gesehen hat
-- Tagesziel: Ein Ring unter „Heute“ zeigt, wie viele Karten heute geschafft sind (jede Antwort zählt, auch beim Test üben). Das Ziel – 10, 20 oder 30 Karten – steht unter Mein Konto → Lernplan
+- Tagesziel: Ein Ring unter „Heute“ zeigt, wie viele Karten heute gewusst wurden (auch beim Test üben; eine Karte zählt je Runde einmal, „Nochmal“ zählt nicht). Das Ziel – 10, 20 oder 30 Karten – steht unter Mein Konto → Lernplan
 - Die Lernserie zählt Tage mit erreichtem Tagesziel – oder an denen es nichts mehr zu lernen gab. Bisherige Lerntage zählen weiter
 - „Du kannst schon 124 Wörter“ unter „Heute“, und am Rundenende die Wörter, die neu in „Kann ich“ sind
 - Migration: 2026_10_16_000000_add_daily_goal_and_goal_met.php

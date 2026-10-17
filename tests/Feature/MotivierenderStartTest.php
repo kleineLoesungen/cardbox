@@ -164,20 +164,24 @@ describe('Neue Wörter zuerst zeigen', function () {
 });
 
 describe('Tagesziel und Lernserie', function () {
-    it('füllt den Ring mit jeder Antwort, auch Wiederholungen und Test üben', function () {
+    it('füllt den Ring nur mit gewussten Karten, je Runde einmal', function () {
         $ich = actingAsUser();
         $deck = msDeck($ich, 12);
 
-        $this->get('/learn')->assertSee('aria-label="Tagesziel: 0 von 20 Karten"', false)->assertSee("Los geht's");
-
-        $this->post('/learn/round', ['mode' => 'test', 'deck' => $deck->id]);
-        foreach (range(1, 15) as $i) {
-            msNext($i > 3);     // three times "Nochmal", then known
-        }
-        $this->get('/learn')->assertSee('aria-label="Tagesziel: 15 von 20 Karten"', false)->assertDontSee('Tagesziel geschafft!');
+        $this->get('/learn')->assertSee('aria-label="Tagesziel: 0 von 20 Karten gewusst"', false)->assertSee("Los geht's");
 
         $this->post('/learn/round', ['mode' => 'test', 'deck' => $deck->id]);
         foreach (range(1, 5) as $i) {
+            msNext(false);     // "Nochmal" fills nothing
+        }
+        $this->get('/learn')->assertSee('aria-label="Tagesziel: 0 von 20 Karten gewusst"', false);
+        foreach (range(1, 12) as $i) {
+            msNext(true);      // 7 at once, then the 5 repeats
+        }
+        $this->get('/learn')->assertSee('aria-label="Tagesziel: 12 von 20 Karten gewusst"', false)->assertDontSee('Tagesziel geschafft!');
+
+        $this->post('/learn/round', ['mode' => 'test', 'deck' => $deck->id]);
+        foreach (range(1, 8) as $i) {
             msNext();
         }
         $this->get('/learn')->assertSee('Tagesziel geschafft!')->assertSee('goal-ring-done')->assertSee('Weiterlernen');
@@ -320,7 +324,7 @@ describe('Tagesziel und Lernserie', function () {
         }
 
         $this->travelTo(Carbon::parse('2026-10-14 22:30:00', 'UTC'));   // 00:30 in Berlin
-        $this->get('/learn')->assertSee('aria-label="Tagesziel: 0 von 20 Karten"', false);
+        $this->get('/learn')->assertSee('aria-label="Tagesziel: 0 von 20 Karten gewusst"', false);
     });
 });
 

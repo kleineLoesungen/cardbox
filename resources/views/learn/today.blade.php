@@ -36,10 +36,10 @@
         <div>
           <div @class(['goal-ring', 'goal-ring-done' => $full]) style="--goal: {{ $percent }}"
                role="progressbar" aria-valuemin="0" aria-valuemax="{{ $today['goal'] }}" aria-valuenow="{{ min($today['answers'], $today['goal']) }}"
-               aria-label="Tagesziel: {{ $today['answers'] }} von {{ $today['goal'] }} Karten{{ $full ? ', geschafft' : '' }}">
+               aria-label="Tagesziel: {{ $today['answers'] }} von {{ $today['goal'] }} Karten gewusst{{ $full ? ', geschafft' : '' }}">
             <span class="text-2xl font-semibold tabular-nums">{{ $today['answers'] }}<span class="text-base font-normal text-muted"> / {{ $today['goal'] }}</span></span>
           </div>
-          <p class="mt-1 text-sm text-muted">Karten heute</p>
+          <p class="mt-1 text-sm text-muted">heute gewusst</p>
         </div>
 
         @if ($reached)

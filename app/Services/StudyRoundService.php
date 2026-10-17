@@ -37,7 +37,7 @@ use Illuminate\Validation\ValidationException;
  * Modes: `learn` (counts for the boxes), `practice` (one box, nothing
  * saved) and `test` ("Für den Test üben": every card until known once,
  * nothing saved; docs/specs/einfacher-lernen.md, F).
- * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>, mastered?: list<string>, goal_before?: bool}
+ * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>, mastered?: list<string>, counted?: list<string>, goal_before?: bool}
  */
 class StudyRoundService
 {
@@ -489,7 +489,13 @@ class StudyRoundService
         if ($current['intro']) {
             return $round;
         }
-        $this->leitner->countAnswer($user);
+        // The daily goal counts successes: a card known in this round, once
+        // per card and direction — also when known on a repeat. Tapping
+        // "Nochmal" through a round fills nothing.
+        if ($known && ! in_array($key, $round['counted'] ?? [], true)) {
+            $round['counted'][] = $key;
+            $this->leitner->countAnswer($user);
+        }
 
         if ($round['mode'] === 'test') {
             // Every card until known once: "known" counts cards done, "first" those known at once.
@@ -604,6 +610,7 @@ class StudyRoundService
             'promoted' => 0,
             'repeats' => [],
             'mastered' => [],
+            'counted' => [],
             // The end screen says "Tagesziel geschafft!" only for the round that reached it.
             'goal_before' => $day['answers'] >= $day['goal'],
         ];
