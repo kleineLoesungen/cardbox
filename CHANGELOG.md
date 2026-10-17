@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.18.4
+- Sicherheitsupdates: Laravel 13.37, Symfony 8.1.9 (manipulierter Cache-Control-Header konnte den Server lange beschäftigen) und league/commonmark 2.10.4. composer audit meldet keine bekannten Lücken mehr
+
 ## 2026.10.18.3
 - Heute: Sieben Punkte zeigen die letzten 7 Tage – grün mit erreichtem Tagesziel, grau ohne
 - Startseite für Gäste: nennt jetzt auch Tagesziel, Antworten eintippen, knifflige Wörter und die Eltern-Ansicht, die Erinnerung nur, wenn sie eingerichtet ist
