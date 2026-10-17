@@ -57,4 +57,11 @@ return [
     // "Für den Test üben": most questions in one round (cards × directions).
     'test_max' => 200,
 
+    // Daily goal on "Heute": answers a day (docs/specs/motivierender-start.md).
+    'default_daily_goal' => 20,
+    'daily_goals' => [10, 20, 30],
+
+    // A new card is shown first; it is asked this many cards later.
+    'intro_gap' => 3,
+
 ];

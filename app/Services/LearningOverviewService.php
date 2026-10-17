@@ -40,7 +40,9 @@ class LearningOverviewService
      * new cards "Los geht's" adds today by itself; `more_new`: further new
      * cards for "Noch 20 neue Karten".
      *
-     * @return array{due: int, tomorrow: int, streak: int, new: int, more_new: int}
+     * `answers`, `goal`, `goal_met`: today's daily goal (motivierender-start.md, B).
+     *
+     * @return array{due: int, tomorrow: int, streak: int, new: int, more_new: int, answers: int, goal: int, goal_met: bool}
      */
     public function today(User $user): array
     {
@@ -63,6 +65,40 @@ class LearningOverviewService
             'streak' => $this->leitner->streak($user),
             'new' => $new,
             'more_new' => $available - $new,
+            ...$this->leitner->dayStatus($user),
+        ];
+    }
+
+    /**
+     * The growing vocabulary on "Heute" (motivierender-start.md, C): cards
+     * in "Kann ich" in at least one learned direction and run, those of
+     * them that got there in the last 7 days, and cards with any progress.
+     * Only own and followed decks, only active cards.
+     *
+     * @return array{mastered: int, mastered_week: int, in_box: int}
+     */
+    public function vocabulary(User $user): array
+    {
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
+
+        $row = DB::table('card_progress')
+            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
+            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
+            ->where('card_progress.user_id', $user->id)
+            ->where('card_progress.box', '>=', 1)
+            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->whereRaw($active, $bindings)
+            ->whereRaw($learned, $learnedBindings)
+            ->selectRaw('count(distinct card_progress.card_id) filter (where card_progress.box >= deck_runs.box_count) as mastered')
+            ->selectRaw('count(distinct card_progress.card_id) filter (where card_progress.box >= deck_runs.box_count and card_progress.last_reviewed_at >= ?) as mastered_week', [now()->subDays(7)])
+            ->selectRaw('count(distinct card_progress.card_id) as in_box')
+            ->first();
+
+        return [
+            'mastered' => (int) ($row->mastered ?? 0),
+            'mastered_week' => (int) ($row->mastered_week ?? 0),
+            'in_box' => (int) ($row->in_box ?? 0),
         ];
     }
 

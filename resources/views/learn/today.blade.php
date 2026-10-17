@@ -1,4 +1,4 @@
-{{-- "Heute" — start page: what is due, the streak, "Meine Stapel". --}}
+{{-- "Heute" — start page: daily goal, what is due, the streak, the vocabulary, "Meine Stapel". --}}
 @extends('layouts.app')
 @section('title', 'Heute')
 
@@ -25,33 +25,76 @@
     <div class="card mt-6">
       <div class="card-body stack text-center">
         {{-- Due and new cards from every deck (docs/specs/einfacher-lernen.md, A). --}}
-        @php($waiting = $today['due'] + $today['new'])
+        @php
+            $waiting = $today['due'] + $today['new'];
+            // Daily goal (docs/specs/motivierender-start.md, B): full when reached or nothing is left.
+            // Full only when the day counts: goal reached, or done with nothing left after learning.
+            $reached = $today['answers'] >= $today['goal'];
+            $full = $reached || $today['goal_met'];
+            $percent = $full ? 100 : (int) floor(100 * $today['answers'] / max(1, $today['goal']));
+        @endphp
+        <div>
+          <div @class(['goal-ring', 'goal-ring-done' => $full]) style="--goal: {{ $percent }}"
+               role="progressbar" aria-valuemin="0" aria-valuemax="{{ $today['goal'] }}" aria-valuenow="{{ min($today['answers'], $today['goal']) }}"
+               aria-label="Tagesziel: {{ $today['answers'] }} von {{ $today['goal'] }} Karten{{ $full ? ', geschafft' : '' }}">
+            <span class="text-2xl font-semibold tabular-nums">{{ $today['answers'] }}<span class="text-base font-normal text-muted"> / {{ $today['goal'] }}</span></span>
+          </div>
+          <p class="mt-1 text-sm text-muted">Karten heute</p>
+        </div>
+
+        @if ($reached)
+          <p class="text-lg font-semibold text-success">Tagesziel geschafft!</p>
+        @elseif ($waiting === 0 && $today['goal_met'])
+          <p class="text-lg font-medium">Für heute alles geschafft.</p>
+        @elseif ($waiting === 0)
+          {{-- Nothing due and nothing learned yet: a little practice keeps the streak. --}}
+          <p class="text-lg font-medium">Heute ist nichts dran.</p>
+          <p class="-mt-2 text-sm text-muted">Üb ein paar Karten in einem Stapel, dann zählt der Tag für deine Lernserie.</p>
+        @endif
+
         @if ($waiting > 0)
-          <p class="text-lg">
-            <strong class="text-2xl">{{ $waiting === 1 ? '1 Karte' : $waiting.' Karten' }}</strong><br>
-            {{ $waiting === 1 ? 'wartet' : 'warten' }} auf dich
-          </p>
+          @unless ($reached)
+            <p class="text-lg">
+              <strong class="text-2xl">{{ $waiting === 1 ? '1 Karte' : $waiting.' Karten' }}</strong><br>
+              {{ $waiting === 1 ? 'wartet' : 'warten' }} auf dich
+            </p>
+          @endunless
           @if ($today['new'] > 0)
-            <p class="-mt-2 text-sm text-muted">davon {{ $today['new'] }} neu</p>
+            <p class="-mt-2 text-sm text-muted">{{ $reached ? ($waiting === 1 ? '1 Karte wartet noch' : $waiting.' Karten warten noch').', davon '.$today['new'].' neu' : 'davon '.$today['new'].' neu' }}</p>
+          @elseif ($reached)
+            <p class="-mt-2 text-sm text-muted">{{ $waiting === 1 ? '1 Karte wartet noch' : $waiting.' Karten warten noch' }}</p>
           @endif
           <form method="post" action="/learn/round">
             @csrf
-            <button type="submit" class="btn btn-primary btn-lg btn-block">Los geht's</button>
+            {{-- After the goal learning on is welcome, but no longer the one main action. --}}
+            <button type="submit" @class(['btn btn-lg btn-block', 'btn-primary' => ! $reached, 'btn-secondary' => $reached])>{{ $reached ? 'Weiterlernen' : "Los geht's" }}</button>
           </form>
-        @else
-          <p class="text-lg font-medium">Für heute alles geschafft.</p>
-          @if ($today['more_new'] > 0)
-            <form method="post" action="/learn/round">
-              @csrf
-              <input type="hidden" name="more" value="1">
-              <button type="submit" class="btn btn-secondary btn-block">Noch {{ min($today['more_new'], (int) config('learning.round_size')) }} neue Karten</button>
-            </form>
-          @elseif ($today['tomorrow'] > 0)
-            <p class="text-sm text-muted">Morgen {{ $today['tomorrow'] === 1 ? 'ist 1 Karte' : 'sind '.$today['tomorrow'].' Karten' }} dran.</p>
-          @endif
+        @elseif ($today['more_new'] > 0)
+          <form method="post" action="/learn/round">
+            @csrf
+            <input type="hidden" name="more" value="1">
+            <button type="submit" class="btn btn-secondary btn-block">Noch {{ min($today['more_new'], (int) config('learning.round_size')) }} neue Karten</button>
+          </form>
+        @elseif ($today['tomorrow'] > 0)
+          <p class="text-sm text-muted">Morgen {{ $today['tomorrow'] === 1 ? 'ist 1 Karte' : 'sind '.$today['tomorrow'].' Karten' }} dran.</p>
         @endif
       </div>
     </div>
+
+    {{-- The growing vocabulary (docs/specs/motivierender-start.md, C). --}}
+    @if ($vocabulary['mastered'] > 0)
+      <p class="mt-4 text-center">
+        Du kannst schon <strong>{{ $vocabulary['mastered'] === 1 ? '1 Wort' : $vocabulary['mastered'].' Wörter' }}</strong>
+        @if ($vocabulary['mastered_week'] > 0)
+          <span class="block text-sm text-success">+{{ $vocabulary['mastered_week'] }} diese Woche</span>
+        @endif
+      </p>
+    @elseif ($vocabulary['in_box'] > 0)
+      <p class="mt-4 text-center text-sm text-muted">
+        <strong class="text-content">{{ $vocabulary['in_box'] === 1 ? '1 Wort' : $vocabulary['in_box'].' Wörter' }}</strong> im Karteikasten.
+        Nach ein paar Wiederholungen kannst du {{ $vocabulary['in_box'] === 1 ? 'es' : 'sie' }}.
+      </p>
+    @endif
 
     <div class="mt-6 mb-2 flex items-center justify-between">
       <h2 class="text-base font-semibold">Meine Stapel</h2>

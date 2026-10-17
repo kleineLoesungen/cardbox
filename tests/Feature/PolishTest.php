@@ -61,8 +61,9 @@ describe('Lernplan', function () {
         $this->post('/learn/settings', ['plan' => 'custom', 'box_count' => '3', 'day_gaps' => ['5', '9']]);
 
         $this->post('/learn/round', ['deck' => $card->deck->id]);
+        skipIntros();
         $this->withHeaders(['HX-Request' => 'true'])
-            ->post('/learn/round/answer', ['card' => $card->id, 'step' => 0, 'known' => '1']);
+            ->post('/learn/round/answer', ['card' => $card->id, 'step' => session('study_round')['step'], 'known' => '1']);
 
         $due = DB::table('card_progress')->where('user_id', $ich->id)->value('due_on');
         expect(substr((string) $due, 0, 10))->toBe(app(LeitnerService::class)->today()->addDays(5)->toDateString());
@@ -119,12 +120,16 @@ describe('Rückfragen und Lernrunde', function () {
         Card::factory()->for($rechnen)->create(['front' => ['3·4'], 'back' => ['12']]);
 
         $this->post('/learn/round', ['deck' => $deck->id]);
+        skipIntros();
         $this->get('/learn/round')
             ->assertSee('data-question="Haus" data-question-lang="de"', false)
             // Main meaning only (lernplaene-und-karten.md, B1).
             ->assertSee('data-answer="house" data-answer-lang="en"', false);
 
         $this->post('/learn/round', ['deck' => $rechnen->id]);
+        // The intro of the new card: no language, so the button stays hidden.
+        $this->get('/learn/round')->assertSee('data-speak-lang=""', false);
+        skipIntros();
         $this->get('/learn/round')->assertSee('data-question-lang=""', false);
     });
 });

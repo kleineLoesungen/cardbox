@@ -139,14 +139,84 @@ class LeitnerService
     }
 
     /**
-     * Days of learning in a row, counting back from today — or from
-     * yesterday, so the streak survives until the person learns today.
+     * The person's daily goal: answers a day (docs/specs/motivierender-start.md, B).
+     */
+    public function dailyGoal(User $user): int
+    {
+        $goal = DB::table('learning_settings')->where('user_id', $user->id)->value('daily_goal');
+
+        return $goal === null ? (int) config('learning.default_daily_goal') : (int) $goal;
+    }
+
+    /**
+     * Counts one answer of any round (learning, repeats, practice, test)
+     * for today's goal; reaching the goal makes the day count for the streak.
+     */
+    public function countAnswer(User $user): void
+    {
+        $goal = $this->dailyGoal($user);
+        DB::statement(
+            'INSERT INTO study_days (user_id, day, reviews, correct, answers, goal_met) VALUES (?, ?, 0, 0, 1, ? <= 1)
+             ON CONFLICT (user_id, day) DO UPDATE SET answers = study_days.answers + 1,
+                 goal_met = study_days.goal_met OR study_days.answers + 1 >= ?',
+            [$user->id, $this->today()->toDateString(), $goal, $goal],
+        );
+    }
+
+    /**
+     * After the goal was changed: a goal now reached counts for today at once.
+     */
+    public function refreshGoalMet(User $user): void
+    {
+        DB::table('study_days')
+            ->where('user_id', $user->id)
+            ->where('day', $this->today()->toDateString())
+            ->where('answers', '>=', $this->dailyGoal($user))
+            ->update(['goal_met' => true]);
+    }
+
+    /**
+     * Today counts for the streak although the goal is not reached: "Heute"
+     * had nothing more to offer. Only after a round, so a day without any
+     * learning never counts.
+     */
+    public function markGoalMet(User $user): void
+    {
+        DB::table('study_days')
+            ->where('user_id', $user->id)
+            ->where('day', $this->today()->toDateString())
+            ->update(['goal_met' => true]);
+    }
+
+    /**
+     * Today's answers against the goal.
+     *
+     * @return array{answers: int, goal: int, goal_met: bool}
+     */
+    public function dayStatus(User $user): array
+    {
+        $row = DB::table('study_days')
+            ->where('user_id', $user->id)
+            ->where('day', $this->today()->toDateString())
+            ->first(['answers', 'goal_met']);
+
+        return [
+            'answers' => (int) ($row->answers ?? 0),
+            'goal' => $this->dailyGoal($user),
+            'goal_met' => (bool) ($row->goal_met ?? false),
+        ];
+    }
+
+    /**
+     * Days in a row with the daily goal met, counting back from today — or
+     * from yesterday, so the streak survives until the person learns today.
      */
     public function streak(User $user): int
     {
         $today = $this->today();
         $days = DB::table('study_days')
             ->where('user_id', $user->id)
+            ->where('goal_met', true)
             ->where('day', '<=', $today->toDateString())
             ->orderByDesc('day')
             // Streaks are shown up to 400 days; enough for a school year and more.

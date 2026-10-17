@@ -64,6 +64,7 @@ return [
         'body' => 'Text',
         'box_count' => 'Anzahl Fächer',
         'current_password' => 'Aktuelles Passwort',
+        'daily_goal' => 'Tagesziel',
         'day_gaps' => 'Tage je Fach',
         'day_gaps.*' => 'Tage',
         'decks' => 'Stapel',

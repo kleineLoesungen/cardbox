@@ -69,6 +69,13 @@
   document.addEventListener("pointercancel", () => endDrag(false));
 
   document.addEventListener("keydown", (e) => {
+    // An intro of a new word: Enter or space goes on — once per key press.
+    const intro = document.querySelector("[data-intro-screen]");
+    if (intro && !e.repeat && (e.key === " " || e.key === "Enter") && !e.target.closest("a, button, input, textarea")) {
+      e.preventDefault();
+      intro.querySelector("[data-intro-next]")?.click();
+      return;
+    }
     const round = document.querySelector("[data-card-screen]");
     // e.repeat: a held key must not rate several cards.
     if (!round || e.repeat || e.target.closest("input, textarea")) return;

@@ -197,6 +197,8 @@ Während einer Lernrunde ist die Tab-Leiste ausgeblendet (Vollbild).
 - **Lernserie**: „4 Tage in Folge gelernt" mit kleinem Symbol. Ein Tag zählt,
   sobald an ihm mindestens eine Karte bewertet wurde. Ohne Lernen gestern
   oder heute beginnt die Zählung neu. Bei 0 wird nichts angezeigt.
+  *Seit [motivierender-start.md](motivierender-start.md): Ein Tag zählt,
+  wenn das Tagesziel erreicht ist oder nach einer Runde nichts mehr dran war.*
 - **Meine Stapel** (Kurzliste): Name, „Deutsch → Englisch", bei gefolgten
   „von Lena M.", Fortschrittsbalken (Anteil „Kann ich") und Plakette „5
   fällig". Stapel mit fälligen Karten zuerst.

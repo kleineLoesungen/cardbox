@@ -102,6 +102,32 @@
   </section>
 
   <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Neue Wörter</h2>
+    <p class="text-muted">
+      Ein neues Wort zeigt dir die App zuerst ganz – vorne und hinten, zum
+      Anhören. Tippe auf <strong>Weiter</strong>. Ein paar Karten später fragt
+      sie dich danach.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Tagesziel und Lernserie</h2>
+    <p class="text-muted">
+      Der Ring unter <strong>Heute</strong> zeigt, wie viele Karten du heute
+      geschafft hast. Jede Antwort zählt, auch beim Test üben. Ist er voll,
+      hast du dein <strong>Tagesziel</strong> erreicht – weiterlernen darfst
+      du trotzdem. Wie groß das Ziel ist (10, 20 oder 30 Karten), stellst du
+      unter <strong>Mein Konto → Lernplan</strong> ein.
+    </p>
+    <p class="text-muted">
+      Jeder Tag mit erreichtem Ziel verlängert deine <strong>Lernserie</strong>.
+      Gab es an einem Tag weniger zu lernen und du hast alles geschafft, zählt
+      er auch. Ist gar nichts dran, üb ein paar Karten in einem Stapel – dann
+      zählt der Tag ebenfalls.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Bald ist ein Test?</h2>
     <p class="text-muted">
       Öffne den Stapel und tippe auf <strong>Für den Test üben</strong>. Dann

@@ -21,6 +21,7 @@ class LearnController extends Controller
         return view('learn.today', [
             'user' => $user,
             'today' => $this->overview->today($user),
+            'vocabulary' => $this->overview->vocabulary($user),
             'decks' => $decks,
             'stats' => $stats,
         ]);

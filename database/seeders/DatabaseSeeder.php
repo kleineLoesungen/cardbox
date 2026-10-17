@@ -175,6 +175,8 @@ class DatabaseSeeder extends Seeder
                 'day' => $today->subDays($back)->toDateString(),
                 'reviews' => 10,
                 'correct' => 8,
+                'answers' => 20,
+                'goal_met' => true,
             ]);
         }
     }

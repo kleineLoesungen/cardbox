@@ -38,11 +38,12 @@ function elRound(array $input = []): array
 {
     test()->post('/learn/round', $input)->assertRedirect('/learn/round');
 
-    return array_map(fn (array $i) => $i['card'].'|'.$i['direction'], session('study_round')['queue']);
+    return array_map(fn (array $i) => $i['card'].'|'.$i['direction'], roundQuestions());
 }
 
 function elAnswer(bool $known): TestResponse
 {
+    skipIntros();
     $round = session('study_round');
 
     return test()->withHeaders(['HX-Request' => 'true'])->post('/learn/round/answer', [
@@ -84,7 +85,7 @@ describe('Heute', function () {
             elAnswer(true);
         }
 
-        $this->get('/learn')->assertSee('Für heute alles geschafft.')->assertSee('Noch 20 neue Karten');
+        $this->get('/learn')->assertSee('Tagesziel geschafft!')->assertSee('Noch 20 neue Karten');
         expect(elRound())->toBe([]);
         expect(elRound(['more' => '1']))->toHaveCount(20);
         foreach (range(1, 20) as $i) {
@@ -206,7 +207,7 @@ describe('Für den Test üben', function () {
         $this->post("/decks/{$deck->id}/selection", ['cards' => [$cards[0]->id, $cards[1]->id]]);
 
         expect(elRound(['mode' => 'test', 'deck' => $deck->id]))->toEqualCanonicalizing([$cards[0]->id.'|forward', $cards[1]->id.'|forward']);
-        $this->get('/learn/round')->assertSee('Test üben – zählt nicht')->assertSee('0 / 2');
+        $this->get('/learn/round')->assertSee('Test üben – nur Übung')->assertSee('0 / 2');
 
         // Not known more often than the three repeats of a normal round.
         foreach (range(1, 5) as $i) {
@@ -217,7 +218,7 @@ describe('Für den Test üben', function () {
         elAnswer(true)->assertSee('Alles gewusst!')->assertSee('<strong>0 von 2</strong> gleich beim ersten Mal.', false)->assertSee('Nochmal üben');
 
         expect(CardProgress::count())->toBe(0)
-            ->and(DB::table('study_days')->count())->toBe(0)
+            ->and(DB::table('study_days')->value('reviews'))->toBe(0)
             ->and(DeckRun::count())->toBe(0);
     });
 

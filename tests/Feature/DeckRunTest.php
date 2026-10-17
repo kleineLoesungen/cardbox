@@ -51,6 +51,7 @@ function progressIn(DeckRun $run, Card $card, int $box, ?int $dueInDays = 0, Dir
 
 function answerCard(Card $card, bool $known): void
 {
+    skipIntros();
     test()->withHeaders(['HX-Request' => 'true'])->post('/learn/round/answer', [
         'card' => $card->id,
         'step' => session('study_round')['step'],
@@ -143,7 +144,7 @@ describe('Lernen mit mehreren Durchgängen', function () {
 
         $this->post('/learn/round', ['deck' => $deck->id, 'run' => $schnell->id]);
 
-        expect(array_column(session('study_round')['queue'], 'card'))->toBe([$card->id]);
+        expect(array_column(roundQuestions(), 'card'))->toBe([$card->id]);
     });
 
     it('fragt bei „Los geht\'s“ eine in zwei Durchgängen fällige Karte nur einmal und bewegt beide', function () {

@@ -47,12 +47,16 @@ function startRound(Deck $deck): array
 {
     test()->post('/learn/round', ['deck' => $deck->id])->assertRedirect('/learn/round');
 
-    return array_column(session('study_round')['queue'], 'card');
+    return array_column(roundQuestions(), 'card');
 }
 
 /** Answers like the form does: card, the step it was shown at, known or not. */
 function answer(Card $card, bool $known, ?int $step = null): TestResponse
 {
+    if ($step === null) {
+        skipIntros();
+    }
+
     return test()->withHeaders(['HX-Request' => 'true'])->post('/learn/round/answer', [
         'card' => $card->id,
         'step' => $step ?? session('study_round')['step'],
@@ -137,7 +141,7 @@ describe('Karteikasten', function () {
         expect(startRound($card->deck))->toBe([$card->id]);
         $this->post("/decks/{$card->deck_id}/reverse", ['on' => '1'])->assertRedirect();
         expect(startRound($card->deck))->toBe([$card->id, $card->id])
-            ->and(array_column(session('study_round')['queue'], 'direction'))->toBe(['forward', 'backward']);
+            ->and(array_column(roundQuestions(), 'direction'))->toBe(['forward', 'backward']);
 
         answer($card, true);
         expect(progressOf($ich, $card, Direction::Forward)->box)->toBe(1)
@@ -282,7 +286,7 @@ describe('Los geht\'s', function () {
         $this->post('/learn/round')->assertRedirect('/learn/round');
 
         // Due ones first, then new ones (docs/specs/einfacher-lernen.md, A).
-        $queue = array_column(session('study_round')['queue'], 'card');
+        $queue = array_column(roundQuestions(), 'card');
         expect(array_slice($queue, 0, 2))->toEqualCanonicalizing([$eigen->id, $gefolgt->id])
             ->and(array_slice($queue, 2))->toBe([$neu->id]);
     });
@@ -293,8 +297,8 @@ describe('Los geht\'s', function () {
         progress($ich, Card::factory()->for($deck)->create(), 1, 0);
         progress($ich, Card::factory()->for($deck)->create(), 2, 1);
         DB::table('study_days')->insert([
-            ['user_id' => $ich->id, 'day' => '2026-10-13', 'reviews' => 3, 'correct' => 2],
-            ['user_id' => $ich->id, 'day' => '2026-10-12', 'reviews' => 1, 'correct' => 1],
+            ['user_id' => $ich->id, 'day' => '2026-10-13', 'reviews' => 3, 'correct' => 2, 'goal_met' => true],
+            ['user_id' => $ich->id, 'day' => '2026-10-12', 'reviews' => 1, 'correct' => 1, 'goal_met' => true],
         ]);
 
         $this->get('/learn')->assertOk()
@@ -308,7 +312,7 @@ describe('Los geht\'s', function () {
         $ich = actingAsUser();
         progress($ich, Card::factory()->for(Deck::factory()->for($ich))->create(), 2, 1);
 
-        $this->get('/learn')->assertSee('Für heute alles geschafft.')->assertSee('Morgen ist 1 Karte dran.');
+        $this->get('/learn')->assertSee('Heute ist nichts dran.')->assertSee('Morgen ist 1 Karte dran.');
     });
 
     it('leitet von / und /dashboard nach /learn', function () {
@@ -320,16 +324,18 @@ describe('Los geht\'s', function () {
 });
 
 describe('Freies Üben', function () {
-    it('speichert weder Fortschritt noch Lerntag', function () {
+    it('speichert keinen Fortschritt, zählt aber fürs Tagesziel', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();
         $card = Card::factory()->for($deck)->create();
 
         $this->post('/learn/round', ['mode' => 'practice', 'deck' => $deck->id, 'direction' => 'mixed'])->assertRedirect('/learn/round');
-        $this->get('/learn/round')->assertSee('Freies Üben – zählt nicht');
+        $this->get('/learn/round')->assertSee('Freies Üben – nur Übung');
         answer($card, true)->assertSee('1 von 1');
 
-        expect(CardProgress::count())->toBe(0)->and(DB::table('study_days')->count())->toBe(0);
+        expect(CardProgress::count())->toBe(0)
+            ->and(DB::table('study_days')->where('user_id', $ich->id)->first(['reviews', 'answers']))
+            ->toEqual((object) ['reviews' => 0, 'answers' => 1]);
     });
 
     it('verlangt eine gültige Richtung', function () {
@@ -346,7 +352,7 @@ describe('Lernserie', function () {
         $ich = User::factory()->create();
         $leitner = app(LeitnerService::class);
         $tage = fn (array $days) => DB::table('study_days')->insert(array_map(
-            fn ($d) => ['user_id' => $ich->id, 'day' => $d, 'reviews' => 1, 'correct' => 1], $days,
+            fn ($d) => ['user_id' => $ich->id, 'day' => $d, 'reviews' => 1, 'correct' => 1, 'goal_met' => true], $days,
         ));
 
         expect($leitner->streak($ich))->toBe(0);
@@ -484,8 +490,10 @@ describe('Grenzfälle', function () {
         $card = Card::factory()->for(Deck::factory()->for($ich))->create();
 
         startRound($card->deck);
-        answer($card, false, 0);   // shown at step 0 → repeat comes next
-        answer($card, true, 0);    // late double tap from step 0: ignored
+        skipIntros();
+        $step = session('study_round')['step'];
+        answer($card, false, $step);   // shown at this step → repeat comes next
+        answer($card, true, $step);    // late double tap from the same step: ignored
         expect(session('study_round')['queue'])->toHaveCount(1)
             ->and(progressOf($ich, $card)->review_count)->toBe(1);
     });
@@ -552,7 +560,7 @@ describe('Freies Üben auf ein Fach', function () {
         answer($zwei, true);
 
         expect(progressOf($ich, $zwei))->box->toBe(2)->review_count->toBe(1)
-            ->and(DB::table('study_days')->count())->toBe(0);
+            ->and(DB::table('study_days')->value('reviews'))->toBe(0);
     });
 
     it('lehnt unbekannte Fächer und „gemischt“ mit Fach ab', function (string $direction, string $box) {

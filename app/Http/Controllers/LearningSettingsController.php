@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * "Lernplan": presets or a custom plan. Rules in LearningSettingsService.
+ * "Lernplan": presets or a custom plan, and the daily goal. Rules in
+ * LearningSettingsService.
  */
 class LearningSettingsController extends Controller
 {
@@ -21,7 +22,7 @@ class LearningSettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $this->settings->save($request->user(), $request->only('plan', 'box_count', 'day_gaps'));
+        $this->settings->save($request->user(), $request->only('plan', 'box_count', 'day_gaps', 'daily_goal'));
 
         return redirect('/learn/settings')->with('toast', ['kind' => 'success', 'message' => 'Lernplan gespeichert.']);
     }

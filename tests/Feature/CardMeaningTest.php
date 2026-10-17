@@ -19,6 +19,7 @@ describe('Hauptbedeutung', function () {
         Card::factory()->for($deck)->create(['front' => ['schnell', 'rasch'], 'back' => ['fast', 'quick', 'rapid']]);
 
         $this->post('/learn/round', ['deck' => $deck->id]);
+        skipIntros();
 
         $this->get('/learn/round')
             ->assertSee('auch: <span lang="en">quick, rapid</span>', false)

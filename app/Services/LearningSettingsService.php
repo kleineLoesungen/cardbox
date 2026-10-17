@@ -27,7 +27,7 @@ class LearningSettingsService
     public function __construct(private LeitnerService $leitner) {}
 
     /**
-     * @return array{preset: StudyPlan|null, box_count: int, day_gaps: list<int>}
+     * @return array{preset: StudyPlan|null, box_count: int, day_gaps: list<int>, daily_goal: int}
      */
     public function current(User $user): array
     {
@@ -37,23 +37,28 @@ class LearningSettingsService
             'preset' => StudyPlan::matching($plan['box_count'], $plan['day_gaps']),
             'box_count' => $plan['box_count'],
             'day_gaps' => $plan['day_gaps'],
+            'daily_goal' => $this->leitner->dailyGoal($user),
         ];
     }
 
     /**
-     * @param  array<string, mixed>  $input  plan (normal|quick|thorough|custom), box_count, day_gaps[]
+     * @param  array<string, mixed>  $input  plan (normal|quick|thorough|custom), box_count, day_gaps[], daily_goal (optional; kept when missing)
      * @return array{box_count: int, day_gaps: list<int>}
      *
      * @throws ValidationException
      */
     public function save(User $user, array $input): array
     {
+        $goals = array_map('intval', (array) config('learning.daily_goals'));
         Validator::make($input, [
             'plan' => ['required', Rule::in([...array_column(StudyPlan::cases(), 'value'), 'custom'])],
+            'daily_goal' => ['sometimes', 'string', Rule::in(array_map('strval', $goals))],
         ], [
             'plan.required' => 'Bitte einen Lernplan wählen.',
             'plan.in' => 'Bitte einen der angebotenen Lernpläne wählen.',
+            'daily_goal.*' => 'Bitte '.implode(', ', array_slice($goals, 0, -1)).' oder '.end($goals).' wählen.',
         ])->validate();
+        $goal = isset($input['daily_goal']) ? (int) $input['daily_goal'] : $this->leitner->dailyGoal($user);
 
         $preset = StudyPlan::tryFrom((string) $input['plan']);
         [$boxCount, $gaps] = $preset !== null
@@ -65,13 +70,15 @@ class LearningSettingsService
                 'user_id' => $user->id,
                 'box_count' => $boxCount,
                 'day_gaps' => json_encode($gaps),
+                'daily_goal' => $goal,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]],
             ['user_id'],
-            ['box_count', 'day_gaps', 'updated_at'],
+            ['box_count', 'day_gaps', 'daily_goal', 'updated_at'],
         );
         $this->leitner->forgetPlan($user);
+        $this->leitner->refreshGoalMet($user);
 
         return ['box_count' => $boxCount, 'day_gaps' => $gaps];
     }

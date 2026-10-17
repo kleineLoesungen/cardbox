@@ -22,6 +22,7 @@
           @else
             Eigener Plan mit {{ $plan['box_count'] }} Fächern
           @endif
+          · Tagesziel {{ $plan['daily_goal'] }} Karten
         </span>
       </span>
       <span class="shrink-0 font-medium text-brand">Ändern ›</span>

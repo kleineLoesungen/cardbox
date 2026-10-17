@@ -3,9 +3,11 @@
   Swapped as a whole by htmx after each answer (target #round).
 
   @param array      $round     state from StudyRoundService
-  @param array|null $current   ['card' => Card, 'direction' => Direction, 'repeat' => bool, 'changed' => bool, …]
+  @param array|null $current   ['card' => Card, 'direction' => Direction, 'repeat' => bool, 'intro' => bool, 'changed' => bool, …]
   @param int        $position  number of the card that is up
   @param int        $streak    days in a row (end screen only)
+  @param list<string> $mastered  words that reached "Kann ich" in this round (end screen only)
+  @param array{answers: int, goal: int, goal_met: bool}|null $day  today's daily goal (end screen only)
 --}}
 @php($practice = $round['mode'] === 'practice')
 {{-- "Für den Test üben": every card until known once, nothing saved. --}}
@@ -13,7 +15,71 @@
 <div id="round" class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-3"
      style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))">
 
-@if ($current)
+@if ($current && $current['intro'])
+  {{--
+    A new word, shown open before it is asked (docs/specs/motivierender-start.md, A).
+    No [data-card-screen]: nothing to flip, swipe or rate; "Weiter" is no answer.
+  --}}
+  @php($card = $current['card'])
+  @php($deck = $card->deck)
+  @php($qLang = \App\Enums\Language::tryFrom($deck->front_language))
+  @php($aLang = \App\Enums\Language::tryFrom($deck->back_language))
+  <div class="contents" id="round-step-{{ $round['step'] }}" data-intro-screen>
+    <div class="flex items-center gap-3">
+      <a href="/learn" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
+      <div class="meter flex-1" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $round['total'] }}" aria-valuenow="{{ $position - 1 }}">
+        <span style="width: {{ $round['total'] > 0 ? round(100 * ($position - 1) / $round['total']) : 0 }}%"></span>
+      </div>
+      <span class="shrink-0 text-sm tabular-nums text-muted">{{ $position }} / {{ $round['total'] }}</span>
+    </div>
+
+    <div class="mt-3 flex min-h-6 justify-center">
+      <span class="badge badge-brand">Neues Wort</span>
+    </div>
+
+    <div class="my-4 flex flex-1 flex-col justify-center">
+      <div class="card">
+        <div class="card-body stack gap-4 text-center">
+          @foreach ([[$qLang, $card->front, true], [$aLang, $card->back, false]] as [$lang, $side, $isQuestion])
+            <div class="stack gap-1">
+              <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $lang?->label() }}</p>
+              <p class="text-3xl font-semibold break-words" lang="{{ $lang?->tag() }}">{{ $side[0] ?? '' }}</p>
+              @if ($isQuestion && $card->hint)
+                <p class="text-sm text-muted">{{ $card->hint }}</p>
+              @endif
+              @if (count($side) > 1)
+                <p class="text-base text-muted">auch: <span lang="{{ $lang?->tag() }}">{{ implode(', ', \App\Models\Card::alternatives($side)) }}</span></p>
+              @endif
+              <div class="flex min-h-11 justify-center">
+                <button type="button" class="btn btn-ghost" data-speak hidden aria-label="{{ $side[0] ?? '' }} vorlesen"
+                        data-speak-text="{{ $side[0] ?? '' }}" data-speak-lang="{{ $lang?->tag() }}">
+                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+                  </svg>
+                  Vorlesen
+                </button>
+                @if ($isQuestion)
+                  <a href="/help#vorlesen" class="self-center text-sm text-subtle hover:text-content" data-speak-missing hidden>
+                    Vorlesen fehlt? So geht's
+                  </a>
+                @endif
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    </div>
+
+    <form hx-post="/learn/round/answer" hx-target="#round" hx-swap="outerHTML" hx-disabled-elt="find button" class="stack gap-2">
+      <input type="hidden" name="card" value="{{ $card->id }}">
+      <input type="hidden" name="step" value="{{ $round['step'] }}">
+      <p class="hint text-center">Merk es dir – gleich fragt die App danach.</p>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" data-intro-next>Weiter</button>
+    </form>
+  </div>
+
+@elseif ($current)
   @php($card = $current['card'])
   @php($deck = $card->deck)
   @php($direction = $current['direction'])
@@ -44,9 +110,9 @@
 
   <div class="mt-3 flex min-h-6 flex-wrap justify-center gap-2">
     @if ($practice)
-      <span class="badge badge-warning">Freies Üben – zählt nicht</span>
+      <span class="badge badge-warning">Freies Üben – nur Übung</span>
     @elseif ($test)
-      <span class="badge badge-warning">Test üben – zählt nicht</span>
+      <span class="badge badge-warning">Test üben – nur Übung</span>
     @endif
     @if ($current['repeat'])
       <span class="badge badge-neutral">Wiederholung</span>
@@ -138,11 +204,21 @@
           {{ $round['promoted'] === 1 ? '1 Karte ist' : $round['promoted'].' Karten sind' }} ein Fach weiter.
         </p>
       @endif
+      @if ($mastered !== [])
+        {{-- The growing vocabulary (docs/specs/motivierender-start.md, C). --}}
+        <p class="text-base">
+          <span class="font-semibold text-success">Neu in „Kann ich“:</span>
+          {{ implode(', ', array_slice($mastered, 0, 8)) }}@if (count($mastered) > 8) und {{ count($mastered) - 8 }} weitere @endif
+        </p>
+      @endif
       @if ($practice)
         <p class="text-sm text-muted">Freies Üben zählt nicht für den Karteikasten.</p>
       @elseif ($streak > 0)
         <p class="badge badge-brand text-sm">{{ $streak === 1 ? '1 Tag' : $streak.' Tage' }} in Folge gelernt</p>
       @endif
+    @endif
+    @if ($round['answered'] > 0 && $day && $day['answers'] >= $day['goal'] && ! ($round['goal_before'] ?? false))
+      <p class="text-lg font-semibold text-success">Tagesziel geschafft!</p>
     @endif
   </div>
 

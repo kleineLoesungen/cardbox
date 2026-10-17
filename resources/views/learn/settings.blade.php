@@ -38,8 +38,28 @@
         data-min="{{ \App\Services\LearningSettingsService::MIN_BOXES }}" data-max="{{ $max }}">
     @csrf
 
+    {{-- Daily goal (docs/specs/motivierender-start.md, B). --}}
+    {{-- Old input only as plain values; a hand-made array must not break the page. --}}
+    @php($oldGoal = old('daily_goal'))
+    @php($goal = is_scalar($oldGoal) ? (string) $oldGoal : (string) $current['daily_goal'])
+    <fieldset class="field">
+      <legend class="label mb-1.5">Tagesziel</legend>
+      <div class="grid grid-cols-3 gap-2">
+        @foreach (config('learning.daily_goals') as $option)
+          <label class="choice-card min-h-12 items-center justify-center">
+            <input type="radio" name="daily_goal" value="{{ $option }}" @checked($goal === (string) $option) class="mt-0">
+            <span class="font-semibold">{{ $option }}</span>
+          </label>
+        @endforeach
+      </div>
+      <p class="hint">So viele Karten möchtest du jeden Tag schaffen.</p>
+      @error('daily_goal')
+        <p class="error">{{ $message }}</p>
+      @enderror
+    </fieldset>
+
     <fieldset class="stack gap-2">
-      <legend class="sr-only">Lernplan wählen</legend>
+      <legend class="label mb-1.5">Lernplan</legend>
       @foreach ($presets as $plan)
         <label class="choice-card">
           <input type="radio" name="plan" value="{{ $plan->value }}" @checked($selected === $plan->value)>

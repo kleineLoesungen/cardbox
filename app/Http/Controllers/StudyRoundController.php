@@ -123,14 +123,22 @@ class StudyRoundController extends Controller
      */
     private function state(Request $request, array $round): array
     {
-        [$round, $current] = $this->rounds->current($request->user(), $round);
+        $user = $request->user();
+        [$round, $current] = $this->rounds->current($user, $round);
         $request->session()->put(self::SESSION_KEY, $round);
+
+        // End screen: maybe today is done, the words now in "Kann ich", the goal.
+        if ($current === null) {
+            $this->rounds->finish($user, $round);
+        }
 
         return [
             'round' => $round,
             'current' => $current,
             'position' => $this->rounds->position($round),
-            'streak' => $current === null ? $this->leitner->streak($request->user()) : 0,
+            'streak' => $current === null ? $this->leitner->streak($user) : 0,
+            'mastered' => $current === null ? $this->rounds->masteredWords($user, $round) : [],
+            'day' => $current === null ? $this->leitner->dayStatus($user) : null,
         ];
     }
 }

@@ -32,7 +32,7 @@ function startDeckRound(Deck $deck): array
 {
     test()->post('/learn/round', ['deck' => $deck->id]);
 
-    return array_column(session('study_round')['queue'], 'card');
+    return array_column(roundQuestions(), 'card');
 }
 
 it('lernt nur ausgewählte Karten und zeigt die anderen als pausiert', function () {
@@ -94,7 +94,7 @@ it('zählt pausierte Karten nicht als fällig und behält ihren Lernstand', func
 
     $this->get('/learn')->assertSee('1 Karte');
     $this->post('/learn/round');
-    expect(array_column(session('study_round')['queue'], 'card'))->toBe([$cards[0]->id])
+    expect(array_column(roundQuestions(), 'card'))->toBe([$cards[0]->id])
         ->and(CardProgress::count())->toBe(2);
 
     // Switching it on again continues where it was.

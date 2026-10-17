@@ -29,11 +29,15 @@ use Illuminate\Validation\ValidationException;
  * geht's" (docs/specs/lernplaene-und-karten.md, A5). Practice items have
  * none; nothing is saved there.
  *
- * @phpstan-type RoundItem array{card: string, direction: string, repeat: bool, runs?: list<string>}
+ * A new card in a learn round is first shown open (`intro`), and asked a
+ * few cards later (docs/specs/motivierender-start.md, A). An intro is no
+ * answer: it moves no box and does not count for the daily goal.
+ *
+ * @phpstan-type RoundItem array{card: string, direction: string, repeat: bool, runs?: list<string>, new?: bool, intro?: bool}
  * Modes: `learn` (counts for the boxes), `practice` (one box, nothing
  * saved) and `test` ("Für den Test üben": every card until known once,
  * nothing saved; docs/specs/einfacher-lernen.md, F).
- * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>}
+ * @phpstan-type Round array{mode: string, deck: string|null, queue: list<RoundItem>, step: int, total: int, answered: int, known: int, first: int, promoted: int, repeats: array<string, int>, mastered?: list<string>, goal_before?: bool}
  */
 class StudyRoundService
 {
@@ -79,10 +83,10 @@ class StudyRoundService
             ->all();
 
         $new = $this->newCards($user, [$deck->id], $limit - count($due), $run->id)
-            ->map(fn (object $row) => ['card' => (string) $row->id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$run->id]])
+            ->map(fn (object $row) => ['card' => (string) $row->id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$run->id], 'new' => true])
             ->all();
 
-        return $this->newRound('learn', $deck->id, [...$due, ...$new]);
+        return $this->newRound($user, 'learn', $deck->id, $this->withIntros([...$due, ...$new]));
     }
 
     /**
@@ -130,10 +134,10 @@ class StudyRoundService
         foreach ($rows as $row) {
             $deckId = (string) $row->deck_id;
             $runs[$deckId] ??= $this->runFor($user, $deckId)->id;
-            $new[] = ['card' => (string) $row->id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$runs[$deckId]]];
+            $new[] = ['card' => (string) $row->id, 'direction' => (string) $row->direction, 'repeat' => false, 'runs' => [$runs[$deckId]], 'new' => true];
         }
 
-        return $this->newRound('learn', null, [...$due, ...$new]);
+        return $this->newRound($user, 'learn', null, $this->withIntros([...$due, ...$new]));
     }
 
     /**
@@ -238,7 +242,98 @@ class StudyRoundService
         }
         shuffle($items);
 
-        return $this->newRound('test', $deck->id, $items);
+        return $this->newRound($user, 'test', $deck->id, $items);
+    }
+
+    /**
+     * Puts an intro before each new card (front → back only: back → front
+     * is a word the person met already) and asks its question "intro_gap"
+     * places later — or at the end when the round is shorter. A back → front
+     * question of a card just introduced follows its front → back one.
+     *
+     * @param  list<RoundItem>  $items
+     * @return list<RoundItem>
+     */
+    private function withIntros(array $items): array
+    {
+        $gap = max(1, (int) config('learning.intro_gap'));
+        $out = [];
+        /** @var list<array{0: int, 1: RoundItem}> $waiting place in $out, question */
+        $waiting = [];
+
+        foreach ($items as $item) {
+            while ($waiting !== [] && $waiting[0][0] <= count($out)) {
+                $out[] = array_shift($waiting)[1];
+            }
+
+            $introduced = array_search($item['card'], array_map(fn (array $w) => $w[1]['card'], $waiting), true);
+            if (($item['new'] ?? false) && $item['direction'] === Direction::Forward->value) {
+                $out[] = ['intro' => true] + $item;
+                $waiting[] = [count($out) + $gap, $item];
+            } elseif ($introduced !== false) {
+                array_splice($waiting, $introduced + 1, 0, [[$waiting[$introduced][0], $item]]);
+            } else {
+                $out[] = $item;
+            }
+        }
+        foreach ($waiting as [, $question]) {
+            $out[] = $question;
+        }
+
+        return $out;
+    }
+
+    /**
+     * At the end of any round with answers: when "Heute" has nothing more
+     * to offer, today counts for the streak although the goal is not
+     * reached (docs/specs/motivierender-start.md, B). So a day with nothing
+     * due still counts after a little practice.
+     *
+     * @param  Round  $round
+     */
+    public function finish(User $user, array $round): void
+    {
+        if ($round['answered'] === 0) {
+            return;
+        }
+
+        $due = $this->dueQuery($user)->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))->exists();
+        $new = $this->newAllowedToday($user) > 0
+            && $this->newCardCount($user, $this->decks->mineQuery($user)->pluck('id')->all(), 1) > 0;
+        if (! $due && ! $new) {
+            $this->leitner->markGoalMet($user);
+        }
+    }
+
+    /**
+     * Main meanings of the answer side of the cards that reached "Kann ich"
+     * in this round, in order.
+     *
+     * @param  Round  $round
+     * @return list<string>
+     */
+    public function masteredWords(User $user, array $round): array
+    {
+        $keys = $round['mastered'] ?? [];
+        if ($keys === []) {
+            return [];
+        }
+
+        $cards = Card::whereIn('deck_id', $this->decks->visibleTo($user)->select('id'))
+            ->whereKey(array_map(fn (string $key) => explode('|', $key)[0], $keys))
+            ->get()
+            ->keyBy('id');
+
+        $words = [];
+        foreach ($keys as $key) {
+            [$id, $direction] = explode('|', $key) + [1 => 'forward'];
+            $card = $cards->get($id);
+            if ($card !== null) {
+                $words[] = $direction === Direction::Backward->value ? $card->frontText() : $card->backText();
+            }
+        }
+
+        return $words;
     }
 
     /** The deck's oldest run of the person, or a new one with the standard plan. */
@@ -314,7 +409,7 @@ class StudyRoundService
             ])
             ->all();
 
-        return $this->newRound('practice', $deck->id, $items);
+        return $this->newRound($user, 'practice', $deck->id, $items);
     }
 
     /**
@@ -327,7 +422,7 @@ class StudyRoundService
      * free practice never count as changed.
      *
      * @param  Round  $round
-     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, runs: list<DeckRun>, changed: bool}|null}
+     * @return array{0: Round, 1: array{card: Card, direction: Direction, repeat: bool, intro: bool, runs: list<DeckRun>, changed: bool}|null}
      */
     public function current(User $user, array $round): array
     {
@@ -354,13 +449,14 @@ class StudyRoundService
                     'card' => $card,
                     'direction' => Direction::from($item['direction']),
                     'repeat' => $item['repeat'],
+                    'intro' => $item['intro'] ?? false,
                     'runs' => $runs,
                     'changed' => $this->changedSinceReview($card, $item['direction'], $runs),
                 ]];
             }
 
             array_shift($round['queue']);
-            $round['total'] = max(0, $round['total'] - ($item['repeat'] ? 0 : 1));
+            $round['total'] = max(0, $round['total'] - ($item['repeat'] || ($item['intro'] ?? false) ? 0 : 1));
         }
 
         return [$round, null];
@@ -389,6 +485,12 @@ class StudyRoundService
         $round['step']++;
         $key = $cardId.'|'.$current['direction']->value;
 
+        // "Weiter" after an intro is no answer: nothing moves, nothing counts.
+        if ($current['intro']) {
+            return $round;
+        }
+        $this->leitner->countAnswer($user);
+
         if ($round['mode'] === 'test') {
             // Every card until known once: "known" counts cards done, "first" those known at once.
             $round['answered'] += $current['repeat'] ? 0 : 1;
@@ -410,6 +512,9 @@ class StudyRoundService
                 // A new card that was not known also lands in box 1 — that is
                 // not moving up.
                 $round['promoted'] += $known && $move['to'] > $move['from'] ? 1 : 0;
+                if ($known && $move['to'] > $move['from'] && $move['to'] >= ($current['runs'][0]->box_count ?? PHP_INT_MAX)) {
+                    $round['mastered'][] = $key;
+                }
             }
         }
 
@@ -482,19 +587,25 @@ class StudyRoundService
      * @param  list<RoundItem>  $items
      * @return Round
      */
-    private function newRound(string $mode, ?string $deckId, array $items): array
+    private function newRound(User $user, string $mode, ?string $deckId, array $items): array
     {
+        $day = $this->leitner->dayStatus($user);
+
         return [
             'mode' => $mode,
             'deck' => $deckId,
             'queue' => $items,
             'step' => 0,
-            'total' => count($items),
+            // Intros are no questions: "3 / 12" counts questions only.
+            'total' => count(array_filter($items, fn (array $item) => ! ($item['intro'] ?? false))),
             'answered' => 0,
             'known' => 0,
             'first' => 0,
             'promoted' => 0,
             'repeats' => [],
+            'mastered' => [],
+            // The end screen says "Tagesziel geschafft!" only for the round that reached it.
+            'goal_before' => $day['answers'] >= $day['goal'],
         ];
     }
 }

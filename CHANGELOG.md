@@ -7,6 +7,13 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.17
+- Neue Wörter zeigt die App zuerst offen (vorne und hinten, zum Anhören) und fragt sie ein paar Karten später ab – niemand muss mehr ein Wort raten, das er nie gesehen hat
+- Tagesziel: Ein Ring unter „Heute“ zeigt, wie viele Karten heute geschafft sind (jede Antwort zählt, auch beim Test üben). Das Ziel – 10, 20 oder 30 Karten – steht unter Mein Konto → Lernplan
+- Die Lernserie zählt Tage mit erreichtem Tagesziel – oder an denen es nichts mehr zu lernen gab. Bisherige Lerntage zählen weiter
+- „Du kannst schon 124 Wörter“ unter „Heute“, und am Rundenende die Wörter, die neu in „Kann ich“ sind
+- Migration: 2026_10_16_000000_add_daily_goal_and_goal_met.php
+
 ## 2026.10.15.2
 - Einfacher lernen: „Heute“ → „Los geht's“ bringt jetzt auch neue Karten aus allen Stapeln, bis zu 20 am Tag – mehr mit „Noch 20 neue Karten“. Gelernt werden muss nicht mehr im Stapel
 - Geteilte Stapel und Wörter im Wörterbuch lernt man mit einem Knopf „Lernen“ (statt „Folgen“). Eine eigene Fassung („Kopieren“) und Übernehmen stehen im ⋯-Menü bzw. unter „Mehr …“

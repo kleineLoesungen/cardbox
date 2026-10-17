@@ -388,6 +388,19 @@
   .meter > span { @apply block h-full rounded-full bg-brand transition-[width]; }
   .meter-success > span { @apply bg-success; }
 
+  /* --- Daily goal ring on "Heute" (--goal: 0 … 100, set inline) ------- */
+  .goal-ring {
+    --ring: var(--color-brand);
+    @apply relative mx-auto grid size-28 place-items-center rounded-full;
+    background: conic-gradient(var(--ring) calc(var(--goal, 0) * 1%), var(--color-surface-sunken) 0);
+  }
+  .goal-ring::before {
+    content: "";
+    @apply absolute inset-2 rounded-full bg-surface-raised;
+  }
+  .goal-ring > * { @apply relative; }
+  .goal-ring-done { --ring: var(--color-success); }
+
   /* --- Flash card with a 3D flip -------------------------------------- */
   /*
     Both faces are stacked in one grid cell, so the card is as tall as the
