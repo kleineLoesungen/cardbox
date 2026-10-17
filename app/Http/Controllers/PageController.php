@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\LeitnerService;
+use App\Services\ReminderService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,13 +12,17 @@ use Illuminate\View\View;
 class PageController extends Controller
 {
     /** Signed-in people go straight to "Heute". */
-    public function landing(Request $request, UserService $users): View|RedirectResponse
+    public function landing(Request $request, UserService $users, ReminderService $reminders): View|RedirectResponse
     {
         if ($request->user() !== null) {
             return redirect('/learn');
         }
 
-        return view('pages.landing', ['firstSetup' => $users->isEmpty()]);
+        return view('pages.landing', [
+            'firstSetup' => $users->isEmpty(),
+            // Promise reminders only where the installation sends them.
+            'reminders' => $reminders->enabled(),
+        ]);
     }
 
     /** "So funktioniert der Karteikasten" — shows the person's own plan. */

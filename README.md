@@ -71,8 +71,9 @@ eine tägliche **Erinnerung** als Mitteilung aufs Handy (Einrichtung:
 [docs/INSTALL-WEBSPACE.md](docs/INSTALL-WEBSPACE.md#erinnerungen-einrichten-freiwillig)).
 **Mehr → Hilfe** erklärt alles in einfachen Worten.
 
-**Motivation ohne Punkte.** Ein Ring unter **Heute** zeigt das Tagesziel, dazu
-die Lernserie und der wachsende Wortschatz („Du kannst schon 124 Wörter“).
+**Motivation ohne Punktesammeln.** Ein Ring unter **Heute** zeigt das Tagesziel,
+sieben Punkte die letzte Woche (grün: Ziel erreicht), dazu die Lernserie und der
+wachsende Wortschatz („Du kannst schon 124 Wörter“).
 Abzeichen, Ranglisten oder Vergleiche gibt es nicht.
 
 **Eltern.** Ein Kind erzeugt unter **Mein Konto → Eltern** einen Code (gilt

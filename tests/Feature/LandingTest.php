@@ -34,3 +34,18 @@ it('gibt die Beispielwörter maskiert an das Skript weiter', function () {
     // JSON in a double-quoted attribute: quotes must arrive as &quot;.
     $this->get('/')->assertSee('data-examples="[{&quot;q&quot;:&quot;Hund&quot;', false);
 });
+
+it('nennt die Funktionen fürs Lernen und für Eltern, die Erinnerung nur wenn eingerichtet', function () {
+    User::factory()->create();
+    config(['push.vapid.public_key' => null, 'push.vapid.private_key' => null]);
+
+    $this->get('/')
+        ->assertSee('Tagesziel')
+        ->assertSee('Antworten eintippen')
+        ->assertSee('Knifflige Wörter')
+        ->assertSee('Eltern schauen zu')
+        ->assertDontSee('täglicher Erinnerung');
+
+    config(['push.vapid.public_key' => 'public', 'push.vapid.private_key' => 'private']);
+    $this->get('/')->assertSee('auf Wunsch mit täglicher Erinnerung');
+});

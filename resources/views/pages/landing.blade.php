@@ -6,6 +6,7 @@
   (PageController::landing redirects to /learn).
 
   @param bool $firstSetup  no account yet: the only way in is creating the admin
+  @param bool $reminders   daily reminders are set up on this installation
 --}}
 @extends('layouts.base')
 @section('title', 'Vokabeln lernen mit dem Karteikasten')
@@ -128,6 +129,22 @@
         <h2 class="text-xl font-semibold tracking-tight">Was {{ $branding->name }} noch kann</h2>
         <div class="mt-5 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
           <div class="feature-card">
+            <p class="feature-card-title">Tagesziel</p>
+            <p class="feature-card-text">Ein Ring zeigt, wie viele Karten du heute gewusst hast – und dein Wortschatz wächst sichtbar. Ohne Punktesammeln und Ranglisten.</p>
+          </div>
+          <div class="feature-card">
+            <p class="feature-card-title">Antworten eintippen</p>
+            <p class="feature-card-text">Statt umdrehen die Antwort schreiben. Bei kleinen Tippfehlern sagt {{ $branding->name }} „Fast!“.</p>
+          </div>
+          <div class="feature-card">
+            <p class="feature-card-title">Knifflige Wörter</p>
+            <p class="feature-card-text">Wörter, die oft falsch sind, fallen auf und lassen sich gezielt üben.</p>
+          </div>
+          <div class="feature-card">
+            <p class="feature-card-title">Eltern schauen zu</p>
+            <p class="feature-card-text">Mit einem Code vom Kind sehen Eltern Lerntage, Wortschatz und knifflige Wörter – zum Loben und Mitüben.</p>
+          </div>
+          <div class="feature-card">
             <p class="feature-card-title">Stapel teilen</p>
             <p class="feature-card-text">Geteilte Stapel mit einem Tipp mitlernen – oder eine eigene Fassung anlegen und selbst ändern.</p>
           </div>
@@ -149,7 +166,7 @@
           </div>
           <div class="feature-card">
             <p class="feature-card-title">Wie eine App</p>
-            <p class="feature-card-text">Auf den Startbildschirm legen und mit einem Tipp loslernen.</p>
+            <p class="feature-card-text">Auf den Startbildschirm legen und mit einem Tipp loslernen{{ $reminders ? ' – auf Wunsch mit täglicher Erinnerung' : '' }}.</p>
           </div>
         </div>
       </div>

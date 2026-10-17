@@ -125,6 +125,8 @@
       unter <strong>Mein Konto → Lernplan</strong> ein.
     </p>
     <p class="text-muted">
+      Die Punkte über dem Ring zeigen die letzten 7 Tage: <strong>grün</strong>
+      mit erreichtem Tagesziel, <strong>grau</strong> ohne.
       Jeder Tag mit erreichtem Ziel verlängert deine <strong>Lernserie</strong>.
       Gab es an einem Tag weniger zu lernen und du hast alles geschafft, zählt
       er auch. Ist gar nichts dran, üb ein paar Karten in einem Stapel – dann

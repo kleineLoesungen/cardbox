@@ -22,6 +22,19 @@
       <a href="/decks?new=1" class="btn btn-secondary btn-lg">Eigenen Stapel anlegen</a>
     </div>
   @else
+    {{-- The last 7 days: green = daily goal met, grey = not (or not yet today). --}}
+    <ol class="week-dots mt-3" aria-label="Tagesziel der letzten 7 Tage">
+      @foreach ($week as $day)
+        @php
+            $label = $day['date']->locale('de')->isoFormat('dd D.M.').': '.($day['met'] ? 'Ziel erreicht' : ($day['today'] ? 'Ziel noch offen' : 'Ziel nicht erreicht'));
+        @endphp
+        <li class="week-dots-day">
+          <span @class(['week-dot', 'week-dot-met' => $day['met'], 'week-dot-today' => $day['today']]) aria-hidden="true"></span>
+          <span aria-hidden="true">{{ $day['today'] ? 'Heute' : $day['date']->locale('de')->isoFormat('dd') }}</span>
+          <span class="sr-only">{{ $label }}</span>
+        </li>
+      @endforeach
+    </ol>
     <div class="card mt-6">
       <div class="card-body stack text-center">
         {{-- Due and new cards from every deck (docs/specs/einfacher-lernen.md, A). --}}

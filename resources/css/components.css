@@ -401,6 +401,13 @@
   .goal-ring > * { @apply relative; }
   .goal-ring-done { --ring: var(--color-success); }
 
+  /* --- "Heute": the daily goal of the last 7 days as dots ------------- */
+  .week-dots { @apply grid max-w-xs grid-cols-7 gap-1; }
+  .week-dots-day { @apply flex min-w-0 flex-col items-center gap-1 text-xs text-subtle; }
+  .week-dot { @apply block size-4 rounded-full bg-border-strong; }
+  .week-dot-met { @apply bg-success; }
+  .week-dot-today { @apply ring-2 ring-brand ring-offset-2 ring-offset-surface; }
+
   /* --- Learning days for parents: four weeks as rows ------------------ */
   .day-strip { @apply grid grid-cols-7 gap-1.5; }
   .day-strip-head { @apply text-center text-xs text-subtle; }

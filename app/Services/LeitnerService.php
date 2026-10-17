@@ -217,6 +217,33 @@ class LeitnerService
     }
 
     /**
+     * The last `$days` days up to today, oldest first, each with whether the
+     * daily goal was met ("Heute": dots for the week).
+     *
+     * @return list<array{date: CarbonImmutable, today: bool, met: bool}>
+     */
+    public function recentDays(User $user, int $days = 7): array
+    {
+        $today = $this->today();
+        $start = $today->subDays($days - 1);
+        $met = DB::table('study_days')
+            ->where('user_id', $user->id)
+            ->where('goal_met', true)
+            ->whereBetween('day', [$start->toDateString(), $today->toDateString()])
+            ->pluck('day')
+            ->map(fn ($d) => substr((string) $d, 0, 10))
+            ->all();
+
+        $result = [];
+        for ($i = 0; $i < $days; $i++) {
+            $date = $start->addDays($i);
+            $result[] = ['date' => $date, 'today' => $i === $days - 1, 'met' => in_array($date->toDateString(), $met, true)];
+        }
+
+        return $result;
+    }
+
+    /**
      * Days in a row with the daily goal met, counting back from today — or
      * from yesterday, so the streak survives until the person learns today.
      */
