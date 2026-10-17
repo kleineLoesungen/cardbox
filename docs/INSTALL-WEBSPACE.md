@@ -178,12 +178,13 @@ Dienst von außen alle 15 Minuten eine geschützte Adresse auf.
    Dazu `VAPID_SUBJECT="mailto:admin@example.com"` und ein Token:
    `REMINDER_TOKEN=` mit der Ausgabe von `openssl rand -hex 32`.
 
-2. Einen Aufrufer einrichten, z. B. **Cronicle** (auf einer NAS) oder
-   cron-job.org:
+2. Einen Aufrufer einrichten, der alle 15 Minuten die Adresse aufruft. Drei
+   Möglichkeiten, von einfach bis eigener Dienst – siehe
+   [Aufrufer für Erinnerungen](#aufrufer-für-erinnerungen) unten. Was er
+   schicken muss:
 
    | Feld | Wert |
    |---|---|
-   | Plugin / Art | HTTP Request |
    | Methode | `POST` |
    | URL | `https://cardbox.example.com/api/v1/reminders/run` |
    | Kopfzeile | `X-Cron-Token: <REMINDER_TOKEN>` |
@@ -195,7 +196,6 @@ Dienst von außen alle 15 Minuten eine geschützte Adresse auf.
    eingeschaltet haben. Ein **404** heißt: Token fehlt, ist kürzer als 32
    Zeichen oder falsch. Ein **503** nennt den Fehler in der Einrichtung
    (z. B. `VAPID_SUBJECT muss mit mailto: oder https:// beginnen.`).
-   Als „Success Match“ in Cronicle eignet sich `"sent":\d+`.
 
 3. Unter **Mehr → System** steht danach, wann zuletzt verschickt wurde.
 
@@ -203,6 +203,85 @@ Der Kopf heißt bewusst `X-Cron-Token` statt `Authorization`, weil PHP über
 FastCGI den `Authorization`-Kopf oft verliert. Die Mitteilungen laufen über
 die Push-Dienste der Browser-Hersteller (Apple, Google, Mozilla); übertragen
 werden nur die Kartenzahl und die Lernserie, verschlüsselt.
+
+### Aufrufer für Erinnerungen
+
+Irgendetwas muss alle 15 Minuten die Adresse aufrufen. Am einfachsten zuerst:
+
+**a) cron-job.org (ohne eigenen Rechner)**
+
+Kostenlos registrieren, „Cronjob erstellen“: URL wie oben, unter „Erweitert“
+Methode `POST` und die Kopfzeile `X-Cron-Token` eintragen, Ausführung „alle
+15 Minuten“. Der Dienst kennt dann das Token; er kann damit aber nur
+Erinnerungen anstoßen, nichts lesen.
+
+**b) Ein Rechner, der ohnehin läuft (NAS, Raspberry Pi, Server)**
+
+Eine Zeile in dessen Crontab (`crontab -e`), ganz ohne zusätzliche Software:
+
+```cron
+*/15 * * * * curl -fsS -X POST -H "X-Cron-Token: <REMINDER_TOKEN>" https://cardbox.example.com/api/v1/reminders/run >/dev/null
+```
+
+`-f` lässt `curl` bei 404/503 mit Fehler enden; wer die Crontab-Mails liest,
+merkt so eine kaputte Einrichtung.
+
+**c) Cronicle per Docker Compose (mit Weboberfläche und Verlauf)**
+
+Cronicle zeigt jeden Lauf mit Antwort und warnt bei Fehlern – gut, wenn man
+sehen will, was passiert. Auf einer NAS mit Docker, z. B. in einem Ordner
+`cronicle/` diese `compose.yaml`:
+
+```yaml
+services:
+  cronicle:
+    image: soulteary/cronicle:latest   # besser eine feste Version eintragen
+    container_name: cronicle
+    hostname: cronicle
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/data:/opt/cronicle/data
+      - ./data/logs:/opt/cronicle/logs
+      - ./data/plugins:/opt/cronicle/plugins
+```
+
+```bash
+docker compose up -d
+```
+
+Dann:
+
+1. `http://<NAS>:3012` öffnen, mit `admin` / `admin` anmelden und **sofort
+   das Passwort ändern** (oben rechts → „My Account“). Port 3012 nicht ins
+   Internet freigeben – Cronicle braucht nur ausgehende Verbindungen.
+2. **Schedule → Add Event:**
+
+   | Feld | Wert |
+   |---|---|
+   | Title | `Cardbox Erinnerungen` |
+   | Timing | „Hourly“, Minuten `0`, `15`, `30`, `45` |
+   | Plugin | **HTTP Request** |
+   | Method | `POST` |
+   | URL | `https://cardbox.example.com/api/v1/reminders/run` |
+   | Request Headers | `X-Cron-Token: <REMINDER_TOKEN>` |
+   | Timeout | `60` |
+   | Success Match | `"sent":\d+` (mit **umgekehrtem** Schrägstrich) |
+   | Error Match | leer lassen |
+
+3. Speichern, rechts mit „Run“ einmal von Hand starten und im Verlauf die
+   Antwort ansehen: `"scheduled"` zeigt, wie viele Konten eine Erinnerung
+   haben. Ein Fehler (404, 503) erscheint rot mit Grund.
+4. Wer bei Fehlern Bescheid bekommen möchte: im Event unter „Notification“
+   eine E-Mail-Adresse oder einen Webhook eintragen (Cronicle braucht dafür
+   unter „Admin → Configuration“ einen Mailserver).
+
+Das Cronicle-Log zeigt das Token im Klartext. Wer Logs weitergibt, sollte es
+danach mit `openssl rand -hex 32` erneuern (in der `.env` und im Aufrufer).
 
 ---
 

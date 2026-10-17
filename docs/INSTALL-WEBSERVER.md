@@ -289,7 +289,7 @@ Zeilen und `VAPID_SUBJECT` in die `.env` übernehmen, dann:
 ```
 
 Statt des Cronjobs geht auch ein Aufruf von außen (Cronicle, cron-job.org),
-siehe [INSTALL-WEBSPACE.md](INSTALL-WEBSPACE.md#erinnerungen-einrichten-freiwillig).
+siehe [INSTALL-WEBSPACE.md](INSTALL-WEBSPACE.md#aufrufer-für-erinnerungen).
 Im Docker-Betrieb ebenso: `docker compose exec app php artisan reminders:send`
 vom Cron des Hosts, oder der Aufruf von außen.
 
