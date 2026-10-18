@@ -126,7 +126,10 @@
     </p>
     <p class="text-muted">
       Die Punkte über dem Ring zeigen die letzten 7 Tage: <strong>grün</strong>
-      mit erreichtem Tagesziel, <strong>grau</strong> ohne.
+      mit erreichtem Tagesziel, <strong>grau</strong> ohne. Die Zahl im grünen
+      Punkt sagt, wie oft du das Ziel geschafft hast – bei einem Ziel von 20
+      Karten steht bei 40 gewussten Karten eine 2. Gerechnet wird mit deinem
+      heutigen Tagesziel.
       Jeder Tag mit erreichtem Ziel verlängert deine <strong>Lernserie</strong>.
       Gab es an einem Tag weniger zu lernen und du hast alles geschafft, zählt
       er auch. Ist gar nichts dran, üb ein paar Karten in einem Stapel – dann

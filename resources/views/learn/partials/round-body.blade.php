@@ -193,8 +193,12 @@
   </div>
 
   {{-- The card: tap to flip (typed: only the question, the answer is not in the page) --}}
-  <div class="flashcard my-4 flex flex-1 flex-col justify-center">
-    <div @class(['flashcard-inner', 'cursor-pointer' => ! $current['typed']])
+  {{--
+    Typed: a compact card at the top with the field right under it, so both
+    stay visible above the phone's keyboard.
+  --}}
+  <div @class(['flashcard flex flex-col', 'my-4 flex-1 justify-center' => ! $current['typed'], 'mt-3' => $current['typed']])>
+    <div @class(['flashcard-inner', 'cursor-pointer' => ! $current['typed'], 'flashcard-compact' => $current['typed']])
          @unless ($current['typed']) data-flip role="button" tabindex="0" aria-label="Karte umdrehen" @endunless>
       <div class="flashcard-face">
         <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $qLang?->label() }}</p>
@@ -223,7 +227,8 @@
       until the script finds a voice for the language; never shown for
       "Aufgabe"/"Ergebnis", which have no language tag.
     --}}
-    <div class="mt-3 flex min-h-11 justify-center">
+    {{-- min-h-11 also when typing: a voice found late must not push the field under the keyboard. --}}
+    <div @class(['flex min-h-11 justify-center', 'mt-3' => ! $current['typed'], 'mt-1' => $current['typed']])>
       <button type="button" class="btn btn-ghost" data-speak hidden
               data-question="{{ $question[0] ?? '' }}" data-question-lang="{{ $qLang?->tag() }}"
               @unless ($current['typed']) data-answer="{{ $answer[0] ?? '' }}" data-answer-lang="{{ $aLang?->tag() }}" @endunless>
@@ -242,7 +247,7 @@
 
   @if ($current['typed'])
     {{-- Type the answer; the server checks it (AnswerCheckService). --}}
-    <form class="stack gap-2" hx-post="/learn/round/answer" hx-target="#round" hx-swap="outerHTML"
+    <form class="stack mt-2 gap-2" hx-post="/learn/round/answer" hx-target="#round" hx-swap="outerHTML"
           hx-disabled-elt="find button" hx-sync="this:drop">
       <input type="hidden" name="card" value="{{ $card->id }}">
       <input type="hidden" name="step" value="{{ $round['step'] }}">

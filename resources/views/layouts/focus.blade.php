@@ -30,6 +30,16 @@
     const field = document.querySelector("#round input[name=typed]");
     field ? field.focus({ preventScroll: true }) : keeper.blur();
   });
+  // When the keyboard opens, phones scroll the field into view and can push
+  // the card out at the top. If card and field fit above the keyboard,
+  // scroll back to the top so the word stays readable.
+  window.visualViewport?.addEventListener("resize", () => {
+    const field = document.querySelector("#round input[name=typed]");
+    // Pinch zoom resizes the visual viewport too; leave that alone.
+    if (!field || document.activeElement !== field || window.visualViewport.scale !== 1) return;
+    const bottom = field.getBoundingClientRect().bottom + window.scrollY;
+    if (bottom + 8 <= window.visualViewport.height) window.scrollTo(0, 0);
+  });
   // An answer that is no round (session expired → login page): go there instead of swapping it in.
   document.body.addEventListener("htmx:beforeSwap", (e) => {
     const url = e.detail.xhr.responseURL;

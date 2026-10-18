@@ -118,8 +118,9 @@ automatisch mit, die zweite bleibt weiß.
 
 **Zustände:** `success`, `warning`, `danger` — jeweils auch als `-subtle`
 für die zugehörige Hintergrundfläche. Dazu `danger-content` für Schrift auf
-`bg-danger` (Löschen-Knopf, Zähler am Tab): hell im Hellmodus, dunkel im
-Dunkelmodus, weil das Rot dort heller ist.
+`bg-danger` (Löschen-Knopf, Zähler am Tab) und `success-content` für Schrift
+auf `bg-success` (Zahl in den Wochenpunkten auf „Heute“): hell im Hellmodus,
+dunkel im Dunkelmodus, weil Rot und Grün dort heller sind.
 
 Jede Rolle gibt es als `bg-`, `text-` und `border-`. Dazu `rounded-ui` für die
 projektweit einheitliche Eckenrundung und `ring-focus` für Fokusringe.

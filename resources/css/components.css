@@ -404,8 +404,8 @@
   /* --- "Heute": the daily goal of the last 7 days as dots ------------- */
   .week-dots { @apply grid max-w-xs grid-cols-7 gap-1; }
   .week-dots-day { @apply flex min-w-0 flex-col items-center gap-1 text-xs text-subtle; }
-  .week-dot { @apply block size-4 rounded-full bg-border-strong; }
-  .week-dot-met { @apply bg-success; }
+  .week-dot { @apply grid size-6 place-items-center rounded-full bg-border-strong text-xs leading-none font-semibold tabular-nums; }
+  .week-dot-met { @apply bg-success text-success-content; }
   .week-dot-today { @apply ring-2 ring-brand ring-offset-2 ring-offset-surface; }
 
   /* --- Learning days for parents: four weeks as rows ------------------ */
@@ -441,6 +441,9 @@
     backface-visibility: hidden;
   }
   .flashcard-back { transform: rotateY(180deg); }
+  /* Typed answers: small enough to stay above the phone's keyboard. */
+  .flashcard-compact { @apply min-h-0; }
+  .flashcard-compact .flashcard-face { @apply gap-2 py-5; }
   .flashcard-text { @apply max-w-full font-semibold break-words text-balance; }
 
   /* --- Box tiles on the deck page ("Neu · 1 · 2 · … · Kann ich") ------- */

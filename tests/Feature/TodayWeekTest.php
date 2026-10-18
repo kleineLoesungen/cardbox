@@ -54,3 +54,29 @@ it('zeigt ohne Stapel keine Punkte', function () {
 
     $this->get('/learn')->assertDontSee('week-dots');
 });
+
+it('zeigt im grünen Punkt, wie viele Male das Tagesziel erreicht wurde', function () {
+    $this->travelTo(Carbon::parse('2026-10-14 08:00:00', 'UTC'));
+    $ich = actingAsUser();
+    Deck::factory()->for($ich)->create();
+    $day = fn (string $date, int $answers, bool $met = true) => ['user_id' => $ich->id, 'day' => $date, 'reviews' => $answers, 'correct' => $answers, 'answers' => $answers, 'goal_met' => $met];
+    DB::table('study_days')->insert([
+        $day('2026-10-09', 39),
+        $day('2026-10-10', 40),
+        $day('2026-10-11', 65),
+        // Finished with fewer cards left: the day counts, once.
+        $day('2026-10-12', 8),
+        $day('2026-10-13', 19, false),
+    ]);
+
+    $html = $this->get('/learn')
+        ->assertSee('Fr 9.10.: Ziel erreicht')
+        ->assertSee('Sa 10.10.: Ziel 2-mal erreicht')
+        ->assertSee('So 11.10.: Ziel 3-mal erreicht')
+        ->assertSee('Mo 12.10.: Ziel erreicht')
+        ->assertSee('Di 13.10.: Ziel nicht erreicht')
+        ->getContent();
+
+    preg_match_all('/class="week-dot week-dot-met"[^>]*>(\d*)</', $html, $numbers);
+    expect($numbers[1])->toBe(['1', '2', '3', '1']);
+});

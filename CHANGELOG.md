@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.19
+- Antworten eintippen auf dem Handy: Die Karte ist kleiner und steht oben, das Eingabefeld direkt darunter. So bleibt das Wort lesbar, wenn die Tastatur aufgeht
+- Heute: Die grünen Punkte der Woche zeigen, wie oft das Tagesziel erreicht wurde (Ziel 20: bis 39 gewusste Karten eine 1, ab 40 eine 2 usw.), gemessen am aktuellen Tagesziel
+- Hellmodus: Das Grün für „geschafft“ ist etwas dunkler und damit besser lesbar
+
 ## 2026.10.18.4
 - Sicherheitsupdates: Laravel 13.37, Symfony 8.1.9 (manipulierter Cache-Control-Header konnte den Server lange beschäftigen) und league/commonmark 2.10.4. composer audit meldet keine bekannten Lücken mehr
 

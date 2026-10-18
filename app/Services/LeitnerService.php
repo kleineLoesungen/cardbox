@@ -218,26 +218,30 @@ class LeitnerService
 
     /**
      * The last `$days` days up to today, oldest first, each with whether the
-     * daily goal was met ("Heute": dots for the week).
+     * daily goal was met and how many times over ("Heute": dots for the
+     * week). `times` is answers ÷ today's goal, rounded down, at least 1 on
+     * a day that counts (also one finished with fewer cards left); 0 otherwise.
      *
-     * @return list<array{date: CarbonImmutable, today: bool, met: bool}>
+     * @return list<array{date: CarbonImmutable, today: bool, met: bool, times: int}>
      */
     public function recentDays(User $user, int $days = 7): array
     {
         $today = $this->today();
         $start = $today->subDays($days - 1);
+        $goal = max(1, $this->dailyGoal($user));
         $met = DB::table('study_days')
             ->where('user_id', $user->id)
             ->where('goal_met', true)
             ->whereBetween('day', [$start->toDateString(), $today->toDateString()])
-            ->pluck('day')
-            ->map(fn ($d) => substr((string) $d, 0, 10))
+            ->get(['day', 'answers'])
+            ->mapWithKeys(fn ($row) => [substr((string) $row->day, 0, 10) => max(1, intdiv((int) $row->answers, $goal))])
             ->all();
 
         $result = [];
         for ($i = 0; $i < $days; $i++) {
             $date = $start->addDays($i);
-            $result[] = ['date' => $date, 'today' => $i === $days - 1, 'met' => in_array($date->toDateString(), $met, true)];
+            $times = $met[$date->toDateString()] ?? 0;
+            $result[] = ['date' => $date, 'today' => $i === $days - 1, 'met' => $times > 0, 'times' => $times];
         }
 
         return $result;

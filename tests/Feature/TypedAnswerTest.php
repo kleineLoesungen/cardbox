@@ -65,11 +65,15 @@ it('fragt mit Eingabefeld statt Umdrehen, nur bei eingeschaltetem Stapel', funct
     $this->post('/learn/round', ['deck' => $tippen->id]);
     $this->get('/learn/round')->assertSee('name="typed"', false)->assertSee('Weiß ich nicht')
         ->assertDontSee('data-flip role="button"', false)
+        // Compact card at the top, so it stays above the phone's keyboard.
+        ->assertSee('flashcard-compact')
         // The answer is not in the page before checking.
         ->assertDontSee('dog');
 
     $this->post('/learn/round', ['deck' => $umdrehen->id]);
-    $this->get('/learn/round')->assertSee('data-flip role="button"', false)->assertDontSee('name="typed"', false);
+    $this->get('/learn/round')->assertSee('data-flip role="button"', false)->assertDontSee('name="typed"', false)
+        ->assertSee('class="flashcard flex flex-col my-4 flex-1 justify-center"', false)
+        ->assertDontSee('flashcard-compact');
 });
 
 it('wertet beim Lernen richtig und fast richtig als gewusst, falsch als nicht gewusst', function () {
