@@ -166,9 +166,10 @@ class CardSelectionService
         DB::transaction(function () use ($user, $card, $deck) {
             $learnedBefore = $deck->isOwnedBy($user) || $this->decks->isFollowing($user, $deck);
             if (! $learnedBefore) {
-                $this->decks->follow($user, $deck->id);
                 DB::table('deck_selections')->insertOrIgnore(['user_id' => $user->id, 'deck_id' => $deck->id, 'created_at' => now(), 'updated_at' => now()]);
             }
+            // "Lernen" puts the deck on "Heute", also when it was paused or not learned.
+            $this->decks->startLearning($user, $deck);
             if ($this->isSelective($user, $deck)) {
                 DB::table('deck_selection_cards')->insertOrIgnore(['user_id' => $user->id, 'deck_id' => $deck->id, 'card_id' => $card->id]);
             }

@@ -7,7 +7,7 @@
   @param \App\Models\Deck $deck
   @param \App\Enums\Direction $direction  direction of the box tiles
   @param bool $withReverse  the viewer learns back → front too
-  @param bool $learns  own or followed deck
+  @param string|null $learningState  'active' ("Lerne ich"), 'paused', 'idle'; null = somebody else's deck not learned
   @param int $learnable  due and new cards for "Nur diesen Stapel lernen"
   @param \Illuminate\Support\Collection<int, \App\Models\DeckRun> $runs  the viewer's runs of this deck
   @param \App\Models\DeckRun|null $run  the selected run; null = not started yet
@@ -32,9 +32,6 @@
       @endforeach
     </nav>
     </div>
-  @endif
-  @if ($learns)
-    <p class="text-sm text-muted">Kommt jeden Tag unter <a href="/learn" class="font-medium text-brand hover:underline">Heute</a> dran.</p>
   @endif
 
   @if ($activeIds !== null)
@@ -72,7 +69,8 @@
     </div>
   @endif
 
-  @if ($learns)
+  @if ($learningState === 'active')
+    {{-- Learning with the boxes is for "Lerne ich" decks; practising below is for any. --}}
     <form method="post" action="/learn/round">
       @csrf
       <input type="hidden" name="deck" value="{{ $deck->id }}">

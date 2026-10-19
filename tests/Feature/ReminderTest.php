@@ -231,7 +231,7 @@ describe('Verschicken', function () {
     it('erinnert nicht an Karten aus pausierten Stapeln (Issue #15)', function () {
         $push = fakePush();
         $ich = remindable();
-        $this->post('/decks/'.Deck::where('user_id', $ich->id)->sole()->id.'/pause', ['on' => '1']);
+        $this->post('/decks/'.Deck::where('user_id', $ich->id)->sole()->id.'/learning', ['on' => '0']);
 
         runReminders()->assertJson(['sent' => 0, 'skipped' => 1]);
         expect($push->sent)->toBe([]);

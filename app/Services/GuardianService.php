@@ -43,7 +43,6 @@ class GuardianService
     public function __construct(
         private LearningOverviewService $overview,
         private LeitnerService $leitner,
-        private DeckService $decks,
     ) {}
 
     /**
@@ -220,7 +219,6 @@ class GuardianService
      *     decks: Collection<int, Deck>,
      *     stats: array<string, array{due: int, mastered_percent: int}>,
      *     progress: array<string, array{new: int, learning: int, mastered: int, total: int, mastered_percent: float, learning_percent: float}>,
-     *     paused: int,
      *     hard: list<array{word: string, deck: string}>
      * }
      */
@@ -243,8 +241,6 @@ class GuardianService
             'decks' => $decks,
             'stats' => $stats,
             'progress' => $this->overview->deckProgress($child, $decks),
-            // Only how many, no names: parents see that something is paused (issue #15).
-            'paused' => count($this->decks->pausedIds($child)),
             'hard' => $this->overview->hardWords($child, 20),
         ];
     }

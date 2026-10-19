@@ -59,7 +59,7 @@
 
             {{-- One visible action: "Lernen" (issue #10, docs/specs/einfacher-lernen.md, B); the rest is under "Mehr …". --}}
             @if ($hit['learn'] === 'active')
-              <p class="text-sm"><span class="badge badge-success">lernst du</span></p>
+              <p class="text-sm"><span class="badge badge-success">lerne ich</span></p>
             @else
               <button type="button" class="btn btn-primary btn-block"
                       hx-post="/dictionary/learn/{{ $card->id }}" hx-target="this" hx-swap="outerHTML">

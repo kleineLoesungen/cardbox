@@ -163,12 +163,12 @@ describe('Stapelseite', function () {
 
         $this->post("/decks/{$deck->id}/follow");
         $this->get("/decks/{$deck->id}")
-            ->assertSee('lernst du')
+            ->assertSee('lerne ich')
             ->assertSee('Kommt jeden Tag unter')
             ->assertSee('Nur diesen Stapel lernen')
             ->assertSee('Nicht mehr lernen')
             ->assertDontSee('Mit anderem Lernplan starten');
-        $this->get('/decks?tab=discover')->assertSee('lernst du');
+        $this->get('/decks?tab=discover')->assertSee('lerne ich');
     });
 
     it('lernt mit „Nur diesen Stapel lernen“ auch über das Tageskontingent hinaus', function () {

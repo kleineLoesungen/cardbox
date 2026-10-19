@@ -155,7 +155,7 @@ describe('Folgen und Kopieren', function () {
         expect($ich->followedDecks()->count())->toBe(1);
 
         $card->update(['back' => ['home']]);
-        $this->get("/decks/{$deck->id}")->assertSee('home')->assertSee('lernst du');
+        $this->get("/decks/{$deck->id}")->assertSee('home')->assertSee('lerne ich');
     });
 
     it('lässt dem eigenen Stapel nicht folgen', function () {

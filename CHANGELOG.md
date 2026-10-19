@@ -7,6 +7,13 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.19.4
+- Einfacher: Jeder Stapel ist „lerne ich“, „pausiert“ oder keins von beiden. Nur „lerne ich“ kommt auf Heute, in „Los geht's“, in die Erinnerung und in die Eltern-Ansicht. Umgeschaltet wird direkt oben auf der Stapelseite („Pausieren“, „Wieder lernen“, „Lernen“), nicht mehr im Menü
+- Neue Stapel und geteilte Stapel nach „Lernen“ sind gleich „lerne ich“. Üben (Für den Test üben, Knifflige Wörter, Fach üben) ändert nichts
+- Stapel → Meine: getrennt nach „Lerne ich“, „Pausiert“ und „Weitere Stapel“; Entdecken zeigt „lerne ich“ bzw. „pausiert“
+- Eigene Stapel ohne Lernstand sind nach dem Update „Weitere Stapel“ und nicht mehr auf Heute; Stapel mit Karten in den Fächern und gelernte geteilte Stapel bleiben „lerne ich“
+- Migration: 2026_10_19_100000_add_learning_to_deck_preferences.php
+
 ## 2026.10.19.3
 - Betrieb: Die 20 Migrationen bis Version 2026.10.18 sind zu einer zusammengefasst. Für eine bestehende Datenbank ab Stand 2026.10.18 ist nichts zu tun: Die neue Migration erkennt die vorhandenen Tabellen und wird nur als erledigt vermerkt. Eine ältere Datenbank bricht mit einer Meldung ab und muss erst mit Version 2026.10.19.2 aktualisiert werden. Neue Installationen legen das Schema in einem Schritt an
 - Migration: 0001_01_01_000000_create_cardbox_schema.php (ändert bestehende Datenbanken nicht)

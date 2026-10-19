@@ -7,6 +7,7 @@ use App\Models\CardProgress;
 use App\Models\Deck;
 use App\Models\User;
 use App\Services\DeckRunService;
+use App\Services\DeckService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
@@ -139,3 +140,20 @@ it('lässt nur Administratoren übertragen', function (Role $role) {
 
     expect($deck->fresh()->user_id)->toBe($anna->id);
 })->with([Role::User, Role::Moderator]);
+
+it('lässt die alte Besitzerin einen übertragenen geteilten Stapel als „lerne ich“ weiterlernen, eine Pause bleibt', function () {
+    $anna = User::factory()->create();
+    User::factory()->create(['username' => 'ben']);
+    $ohne = Deck::factory()->for($anna)->shared()->create();
+    $pausiert = Deck::factory()->for($anna)->shared()->create();
+    DB::table('deck_preferences')->insert([
+        ['user_id' => $anna->id, 'deck_id' => $ohne->id, 'learning' => false, 'paused' => false, 'created_at' => now(), 'updated_at' => now()],
+        ['user_id' => $anna->id, 'deck_id' => $pausiert->id, 'learning' => true, 'paused' => true, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    actingAsAdmin();
+
+    transfer($anna, ['decks' => [$ohne->id, $pausiert->id], 'to_username' => 'ben'])->assertSessionHasNoErrors();
+
+    $states = app(DeckService::class)->learningStates($anna);
+    expect($states[$ohne->id])->toBe('active')->and($states[$pausiert->id])->toBe('paused');
+});

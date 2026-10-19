@@ -232,14 +232,19 @@
   </section>
 
   <section class="stack gap-2">
-    <h2 class="text-lg font-semibold">Einen Stapel gerade nicht lernen</h2>
+    <h2 class="text-lg font-semibold">Welche Stapel lerne ich?</h2>
     <p class="text-muted">
-      Ein Stapel ist für dieses Schuljahr fertig, oder du willst dich erst auf
-      einen anderen konzentrieren? Im Stapel unter <strong>⋯ → Gerade nicht
-      lernen</strong> pausierst du ihn. Dann kommt er nicht mehr auf
-      <strong>Heute</strong> und nicht in <strong>Los geht's</strong>. Sein
-      Lernstand bleibt, und auf der Stapelseite kannst du ihn jederzeit
-      trotzdem lernen. Mit <strong>Wieder lernen</strong> ist er zurück.
+      Auf <strong>Heute</strong> kommen nur Stapel mit <strong>lerne ich</strong>.
+      Ein neuer Stapel ist das gleich, ein geteilter, sobald du auf
+      <strong>Lernen</strong> tippst. Oben auf der Stapelseite siehst du, wie es
+      steht, und schaltest mit einem Tipp um: <strong>Pausieren</strong>, wenn
+      ein Stapel fertig ist oder du dich auf einen anderen konzentrieren willst,
+      <strong>Wieder lernen</strong>, wenn er zurück soll. Eigene Stapel, die du
+      noch nie gelernt hast, stehen unter <strong>Weitere Stapel</strong> und
+      kommen mit <strong>Lernen</strong> dazu. Der Lernstand bleibt immer.
+      <strong>Nur diesen Stapel lernen</strong> gibt es bei „lerne ich“;
+      <strong>Üben</strong> (z. B. Für den Test üben) geht mit jedem Stapel,
+      ohne etwas zu verändern.
     </p>
   </section>
 

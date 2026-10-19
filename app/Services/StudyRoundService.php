@@ -68,9 +68,8 @@ class StudyRoundService
         $run = $runId !== null && $runId !== ''
             ? $this->runs->getOwned($user, $deck->id, $runId)
             : ($this->runs->listOwned($user, $deck)->first() ?? $this->runs->forStandard($user, $deck));
-        if (! $deck->isOwnedBy($user)) {
-            $this->decks->startFollowing($user, $deck);
-        }
+        // "Lernen" with the boxes means "Lerne ich" (practising does not).
+        $this->decks->startLearning($user, $deck);
 
         $limit = $this->leitner->roundSize($user);
         $due = $this->dueQuery($user)

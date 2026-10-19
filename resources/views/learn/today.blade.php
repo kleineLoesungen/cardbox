@@ -1,4 +1,4 @@
-{{-- "Heute" — start page: daily goal, what is due, the streak, the vocabulary, "Meine Stapel". --}}
+{{-- "Heute" — start page: daily goal, what is due, the streak, the vocabulary, the decks marked "Lerne ich". --}}
 @extends('layouts.app')
 @section('title', 'Heute')
 
@@ -13,10 +13,10 @@
     </p>
   @endif
 
-  @if ($decks->isEmpty() && $pausedCount > 0)
+  @if ($hasOtherDecks)
     <div class="empty mt-6">
-      <p class="empty-title">Alle deine Stapel sind pausiert</p>
-      <p class="empty-hint">Öffne einen Stapel und tippe auf „Wieder lernen“, dann kommt er wieder auf „Heute“.</p>
+      <p class="empty-title">Du lernst gerade keinen Stapel</p>
+      <p class="empty-hint">Öffne einen Stapel und tippe auf „Lernen“ oder „Wieder lernen“, dann kommt er hier jeden Tag dran.</p>
       <a href="/decks" class="btn btn-primary btn-lg">Zu meinen Stapeln</a>
     </div>
   @elseif ($decks->isEmpty())
@@ -122,7 +122,7 @@
     @endif
 
     <div class="mt-6 mb-2 flex items-center justify-between">
-      <h2 class="text-base font-semibold">Meine Stapel</h2>
+      <h2 class="text-base font-semibold">Lerne ich</h2>
       <a href="/decks" class="text-sm text-brand hover:underline">Alle</a>
     </div>
     <ul class="list">
@@ -130,12 +130,6 @@
         <x-deck-row :deck="$deck" :stats="$stats[$deck->id] ?? null" />
       @endforeach
     </ul>
-    @if ($pausedCount > 0)
-      <p class="mt-3 text-center text-sm text-muted">
-        <a href="/decks" class="text-brand hover:underline">{{ $pausedCount === 1 ? '1 Stapel ist pausiert' : $pausedCount.' Stapel sind pausiert' }}</a>
-        und {{ $pausedCount === 1 ? 'kommt' : 'kommen' }} hier nicht dran.
-      </p>
-    @endif
   @endif
 </div>
 @endsection

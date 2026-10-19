@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Per person and deck: "Auch rückwärts lernen" (docs/specs/einfacher-lernen.md),
- * "Antworten eintippen" (docs/specs/schreiben-und-erinnern.md) and "Gerade
- * nicht lernen" (docs/specs/aktive-stapel-und-freie-karten.md).
+ * "Antworten eintippen" (docs/specs/schreiben-und-erinnern.md) and "Lerne
+ * ich" / "pausiert" (docs/specs/aktive-stapel-und-freie-karten.md).
  * Only for decks the person learns: own ones and followed shared ones.
  */
 class DeckPreferenceService
@@ -36,22 +36,39 @@ class DeckPreferenceService
             ->exists();
     }
 
-    /** "Gerade nicht lernen": the deck stays out of "Heute" (issue #15). */
-    public function paused(User $user, Deck $deck): bool
+    /**
+     * "Lerne ich" (active), "pausiert" (paused) or nothing (idle: an own deck
+     * not learned right now), docs/specs/aktive-stapel-und-freie-karten.md, A.
+     *
+     * @return 'active'|'paused'|'idle'
+     */
+    public function learningState(User $user, Deck $deck): string
     {
-        return DB::table('deck_preferences')
-            ->where('user_id', $user->id)
-            ->where('deck_id', $deck->id)
-            ->where('paused', true)
-            ->exists();
+        $pref = DB::table('deck_preferences')->where('user_id', $user->id)->where('deck_id', $deck->id)->first(['paused', 'learning']);
+
+        return match (true) {
+            $pref !== null && $pref->paused => 'paused',
+            $pref !== null && ! $pref->learning => 'idle',
+            default => 'active',
+        };
     }
 
     /**
+     * "Lernen" / "Wieder lernen" (true) or "Pausieren" (false). Own and
+     * followed decks only; a shared deck of somebody else is started with
+     * "Lernen" (DeckService::follow).
+     *
      * @throws ModelNotFoundException<Deck>
      */
-    public function setPaused(User $user, string $deckId, bool $on): Deck
+    public function setLearning(User $user, string $deckId, bool $learning): Deck
     {
-        return $this->set($user, $deckId, 'paused', $on);
+        $deck = $this->decks->getVisible($user, $deckId);
+        if (! $deck->isOwnedBy($user) && ! $this->decks->isFollowing($user, $deck)) {
+            throw (new ModelNotFoundException)->setModel(Deck::class, [$deckId]);
+        }
+        $this->decks->setLearningState($user, $deck, $learning);
+
+        return $deck;
     }
 
     /**
@@ -73,7 +90,7 @@ class DeckPreferenceService
     /**
      * One switch of a deck the person learns: own or followed; others are 404.
      *
-     * @param  'with_reverse'|'type_answers'|'paused'  $column
+     * @param  'with_reverse'|'type_answers'  $column
      *
      * @throws ModelNotFoundException<Deck>
      */

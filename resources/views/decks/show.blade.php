@@ -29,9 +29,6 @@
           @endif
         @else
           von {{ $deck->user->name }}
-          @if ($isFollowing)
-            · <span class="badge badge-success">lernst du</span>
-          @endif
         @endif
       </p>
       @if ($deck->description)
@@ -45,14 +42,30 @@
 
   <x-form-error />
 
-  @if ($paused)
-    <div class="alert alert-warning mb-4 flex flex-wrap items-center justify-between gap-3" role="status">
-      <span class="min-w-0">Pausiert: Dieser Stapel kommt nicht auf „Heute“.</span>
-      <form method="post" action="/decks/{{ $deck->id }}/pause" class="shrink-0">
-        @csrf
-        <input type="hidden" name="on" value="0">
-        <button type="submit" class="btn btn-secondary btn-sm">Wieder lernen</button>
-      </form>
+  {{--
+    "Lerne ich", "pausiert" or neither, switched right here (no menu):
+    only "Lerne ich" decks are on "Heute" (docs/specs/aktive-stapel-und-freie-karten.md, A).
+  --}}
+  @if ($learningState !== null)
+    <div class="card mb-4">
+      <div class="card-body flex items-center gap-3">
+        <p class="min-w-0 flex-1 text-sm">
+          @if ($learningState === 'active')
+            <span class="badge badge-success">lerne ich</span>
+            <span class="text-muted">Kommt jeden Tag unter <a href="/learn" class="font-medium text-brand hover:underline">Heute</a> dran.</span>
+          @elseif ($learningState === 'paused')
+            <span class="badge badge-warning">pausiert</span>
+            <span class="text-muted">Kommt gerade nicht unter „Heute“.</span>
+          @else
+            <span class="text-muted">Du lernst diesen Stapel gerade nicht.</span>
+          @endif
+        </p>
+        <form method="post" action="/decks/{{ $deck->id }}/learning" class="shrink-0">
+          @csrf
+          <input type="hidden" name="on" value="{{ $learningState === 'active' ? '0' : '1' }}">
+          <button type="submit" @class(['btn', 'btn-ghost btn-sm' => $learningState === 'active', 'btn-primary' => $learningState !== 'active'])>{{ match ($learningState) { 'active' => 'Pausieren', 'paused' => 'Wieder lernen', default => 'Lernen' } }}</button>
+        </form>
+      </div>
     </div>
   @endif
 
@@ -171,20 +184,6 @@
             <span class="block text-xs font-normal text-muted">Statt umzudrehen schreibst du die Antwort.</span>
           </span>
           <span class="badge {{ $typeAnswers ? 'badge-success' : 'badge-neutral' }} shrink-0">{{ $typeAnswers ? 'an' : 'aus' }}</span>
-        </button>
-      </form>
-    @endif
-    @if ($isOwner || $isFollowing)
-      {{-- Per person and deck (docs/specs/aktive-stapel-und-freie-karten.md, A). --}}
-      <form method="post" action="/decks/{{ $deck->id }}/pause">
-        @csrf
-        <input type="hidden" name="on" value="{{ $paused ? '0' : '1' }}">
-        <button type="submit" class="sheet-action flex items-center justify-between gap-3">
-          <span class="min-w-0">
-            Gerade nicht lernen
-            <span class="block text-xs font-normal text-muted">Der Stapel kommt nicht auf „Heute“. Hier kannst du ihn trotzdem lernen.</span>
-          </span>
-          <span class="badge {{ $paused ? 'badge-warning' : 'badge-neutral' }} shrink-0">{{ $paused ? 'pausiert' : 'aus' }}</span>
         </button>
       </form>
     @endif

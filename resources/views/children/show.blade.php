@@ -118,9 +118,6 @@
         @endforeach
       </ul>
     @endif
-    @if ($overview['paused'] > 0)
-      <p class="mt-2 text-sm text-muted">{{ $overview['paused'] === 1 ? '1 Stapel ist gerade pausiert und fehlt hier.' : $overview['paused'].' Stapel sind gerade pausiert und fehlen hier.' }}</p>
-    @endif
 
     {{-- --- Tricky words ------------------------------------------------------ --}}
     @if ($overview['learned_ever'] && $overview['hard'] !== [])

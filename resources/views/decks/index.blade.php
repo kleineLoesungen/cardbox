@@ -1,4 +1,4 @@
-{{-- "Stapel": own and followed decks, or shared decks of others to discover. --}}
+{{-- "Stapel": own and learned decks (grouped by "Lerne ich", "Pausiert", the rest), or shared decks of others to discover. --}}
 @extends('layouts.app')
 @section('title', 'Stapel')
 
@@ -74,8 +74,10 @@
                   @endif
                 </span>
               </span>
-              @if ($deck->followed_by_me)
-                <span class="badge badge-success shrink-0">lernst du</span>
+              @if (($states[$deck->id] ?? null) === 'paused')
+                <span class="badge badge-warning shrink-0">pausiert</span>
+              @elseif ($deck->followed_by_me)
+                <span class="badge badge-success shrink-0">lerne ich</span>
               @endif
               <span aria-hidden="true" class="text-subtle">›</span>
             </a>
@@ -98,11 +100,18 @@
         <a href="/decks?tab=discover" class="btn btn-secondary">Geteilte Stapel entdecken</a>
       </div>
     @else
-      <ul class="list">
-        @foreach ($decks as $deck)
-          <x-deck-row :deck="$deck" :paused="in_array($deck->id, $pausedIds, true)" />
-        @endforeach
-      </ul>
+      {{-- "Lerne ich", "Pausiert" and the rest as separate lists (docs/specs/aktive-stapel-und-freie-karten.md, A). --}}
+      @foreach (['active' => 'Lerne ich', 'paused' => 'Pausiert', 'idle' => 'Weitere Stapel'] as $state => $heading)
+        @php($group = $decks->filter(fn ($d) => ($states[$d->id] ?? 'active') === $state))
+        @if ($group->isNotEmpty())
+          <h2 class="mt-6 mb-2 text-base font-semibold first:mt-0">{{ $heading }} <span class="font-normal text-muted">({{ $group->count() }})</span></h2>
+          <ul class="list">
+            @foreach ($group as $deck)
+              <x-deck-row :deck="$deck" :state="$state" />
+            @endforeach
+          </ul>
+        @endif
+      @endforeach
     @endif
   @endif
 </div>

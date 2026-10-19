@@ -31,8 +31,8 @@ class LearnController extends Controller
             'week' => $this->leitner->recentDays($user),
             'decks' => $decks,
             'stats' => $stats,
-            // Paused decks are not on "Heute"; a link says how many (issue #15).
-            'pausedCount' => count($this->decks->pausedIds($user)),
+            // Decks exist, but none is "Lerne ich": a hint instead of the first-deck start.
+            'hasOtherDecks' => $decks->isEmpty() && $this->decks->mineQuery($user)->exists(),
         ]);
     }
 }

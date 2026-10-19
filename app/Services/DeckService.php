@@ -85,8 +85,10 @@ class DeckService
     }
 
     /**
-     * The decks "Heute" learns from: "Meine Stapel" without the ones the
-     * person paused with "Gerade nicht lernen" (issue #15).
+     * The decks "Heute" learns from ("Lerne ich"): "Meine Stapel" without the
+     * paused ones and without own decks the person does not learn right now
+     * (docs/specs/aktive-stapel-und-freie-karten.md, A). No preference row
+     * means "lerne ich" — new and followed decks start there.
      *
      * @return Builder<Deck>
      */
@@ -96,7 +98,7 @@ class DeckService
             ->from('deck_preferences')
             ->whereColumn('deck_preferences.deck_id', 'decks.id')
             ->where('deck_preferences.user_id', $user->id)
-            ->where('deck_preferences.paused', true));
+            ->where(fn ($q) => $q->where('deck_preferences.paused', true)->orWhere('deck_preferences.learning', false)));
     }
 
     /**
@@ -110,17 +112,48 @@ class DeckService
     }
 
     /**
-     * Ids of the person's paused decks among "Meine Stapel".
+     * "Lerne ich", "pausiert" or nothing (an own deck not learned right now)
+     * for each of "Meine Stapel", by deck id.
      *
-     * @return list<string>
+     * @return array<string, 'active'|'paused'|'idle'>
      */
-    public function pausedIds(User $user): array
+    public function learningStates(User $user): array
     {
-        return $this->mineQuery($user)
-            ->whereIn('id', DB::table('deck_preferences')->where('user_id', $user->id)->where('paused', true)->select('deck_id'))
-            ->pluck('id')
-            ->map(fn ($id) => (string) $id)
-            ->all();
+        $prefs = DB::table('deck_preferences')->where('user_id', $user->id)->get(['deck_id', 'paused', 'learning'])->keyBy('deck_id');
+
+        $states = [];
+        foreach ($this->mineQuery($user)->pluck('id') as $id) {
+            $pref = $prefs->get($id);
+            $states[(string) $id] = match (true) {
+                $pref !== null && $pref->paused => 'paused',
+                $pref !== null && ! $pref->learning => 'idle',
+                default => 'active',
+            };
+        }
+
+        return $states;
+    }
+
+    /**
+     * "Lernen": the deck goes on "Heute". A shared deck of somebody else is
+     * followed first (there is no following without learning).
+     */
+    public function startLearning(User $user, Deck $deck): void
+    {
+        if (! $deck->isOwnedBy($user)) {
+            $user->followedDecks()->syncWithoutDetaching([$deck->id]);
+        }
+        $this->setLearningState($user, $deck, true);
+    }
+
+    /** "Pausieren" (false) or back to "Lerne ich" (true). */
+    public function setLearningState(User $user, Deck $deck, bool $learning): void
+    {
+        DB::table('deck_preferences')->upsert(
+            [['user_id' => $user->id, 'deck_id' => $deck->id, 'learning' => true, 'paused' => ! $learning, 'created_at' => now(), 'updated_at' => now()]],
+            ['user_id', 'deck_id'],
+            ['learning', 'paused', 'updated_at'],
+        );
     }
 
     /**
@@ -303,7 +336,8 @@ class DeckService
     // -------------------------------------------------------------------------
 
     /**
-     * Follow a shared deck of somebody else. Following twice changes nothing.
+     * "Lernen" on a shared deck of somebody else: follow it and make it
+     * "Lerne ich" (a pause ends).
      *
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck>
@@ -316,21 +350,9 @@ class DeckService
             throw ValidationException::withMessages(['deck' => 'Deinen eigenen Stapel lernst du schon.']);
         }
 
-        $this->startFollowing($user, $deck);
+        $this->startLearning($user, $deck);
 
         return $deck;
-    }
-
-    /**
-     * Follows a deck. Following anew makes it active again: a pause from an
-     * earlier time of following must not hide it from "Heute" (issue #15).
-     */
-    public function startFollowing(User $user, Deck $deck): void
-    {
-        $changes = $user->followedDecks()->syncWithoutDetaching([$deck->id]);
-        if ($changes['attached'] !== []) {
-            DB::table('deck_preferences')->where('user_id', $user->id)->where('deck_id', $deck->id)->update(['paused' => false]);
-        }
     }
 
     /**
@@ -431,7 +453,7 @@ class DeckService
             }
 
             // The person's switches go along ("Auch rückwärts lernen", "Antworten eintippen"),
-            // or backward progress would be hidden. Not "Gerade nicht lernen": a copy starts active.
+            // or backward progress would be hidden. Not "pausiert": a copy starts as "Lerne ich".
             DB::table('deck_preferences')->insertUsing(
                 ['user_id', 'deck_id', 'with_reverse', 'type_answers', 'created_at', 'updated_at'],
                 DB::table('deck_preferences')
@@ -531,7 +553,10 @@ class DeckService
                 $deck->forceFill(['user_id' => $to->id])->save();
             }
             $to->followedDecks()->detach($deckIds);
-            $from->followedDecks()->syncWithoutDetaching($decks->where('is_shared', true)->modelKeys());
+            $shared = $decks->where('is_shared', true)->modelKeys();
+            $from->followedDecks()->syncWithoutDetaching($shared);
+            // A deck one learns from somebody else is "Lerne ich" or "pausiert", never without either.
+            DB::table('deck_preferences')->where('user_id', $from->id)->whereIn('deck_id', $shared)->update(['learning' => true]);
 
             return ['to' => $to, 'decks' => $decks];
         });

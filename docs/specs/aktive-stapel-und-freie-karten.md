@@ -1,16 +1,27 @@
-# Stapel pausieren und Karten ohne Sprache
+# „Lerne ich“, pausiert und Karten ohne Sprache
 
-Status: **umgesetzt** (19.10.2026)
+Status: **umgesetzt** (19.10.2026), überarbeitet am selben Tag
 
 Aus den Issues #15 (Aktive Lernstapel) und #14 (Generische Karten).
-Entscheidungen (Rückfragen vom 19.10.2026):
 
-- **Pausiert wird über einen Schalter im Stapel.** Er steht im ⋯-Menü, wie
-  „Antworten eintippen“. Neue und gefolgte Stapel sind automatisch aktiv.
-- **Pausiert heißt nur: nicht auf „Heute“.** Auf der Stapelseite bleibt der
-  Stapel lern- und übbar.
-- **Karten ohne Sprache heißen fest „Vorderseite → Rückseite“.**
-- **Sie werden eingetippt wie Sprachen geprüft**, aber nicht vorgelesen.
+Entscheidungen (Rückfragen vom 19.10.2026, zweite Runde: „Das System muss
+einfach sein“):
+
+- **Drei Zustände je Person und Stapel:** **„Lerne ich“**, **„pausiert“** und
+  ohne Kennzeichen. Nur „Lerne ich“ kommt auf „Heute“ und in die
+  Eltern-Ansicht.
+- **Umschalten direkt auf der Stapelseite**, ohne Menü.
+- **Neu angelegte eigene Stapel sind gleich „Lerne ich“.**
+- **Es gibt kein Folgen, nur Lernen:** „Lernen“ auf einem geteilten Stapel
+  macht ihn zu „Lerne ich“.
+- **Lernen und Üben:** Lernen mit dem Karteikasten heißt „Lerne ich“. Üben
+  („Für den Test üben“, „Knifflige Wörter üben“, „Fach üben“) ändert den
+  Zustand nicht.
+- **„Heute“** zeigt nur „Lerne ich“. **„Stapel“** zeigt weiter „Meine“ und
+  „Entdecken“ mit passenden Kennzeichen; „Meine“ getrennt nach „Lerne ich“,
+  „Pausiert“ und „Weitere Stapel“.
+- **Karten ohne Sprache heißen fest „Vorderseite → Rückseite“**, werden beim
+  Eintippen wie Sprachen geprüft und nicht vorgelesen.
 
 ## Nicht dabei
 
@@ -20,79 +31,106 @@ Entscheidungen (Rückfragen vom 19.10.2026):
 
 ---
 
-## A. Stapel pausieren (#15)
+## A. „Lerne ich“ und pausiert (#15)
 
-### Bedienung
+### Die drei Zustände
 
-- Im ⋯-Menü eigener und gefolgter Stapel steht der Schalter **„Gerade nicht
-  lernen“**. Daneben ist ein Kennzeichen „pausiert“ oder „aus“ zu sehen.
-- Darunter steht die Erklärung: „Der Stapel kommt nicht auf ‚Heute‘. Hier
-  kannst du ihn trotzdem lernen.“
-- Ist ein Stapel pausiert, zeigt die Stapelseite oben den Hinweis
-  „Pausiert: Dieser Stapel kommt nicht auf ‚Heute‘.“ mit dem Knopf
-  **„Wieder lernen“**.
-- Unter „Stapel“ trägt ein pausierter Stapel das Kennzeichen **„pausiert“**.
-- Die Einstellung gilt **je Person**. Wer einen gefolgten Stapel pausiert,
-  ändert nichts für die Besitzerin.
-- Wer einem Stapel neu folgt (auch nach Entfolgen), hat ihn wieder aktiv.
-  Eine Kopie startet ebenfalls aktiv.
+| Zustand | Kennzeichen | Auf „Heute“ und bei den Eltern | Knopf auf der Stapelseite |
+|---|---|---|---|
+| Lerne ich | „lerne ich“ (grün) | ja | „Pausieren“ |
+| Pausiert | „pausiert“ | nein | „Wieder lernen“ |
+| Ohne Kennzeichen | – | nein | „Lernen“ |
 
-### Was ein pausierter Stapel nicht mehr tut
+- **Ohne Kennzeichen** sind nur eigene Stapel, die man noch nie gelernt hat:
+  nach dem Update die eigenen Stapel ohne Lernstand. Neue Stapel starten als
+  „Lerne ich“; wer einen nicht lernen will (z. B. eine Lehrkraft für die
+  Klasse), pausiert ihn. Geteilte Stapel anderer sind entweder „Lerne ich“
+  oder „pausiert“ (lernt man sie nicht mehr, verschwinden sie mit „Nicht mehr
+  lernen“ aus „Meine“); das gilt auch, wenn ein Admin einen geteilten Stapel
+  an jemand anderen überträgt und die bisherige Besitzerin ihn weiterlernt.
+- **Wörterbuch:** „lerne ich“ steht nur an Wörtern, die wirklich auf „Heute“
+  kommen. Bei pausierten oder nicht gelernten Stapeln steht „Lernen“; das
+  macht den Stapel zu „Lerne ich“.
+- Der Zustand gilt **je Person**. Pausiert jemand einen geteilten Stapel,
+  ändert das nichts für die Besitzerin.
 
-- Er erscheint nicht unter „Meine Stapel“ auf **„Heute“**. Darunter steht
-  stattdessen „1 Stapel ist pausiert und kommt hier nicht dran.“ mit einem
-  Link zu „Stapel“.
-- Er zählt nicht zu den wartenden Karten, nicht zu „Los geht's“ und nicht
-  zu „Noch N neue Karten“.
-- Für die **Erinnerung** gelten nur die Karten aktiver Stapel.
-- Bleibt in den aktiven Stapeln nichts zu tun, zählt der Tag als geschafft,
-  auch wenn ein pausierter Stapel noch fällige Karten hat. Das ist dieselbe
-  Regel wie bisher, nur ohne die pausierten Stapel. **Ohne einen einzigen
-  aktiven Stapel gilt das nicht**: Sonst könnte man alles pausieren und mit
-  einer Übungskarte jeden Tag grün machen.
-- In der **Eltern-Ansicht** fehlen der Stapel, seine kniffligen Wörter und
-  seine zuletzt gelernten Wörter. Ein Satz nennt, **wie viele** Stapel
-  pausiert sind (ohne Namen), damit nichts unbemerkt verschwindet.
+### Wie ein Stapel zu „Lerne ich“ wird
+
+- Er wird angelegt (auch als Kopie).
+- „Lernen“ auf einem geteilten Stapel, auch im Wörterbuch.
+- „Lernen“ oder „Wieder lernen“ auf der Stapelseite.
+- Eine Lernrunde mit dem Karteikasten („Nur diesen Stapel lernen“). Den
+  Knopf gibt es nur bei „Lerne ich“; die Regel greift auch für Wege von
+  außerhalb.
+- **Üben** ändert nichts.
+
+### Stapelseite
+
+- Ein Kasten über dem Lernbereich zeigt den Zustand und den einen Knopf
+  dazu (Tabelle oben).
+- „Nur diesen Stapel lernen“ gibt es nur bei „Lerne ich“. Üben geht immer.
+- Der Schalter im ⋯-Menü entfällt.
+
+### Stapelliste und Heute
+
+- **Stapel → Meine:** Abschnitte **„Lerne ich (N)“**, **„Pausiert (N)“** und
+  **„Weitere Stapel (N)“**, jeweils nur, wenn es welche gibt. Pausierte tragen
+  zusätzlich das Kennzeichen „pausiert“.
+- **Stapel → Entdecken:** „lerne ich“ oder „pausiert“ bei Stapeln, die man
+  lernt.
+- **Heute:** die Liste heißt „Lerne ich“. Ist kein Stapel „Lerne ich“, aber
+  es gibt welche: „Du lernst gerade keinen Stapel“ mit „Zu meinen Stapeln“.
+- Auch das Kennzeichen im Wörterbuch heißt jetzt „lerne ich“.
+
+### Was nur für „Lerne ich“ gilt
+
+- „Heute“: wartende Karten, „Los geht's“, „Noch N neue Karten“.
+- Die **Erinnerung**.
+- Bleibt in den „Lerne ich“-Stapeln nichts zu tun, zählt der Tag als
+  geschafft. **Ohne einen einzigen „Lerne ich“-Stapel gilt das nicht.**
+- **Eltern-Ansicht:** Stapel, knifflige Wörter, zuletzt gelernte Wörter.
+  Andere Stapel werden dort weder gelistet noch gezählt.
 
 ### Was bleibt
 
-- Der Lernstand bleibt erhalten. Fällige Karten warten, bis der Stapel
-  wieder aktiv ist.
-- Auf der Stapelseite funktionieren „Nur diesen Stapel lernen“, „Für den Test
-  üben“ und „Knifflige Wörter üben“ weiter. Antworten dort zählen auch fürs
-  Tagesziel, denn gelernt ist gelernt.
-- Der **Wortschatz** („Du kannst schon N Wörter“) zählt weiter alle Stapel,
-  weil gelernte Wörter beim Pausieren nicht vergessen werden.
-- Sind alle Stapel pausiert, zeigt „Heute“ den Text „Alle deine Stapel sind
-  pausiert“ und den Knopf „Zu meinen Stapeln“.
+- Der Lernstand bleibt in jedem Zustand erhalten.
+- Antworten beim Üben zählen fürs Tagesziel, egal in welchem Zustand.
+- Der **Wortschatz** („Du kannst schon N Wörter“) zählt alle Stapel.
 
 ### Berechtigungen
 
-`POST /decks/{deck}/pause` gehört in die Gruppe `auth`. Die Route gilt nur
-für eigene und gefolgte Stapel, alle anderen ergeben 404. Das prüft
-`DeckPreferenceService::set`, wie bei den übrigen Schaltern.
+`POST /decks/{deck}/learning` (`on=1` Lernen, `on=0` Pausieren) liegt in der
+Gruppe `auth`. Die Route gilt nur für eigene und gelernte Stapel, sonst 404
+(`DeckPreferenceService::setLearning`). Geteilte Stapel anderer starten mit
+`POST /decks/{deck}/follow` („Lernen“).
 
 ### Datenmodell
 
-Migration `2026_10_19_000000_add_paused_to_deck_preferences.php`: Die Tabelle
-`deck_preferences` bekommt die Spalte `paused` (boolean, Vorgabe `false`).
+- Migration `2026_10_19_000000_add_paused_to_deck_preferences.php`:
+  `deck_preferences.paused` (boolean, Vorgabe `false`).
+- Migration `2026_10_19_100000_add_learning_to_deck_preferences.php`:
+  `deck_preferences.learning` (boolean, **Vorgabe `true`**). Ohne Zeile gilt
+  „Lerne ich“; so sind neue und gelernte Stapel ohne weiteres dabei.
+- Die Migration setzt eigene Stapel, in denen die Besitzerin **keinen
+  Lernstand** hat, auf „ohne Kennzeichen“. Eigene Stapel mit Karten in den
+  Fächern und gelernte geteilte Stapel bleiben „Lerne ich“, pausierte bleiben
+  pausiert.
 
 ### Betroffene Stellen
 
 - **Services:**
-  - `DeckService`: `activeQuery` und `active` (die Stapel für „Heute“) sowie
-    `pausedIds`.
-  - `DeckPreferenceService`: `paused` und `setPaused`.
-  - `LearningOverviewService`: `today`, `myDecksWithStats`, `hardWords` und
-    `recentlyMastered` nehmen nur aktive Stapel. `vocabulary` nimmt weiter
-    alle.
-  - `StudyRoundService`: `startToday` und `finish` nehmen nur aktive Stapel.
-- **Controller:** `DeckController::pause`, `LearnController` (`pausedCount`).
-- **Ansichten:**
-  - Stapelseite: Schalter und Hinweis.
-  - `deck-row`: Kennzeichen „pausiert“.
-  - „Heute“: Link auf die pausierten Stapel und Leerzustand.
-  - Hilfe.
+  - `DeckService`: `activeQuery` und `active` (nur „Lerne ich“),
+    `learningStates`, `startLearning`, `setLearningState`; `follow` nutzt
+    `startLearning`.
+  - `DeckPreferenceService`: `learningState`, `setLearning`.
+  - `LearningOverviewService`: `today`, `myDecksWithStats`, `hardWords`,
+    `recentlyMastered` nur „Lerne ich“; `vocabulary` alle.
+  - `StudyRoundService`: `startToday` und `finish` nur „Lerne ich“;
+    `startForDeck` macht den Stapel zu „Lerne ich“.
+- **Controller:** `DeckController::learning`, `index` (`states`), `show`
+  (`learningState`); `LearnController` (`hasOtherDecks`).
+- **Ansichten:** Stapelseite (Zustandskasten), Lernbereich, Stapelliste
+  (Abschnitte, Kennzeichen), „Heute“, Eltern-Ansicht, Wörterbuch, Hilfe.
 
 ## B. Vorderseite und Rückseite (#14)
 
@@ -114,15 +152,17 @@ Migration `2026_10_19_000000_add_paused_to_deck_preferences.php`: Die Tabelle
 
 `tests/Feature/ActiveDecksAndFreeCardsTest.php`:
 
-- **Pausieren:**
-  - Ein pausierter Stapel fehlt auf „Heute“ und in „Los geht's“, bleibt aber
-    auf der Stapelseite lernbar und hat in der Liste das Kennzeichen.
-  - Er lässt sich wieder aktivieren.
-  - „Heute“ zeigt einen eigenen Leerzustand, wenn alle Stapel pausiert sind.
-  - Ein leerer aktiver Rest gilt als geschafft.
-  - Die Eltern-Ansicht lässt pausierte Stapel weg.
-  - Fremde Stapel ergeben 404.
-  - Das Pausieren gilt nur für die eigene Person.
-- **Vorderseite und Rückseite:**
-  - Anlegen, Beschriftung, kein Vorlesen.
-  - Eintippen wird tolerant geprüft.
+- **Zustände:**
+  - Pausieren direkt auf der Stapelseite: weg von „Heute“ und „Los geht's“,
+    Üben bleibt, Abschnitte in der Stapelliste, wieder lernen.
+  - Ohne Kennzeichen: nicht auf „Heute“, „Lernen“ holt den Stapel dorthin.
+  - Neue eigene Stapel sind „Lerne ich“.
+  - Geteilte Stapel: „Lernen“ statt Folgen, Kennzeichen unter „Entdecken“,
+    nach „Nicht mehr lernen“ und erneutem „Lernen“ wieder dabei.
+  - Lernen mit dem Karteikasten macht „Lerne ich“, Üben nicht.
+  - Tag geschafft nur mit „Lerne ich“-Stapeln.
+  - Eltern sehen nur „Lerne ich“.
+  - Fremde Stapel ergeben 404; der Zustand gilt je Person.
+  - Die Migration setzt die Zustände wie beschrieben.
+- **Vorderseite und Rückseite:** Anlegen, Beschriftung, kein Vorlesen,
+  CSV, tolerantes Eintippen.

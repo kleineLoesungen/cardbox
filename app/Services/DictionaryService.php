@@ -85,15 +85,16 @@ class DictionaryService
         ], array_values($groups));
 
         $hits = array_slice($hits, 0, $limit);
-        $followed = $user->followedDecks()->pluck('decks.id')->all();
+        // "lerne ich" only where the card really comes up on "Heute": deck "Lerne ich" and card selected.
+        $states = $this->decks->learningStates($user);
         $active = [];
         foreach ($hits as $i => $hit) {
             $deck = $hit['card']->deck;
-            $learns = $deck->user_id === $user->id || in_array($deck->id, $followed, true);
+            $learns = isset($states[$deck->id]);
             $active[$deck->id] ??= $learns ? $this->selection->activeIds($user, $deck) : [];
             $hits[$i]['learn'] = match (true) {
                 ! $learns => 'follow',
-                $active[$deck->id] === null || in_array($hit['card']->id, $active[$deck->id], true) => 'active',
+                $states[$deck->id] === 'active' && ($active[$deck->id] === null || in_array($hit['card']->id, $active[$deck->id], true)) => 'active',
                 default => 'paused',
             };
         }

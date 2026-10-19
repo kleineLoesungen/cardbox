@@ -127,7 +127,7 @@ it('folgt im Wörterbuch dem Stapel und lernt erst einmal nur diese Karte', func
     [$deck, $cards] = book(3);
 
     $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+2')->assertSee('Lernen')->assertSee('lernst du erst einmal nur dieses Wort');
-    $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[1]->id}")->assertOk()->assertSee('lernst du');
+    $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[1]->id}")->assertOk()->assertSee('lerne ich');
 
     expect($ich->followedDecks()->pluck('decks.id')->all())->toBe([$deck->id])
         ->and(startDeckRound($deck))->toBe([$cards[1]->id]);
@@ -135,7 +135,7 @@ it('folgt im Wörterbuch dem Stapel und lernt erst einmal nur diese Karte', func
     // A paused card of a followed deck: "Lernen" adds it, without the hint about following.
     $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('Lernen')->assertDontSee('erst einmal nur dieses Wort');
     $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[2]->id}");
-    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('lernst du');
+    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+3')->assertSee('lerne ich');
     expect(startDeckRound($deck))->toBe([$cards[1]->id, $cards[2]->id]);
 });
 
@@ -144,7 +144,7 @@ it('ändert im Wörterbuch nichts an einem Stapel, den man ganz lernt', function
     [$deck, $cards] = book(2);
     $ich->followedDecks()->attach($deck);
 
-    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+1')->assertSee('lernst du')->assertDontSee('erst einmal nur dieses Wort');
+    $this->withHeaders(['HX-Request' => 'true'])->get('/dictionary/search?q=wort+1')->assertSee('lerne ich')->assertDontSee('erst einmal nur dieses Wort');
     $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$cards[0]->id}")->assertOk();
 
     expect(startDeckRound($deck))->toHaveCount(2);

@@ -50,7 +50,8 @@ class DeckController extends Controller
             'decks' => $tab === 'mine'
                 ? $this->decks->mine($user, $search)
                 : $this->decks->discover($user, $search, $language),
-            'pausedIds' => $tab === 'mine' ? $this->decks->pausedIds($user) : [],
+            // "Lerne ich", "pausiert" or neither, for sections and badges.
+            'states' => $this->decks->learningStates($user),
         ]);
     }
 
@@ -102,13 +103,12 @@ class DeckController extends Controller
             'run' => $run,
             'withReverse' => $withReverse,
             'typeAnswers' => $this->preferences->typeAnswers($user, $model),
-            'paused' => ($isOwner || $isFollowing) && $this->preferences->paused($user, $model),
+            'learningState' => $isOwner || $isFollowing ? $this->preferences->learningState($user, $model) : null,
             // Cards often answered wrong (runden-und-knifflige-woerter.md, B).
             'hardIds' => $isOwner || $isFollowing ? $this->overview->hardCardIds($user, $model) : [],
             // Only needed when there is something to learn.
             'activeIds' => $activeIds,
             'boxes' => $boxes,
-            'learns' => $isOwner || $isFollowing,
             'learnable' => $learnable,
             'cards' => $cards,
             'isOwner' => $isOwner,
@@ -173,15 +173,15 @@ class DeckController extends Controller
         ]);
     }
 
-    /** "Gerade nicht lernen" on or off, for the viewer and this deck (issue #15). */
-    public function pause(Request $request, string $deck): RedirectResponse
+    /** "Lernen" / "Wieder lernen" (on) or "Pausieren" (off) for the viewer and this deck. */
+    public function learning(Request $request, string $deck): RedirectResponse
     {
         $on = $request->boolean('on');
-        $this->preferences->setPaused($request->user(), $deck, $on);
+        $this->preferences->setLearning($request->user(), $deck, $on);
 
         return redirect("/decks/{$deck}")->with('toast', [
             'kind' => 'success',
-            'message' => $on ? 'Pausiert. Der Stapel kommt nicht mehr auf „Heute“.' : 'Der Stapel ist wieder auf „Heute“ dabei.',
+            'message' => $on ? 'Lerne ich: Der Stapel ist jetzt auf „Heute“ dabei.' : 'Pausiert. Der Stapel kommt nicht mehr auf „Heute“.',
         ]);
     }
 

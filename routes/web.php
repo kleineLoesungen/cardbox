@@ -147,8 +147,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/reverse', [DeckController::class, 'reverse']);
         // "Antworten eintippen", per person and deck.
         Route::post('/typing', [DeckController::class, 'typing']);
-        // "Gerade nicht lernen", per person and deck: stays out of "Heute" (issue #15).
-        Route::post('/pause', [DeckController::class, 'pause']);
+        // "Lerne ich" or "pausiert", per person and deck: only "Lerne ich" is on "Heute".
+        Route::post('/learning', [DeckController::class, 'learning']);
         // Deck runs: a deck learned with one plan. New runs start only with
         // the standard plan (StudyRoundService); here they are only reset.
         Route::post('/runs/{run}/reset', [DeckRunController::class, 'reset'])->whereUuid('run');
