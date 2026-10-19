@@ -6,7 +6,12 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {{--
+    viewport-fit=cover: only then does iOS report the home bar and the notch
+    as env(safe-area-inset-*), which keeps the tab bar and the buttons at the
+    bottom clear of the system's swipe areas (issue #19).
+  --}}
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>@yield('title') · {{ $branding->name }}</title>
 
   <link rel="stylesheet" href="/css/app.css">

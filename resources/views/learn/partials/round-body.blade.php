@@ -9,12 +9,13 @@
   @param list<string> $mastered  words that reached "Kann ich" in this round (end screen only)
   @param array{answers: int, goal: int, goal_met: bool}|null $day  today's daily goal (end screen only)
   @param array|null $checked   result of a typed answer, shown before the next card (StudyRoundService::answerTyped)
+  @param string $return  where ✕ and "Fertig" lead: "Heute" or the deck the round was started from
 --}}
 @php($practice = $round['mode'] === 'practice')
 {{-- "Für den Test üben": every card until known once, nothing saved. --}}
 @php($test = $round['mode'] === 'test')
-<div id="round" class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-3"
-     style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))">
+<div id="round" class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4"
+     style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + var(--safe-bottom))">
 
 @php($checked ??= null)
 @if ($checked)
@@ -32,7 +33,7 @@
   @php($markedText = implode(', ', array_column(array_filter($checked['parts'], fn ($p) => $p['diff']), 'text')))
   <div class="contents" id="round-step-{{ $round['step'] }}-result" data-result-screen>
     <div class="flex items-center gap-3">
-      <a href="/learn" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
+      <a href="{{ $return }}" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
       <div class="flex-1"></div>
     </div>
 
@@ -94,7 +95,7 @@
   @php($aLang = \App\Enums\Language::tryFrom($deck->back_language))
   <div class="contents" id="round-step-{{ $round['step'] }}" data-intro-screen>
     <div class="flex items-center gap-3">
-      <a href="/learn" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
+      <a href="{{ $return }}" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
       <div class="meter flex-1" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $round['total'] }}" aria-valuenow="{{ $position - 1 }}">
         <span style="width: {{ $round['total'] > 0 ? round(100 * ($position - 1) / $round['total']) : 0 }}%"></span>
       </div>
@@ -168,7 +169,7 @@
 
   {{-- Top: leave, progress --}}
   <div class="flex items-center gap-3">
-    <a href="/learn" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
+    <a href="{{ $return }}" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
     {{-- In a test round progress counts the cards known, as repeats never end there. --}}
     @php($done = $test ? $round['known'] : $position - 1)
     <div class="meter flex-1" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $round['total'] }}" aria-valuenow="{{ $test ? $done : $position }}">
@@ -331,10 +332,8 @@
         <button type="submit" class="btn btn-secondary btn-lg btn-block">Nochmal üben</button>
       </form>
     @endif
-    <a href="/learn" class="btn btn-primary btn-lg btn-block">Fertig</a>
-    @if ($round['deck'])
-      <a href="/decks/{{ $round['deck'] }}" class="btn btn-ghost btn-block">Zum Stapel</a>
-    @endif
+    {{-- Back to where the round was started: "Heute" or the deck (docs/specs/navigation.md). --}}
+    <a href="{{ $return }}" class="btn btn-primary btn-lg btn-block">Fertig</a>
   </div>
 @endif
 </div>

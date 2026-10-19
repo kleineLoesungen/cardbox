@@ -163,6 +163,12 @@ class GuardianService
             ->get();
     }
 
+    /** How many children the guardian sees. */
+    public function childCount(User $guardian): int
+    {
+        return DB::table('guardian_links')->where('guardian_id', $guardian->id)->count();
+    }
+
     /** For the menu: one cheap query. */
     public function hasChildren(User $guardian): bool
     {

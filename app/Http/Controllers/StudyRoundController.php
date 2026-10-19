@@ -7,6 +7,7 @@ use App\Services\StudyRoundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -19,6 +20,8 @@ use Illuminate\View\View;
 class StudyRoundController extends Controller
 {
     private const SESSION_KEY = 'study_round';
+
+    private const RETURN_KEY = 'study_round_return';
 
     public function __construct(private StudyRoundService $rounds, private LeitnerService $leitner) {}
 
@@ -45,6 +48,8 @@ class StudyRoundController extends Controller
         };
 
         $request->session()->put(self::SESSION_KEY, $round);
+        // ✕ and "Fertig" lead back to where the round was started (docs/specs/navigation.md).
+        $request->session()->put(self::RETURN_KEY, is_string($deck) && Str::isUuid($deck) ? "/decks/{$deck}" : '/learn');
 
         return redirect('/learn/round');
     }
@@ -146,6 +151,7 @@ class StudyRoundController extends Controller
             'mastered' => $current === null ? $this->rounds->masteredWords($user, $round) : [],
             'hard' => $current === null ? $this->rounds->hardWords($user, $round) : [],
             'day' => $current === null ? $this->leitner->dayStatus($user) : null,
+            'return' => (string) $request->session()->get(self::RETURN_KEY, '/learn'),
         ];
     }
 }

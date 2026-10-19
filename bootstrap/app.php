@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\LogoutInactiveUsers;
+use App\Http\Middleware\RememberSection;
 use App\Http\Middleware\RequireDeployToken;
 use App\Http\Middleware\RequireReminderToken;
 use App\Http\Middleware\RequireScope;
@@ -37,7 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Gesperrte Konten bei der naechsten Anfrage abmelden — an ALLEN Web-Routen.
         // Vor `auth` einsortiert, sonst liesse `auth` den gesperrten Benutzer noch durch.
-        $middleware->web(append: [LogoutInactiveUsers::class]);
+        $middleware->web(append: [LogoutInactiveUsers::class, RememberSection::class]);
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: LogoutInactiveUsers::class);
 
         // X-Forwarded-For nur mit TRUST_PROXY=true glauben.

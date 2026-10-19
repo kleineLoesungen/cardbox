@@ -15,11 +15,21 @@
 
   html { scroll-behavior: smooth; }
 
+  /*
+    Distance to the screen edge for things at the bottom (issue #19): the
+    home bar on iPhones (needs viewport-fit=cover, layouts/base), at least a
+    little room elsewhere, so a tap there is no system swipe.
+  */
+  :root { --safe-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem); }
+
   body {
     background-color: var(--ui-surface);
     color: var(--ui-content);
     font-family: var(--ui-font-sans);
     -webkit-font-smoothing: antialiased;
+    /* Landscape on phones with a notch: keep content out of it. */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   /* Ein einheitlicher, gut sichtbarer Fokusring fuer die Tastaturbedienung. */
@@ -171,7 +181,9 @@
   .tabbar {
     @apply fixed inset-x-0 bottom-0 z-40 flex border-t border-border
            bg-surface-raised/95 backdrop-blur;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: var(--safe-bottom);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   .tab {
@@ -189,7 +201,7 @@
   */
   .sticky-actions {
     @apply sticky z-20 border-t border-border bg-surface/95 py-3 backdrop-blur;
-    bottom: calc(3.25rem + 1px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(3.25rem + 1px + var(--safe-bottom));
     @variant lg { bottom: 0; }
   }
 
@@ -203,7 +215,9 @@
   .sheet {
     @apply fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-border
            bg-surface-raised shadow-lg;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
     animation: sheet-in 180ms ease-out;
   }
 
@@ -253,7 +267,7 @@
   .toast-region {
     @apply pointer-events-none fixed inset-x-0 z-50 flex flex-col
            items-center gap-2 px-4;
-    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(4.75rem + var(--safe-bottom));
 
     @media (width >= 64rem) { bottom: 1rem; }
   }
@@ -327,7 +341,9 @@
            bg-surface-raised p-0 text-content shadow-lg
            sm:mx-auto sm:mb-auto sm:max-w-md sm:rounded-2xl sm:border;
     max-height: 92dvh;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
   .dialog-sheet[open] { animation: sheet-in 180ms ease-out; }
   .dialog-sheet::backdrop { background: oklch(0 0 0 / 0.45); }
@@ -341,10 +357,11 @@
 
   /* --- Floating action button above the tab bar ------------------------ */
   .fab {
-    @apply fixed right-4 z-30 inline-flex h-14 items-center gap-2 rounded-full
+    @apply fixed z-30 inline-flex h-14 items-center gap-2 rounded-full
            bg-brand px-5 text-base font-semibold text-brand-content shadow-lg
            transition-transform active:scale-95;
-    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(4.75rem + var(--safe-bottom));
+    right: calc(1rem + env(safe-area-inset-right, 0px));
 
     @media (width >= 64rem) { bottom: 2rem; }
   }

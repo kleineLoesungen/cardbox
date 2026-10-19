@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.19.5
+- Zurück einheitlich: Eine Stapelseite führt dorthin zurück, woher man kam („← Heute“, „← Stapel“, „← Wörterbuch“), und die untere Leiste markiert diesen Bereich. Eine Lernrunde endet mit ✕ oder „Fertig“ dort, wo sie gestartet wurde
+- iPhone: Untere Leiste, „Neuer Stapel“ und die Knöpfe der Lernrunde halten Abstand zur Wischleiste am unteren Rand; im Querformat auch zur Notch (Issue #19)
+
 ## 2026.10.19.4
 - Einfacher: Jeder Stapel ist „lerne ich“, „pausiert“ oder keins von beiden. Nur „lerne ich“ kommt auf Heute, in „Los geht's“, in die Erinnerung und in die Eltern-Ansicht. Umgeschaltet wird direkt oben auf der Stapelseite („Pausieren“, „Wieder lernen“, „Lernen“), nicht mehr im Menü
 - Neue Stapel und geteilte Stapel nach „Lernen“ sind gleich „lerne ich“. Üben (Für den Test üben, Knifflige Wörter, Fach üben) ändert nichts

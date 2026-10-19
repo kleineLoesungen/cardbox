@@ -354,6 +354,13 @@ Was auf schmalen Bildschirmen regelmäßig schiefgeht:
   ergänzen. Die Komponente erscheint in der Kopfzeile (breit) und im Blatt hinter
   „Mehr" (schmal). Die untere Leiste auf dem Telefon ist eine handverlesene
   Abkürzung in `layouts/app.blade.php` und bleibt bewusst separat.
+  Jeder Menüpunkt ist ein **Bereich** und gehört zusätzlich in
+  `App\Support\Navigation::SECTIONS` – davon hängen Markierung und „Zurück“
+  ab ([navigation.md](docs/specs/navigation.md)). Unterseiten eines Bereichs
+  bekommen `<x-back-link default="…" />`, Seiten unter einer Seite einen
+  festen Link zu dieser.
+* **Unten am Rand** `var(--safe-bottom)` einrechnen (Wischleiste am iPhone),
+  nie nur `bottom-0`.
 * **Zeitstempel nur über `<x-datetime :value="…" />` / `<x-date :value="…" />`**
   ausgeben. `{{ $note->created_at->format(…) }}` direkt im Template liefert UTC
   statt Ortszeit — im Sommer zwei Stunden daneben.

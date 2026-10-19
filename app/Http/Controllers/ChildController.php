@@ -33,6 +33,8 @@ class ChildController extends Controller
 
         return view('children.show', [
             'child' => $child,
+            // With one child "Meine Kinder" opens this page directly, so there is nothing to go back to.
+            'backToList' => $this->guardians->childCount($request->user()) > 1,
             'overview' => $this->guardians->overview($child),
         ]);
     }

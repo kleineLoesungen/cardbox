@@ -20,7 +20,7 @@
 @php($user = auth()->user())
 <div class="flex min-h-dvh flex-col">
 
-  <header class="sticky top-0 z-30 border-b border-border bg-surface-raised/85 backdrop-blur">
+  <header class="sticky top-0 z-30 border-b border-border bg-surface-raised/85 backdrop-blur" style="padding-top: env(safe-area-inset-top, 0px)">
     <div class="container-app flex h-14 items-center gap-2">
 
       <a href="/learn" class="row mr-2 shrink-0 font-semibold tracking-tight">
@@ -31,7 +31,7 @@
 
       {{-- Breite Bildschirme: Navigation direkt in der Kopfzeile. --}}
       <nav class="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
-        <x-nav-links link-class="nav-link" :pending="$pendingUserCount" :children="$hasChildren" />
+        <x-nav-links link-class="nav-link" :pending="$pendingUserCount" :children="$hasChildren" :section="$navSection" />
       </nav>
 
       <div class="ml-auto flex items-center gap-1">
@@ -60,7 +60,7 @@
   </header>
 
   {{-- `pb-24` haelt den Inhalt oberhalb der unteren Leiste. --}}
-  <main class="container-app flex-1 pt-8 pb-24 lg:pb-8">
+  <main class="container-app flex-1 pt-8 pb-[calc(6rem+var(--safe-bottom))] lg:pb-8">
     @yield('main')
   </main>
 
@@ -91,7 +91,7 @@
 
 {{-- --- Untere Leiste, nur auf schmalen Bildschirmen ------------------------ --}}
 <nav class="tabbar lg:hidden" aria-label="Hauptnavigation">
-  <a href="/learn" class="tab {{ request()->is('learn') ? 'tab-active' : '' }}">
+  <a href="/learn" class="tab {{ $navSection === 'learn' ? 'tab-active' : '' }}">
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
@@ -99,7 +99,7 @@
     Heute
   </a>
 
-  <a href="/decks" class="tab {{ request()->is('decks*') ? 'tab-active' : '' }}">
+  <a href="/decks" class="tab {{ $navSection === 'decks' ? 'tab-active' : '' }}">
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="4" y="7" width="14" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/>
@@ -107,7 +107,7 @@
     Stapel
   </a>
 
-  <a href="/dictionary" class="tab {{ request()->is('dictionary') ? 'tab-active' : '' }}">
+  <a href="/dictionary" class="tab {{ $navSection === 'dictionary' ? 'tab-active' : '' }}">
     {{-- An open book. --}}
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -116,7 +116,7 @@
     Wörterbuch
   </a>
 
-  <button type="button" class="tab relative" data-menu-toggle
+  <button type="button" @class(['tab relative', 'tab-active' => $navSection !== null && ! in_array($navSection, \App\Support\Navigation::TAB_BAR, true)]) data-menu-toggle
           aria-expanded="false" aria-controls="main-menu" aria-label="Mehr anzeigen">
     @if ($pendingUserCount > 0)
       <span class="tab-badge" aria-label="{{ $pendingUserCount }} warten auf Freigabe">{{ $pendingUserCount }}</span>
@@ -141,12 +141,12 @@
     <div class="mx-auto mt-2 h-1 w-10 rounded-full bg-border-strong" aria-hidden="true"></div>
 
     <nav class="container-app flex max-h-[70dvh] flex-col gap-1 overflow-y-auto py-3">
-      <x-nav-links link-class="nav-link-mobile" :pending="$pendingUserCount" :children="$hasChildren" />
+      <x-nav-links link-class="nav-link-mobile" :pending="$pendingUserCount" :children="$hasChildren" :section="$navSection" />
 
       <div class="my-2 border-t border-border"></div>
 
       @if ($user)
-        <a href="/account" class="nav-link-mobile {{ request()->is('account') ? 'nav-link-active' : '' }}">
+        <a href="/account" class="nav-link-mobile {{ $navSection === 'account' ? 'nav-link-active' : '' }}">
           Mein Konto
           <span class="mt-0.5 block text-xs font-normal text-subtle">
             {{ $user->name }} · {{ $user->role->label() }}

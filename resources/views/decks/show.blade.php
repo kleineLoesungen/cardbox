@@ -11,7 +11,7 @@
 <div class="mx-auto max-w-md">
   <div class="mb-4 flex items-start gap-2">
     <div class="min-w-0 flex-1">
-      <a href="/decks" class="text-sm text-muted hover:text-content">← Stapel</a>
+      <x-back-link default="decks" />
       <h1 class="mt-1 text-2xl font-semibold tracking-tight break-words">{{ $deck->name }}</h1>
       <p class="mt-1 text-sm text-muted">
         {{ $deck->directionLabel() }} · @include('partials.card-count', ['count' => $cards->count(), 'oob' => false])

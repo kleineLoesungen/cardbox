@@ -7,7 +7,10 @@
 
 @section('main')
 <div class="mx-auto max-w-md">
-  <h1 class="text-2xl font-semibold tracking-tight">{{ $child->name }}</h1>
+  @if ($backToList)
+    <a href="/children" class="text-sm text-muted hover:text-content">← Meine Kinder</a>
+  @endif
+  <h1 @class(['text-2xl font-semibold tracking-tight', 'mt-1' => $backToList])>{{ $child->name }}</h1>
 
   @if ($overview['blocked'])
     <div class="alert alert-warning mt-6" role="status">Dieses Konto ist gerade gesperrt.</div>

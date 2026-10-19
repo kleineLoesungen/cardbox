@@ -9,6 +9,7 @@ use App\Services\UserService;
 use App\Services\WebPushSender;
 use App\Support\Branding;
 use App\Support\Changelog;
+use App\Support\Navigation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -52,6 +53,12 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
             'pendingUserCount',
             auth()->user()?->isAdmin() ? app(UserService::class)->pendingCount() : 0,
+        ));
+
+        // The section to mark in the tab bar and menu: below a section, the one
+        // the person came from (docs/specs/navigation.md).
+        View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
+            'navSection', Navigation::current(request()),
         ));
 
         // "Meine Kinder" in the menu only for accounts with children (eltern-ansicht.md, B).
