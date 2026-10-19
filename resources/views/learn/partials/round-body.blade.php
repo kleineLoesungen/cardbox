@@ -15,7 +15,7 @@
 {{-- "Für den Test üben": every card until known once, nothing saved. --}}
 @php($test = $round['mode'] === 'test')
 <div id="round" class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4"
-     style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(2.5rem + var(--safe-bottom))">
+     style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(2.5rem + var(--safe-bottom, max(env(safe-area-inset-bottom, 0px), 0.5rem)))">
 
 @php($checked ??= null)
 @if ($checked)

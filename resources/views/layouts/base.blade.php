@@ -14,7 +14,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>@yield('title') · {{ $branding->name }}</title>
 
-  <link rel="stylesheet" href="/css/app.css">
+  {{-- Version in the address: without it a phone may keep an old stylesheet for a while after a deploy. --}}
+  <link rel="stylesheet" href="/css/app.css?v={{ $cssVersion }}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
   {{-- Installierbare App (PWA). Werte aus APP_NAME, PWA_THEME_COLOR usw. --}}

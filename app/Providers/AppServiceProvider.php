@@ -43,6 +43,9 @@ class AppServiceProvider extends ServiceProvider
         // Name und Farben in jedem Template als $branding.
         View::share('branding', Branding::current());
 
+        // Changes with every new build of app.css, so browsers fetch it again.
+        View::share('cssVersion', (string) (@filemtime(public_path('css/app.css')) ?: '0'));
+
         // Version fuer die Fusszeile — nur dort, deshalb kein share().
         View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
             'appVersion', Changelog::installedLabel(),

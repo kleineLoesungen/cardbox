@@ -111,3 +111,9 @@ it('beendet auch „Fach üben“ und „Nur diesen Stapel lernen“ auf der Sta
     $this->post('/learn/round', ['mode' => 'practice', 'deck' => $deck->id, 'direction' => 'forward', 'box' => '0']);
     $this->get('/learn/round')->assertSee($exit, false);
 });
+
+it('bindet das Stylesheet mit Version ein, damit Handys nach einem Deploy das neue laden', function () {
+    actingAsUser();
+
+    $this->get('/learn')->assertSee('href="/css/app.css?v='.filemtime(public_path('css/app.css')).'"', false);
+});
