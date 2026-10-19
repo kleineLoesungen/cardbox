@@ -371,18 +371,3 @@ describe('Wortschatz', function () {
             ->assertSee('word 1, word 2, word 3, word 4, word 5, word 6, word 7, word 8 und 2 weitere');
     });
 });
-
-it('lässt bestehende Lernserien durch die Migration bestehen', function () {
-    $migration = require database_path('migrations/2026_10_16_000000_add_daily_goal_and_goal_met.php');
-    $migration->down();
-
-    $ich = User::factory()->create();
-    foreach (['2026-10-13', '2026-10-12'] as $day) {
-        DB::table('study_days')->insert(['user_id' => $ich->id, 'day' => $day, 'reviews' => 3, 'correct' => 2]);
-    }
-
-    $migration->up();
-
-    expect(app(LeitnerService::class)->streak($ich))->toBe(2)
-        ->and(DB::table('study_days')->pluck('answers')->all())->toBe([3, 3]);
-});

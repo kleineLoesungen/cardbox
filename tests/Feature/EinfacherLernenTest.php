@@ -301,21 +301,3 @@ describe('Konto und Menü', function () {
         $this->get('/learn')->assertDontSee('>Lernplan</a>', false);
     });
 });
-
-it('schaltet Rückwärts für alle ein, die schon rückwärts gelernt haben', function () {
-    $migration = require database_path('migrations/2026_10_15_000000_create_deck_preferences_table.php');
-    $migration->down();
-
-    $anna = User::factory()->create();
-    $ben = User::factory()->create();
-    $deck = elDeck($anna, 2, ['name' => 'A']);
-    [$a, $b] = $deck->cards()->orderBy('created_at')->get()->all();
-    elDue($anna, $a, Direction::Backward);
-    elDue($anna, $b, Direction::Backward);
-    elDue($ben, $a);
-
-    $migration->up();
-
-    expect(DB::table('deck_preferences')->get(['user_id', 'deck_id', 'with_reverse'])->map(fn ($r) => (array) $r)->all())
-        ->toBe([['user_id' => $anna->id, 'deck_id' => $deck->id, 'with_reverse' => true]]);
-});

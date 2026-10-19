@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.19.3
+- Betrieb: Die 20 Migrationen bis Version 2026.10.18 sind zu einer zusammengefasst. Für eine bestehende Datenbank ab Stand 2026.10.18 ist nichts zu tun: Die neue Migration erkennt die vorhandenen Tabellen und wird nur als erledigt vermerkt. Eine ältere Datenbank bricht mit einer Meldung ab und muss erst mit Version 2026.10.19.2 aktualisiert werden. Neue Installationen legen das Schema in einem Schritt an
+- Migration: 0001_01_01_000000_create_cardbox_schema.php (ändert bestehende Datenbanken nicht)
+
 ## 2026.10.19.2
 - Stapel pausieren: Im Stapel unter ⋯ „Gerade nicht lernen“. Pausierte Stapel kommen nicht auf Heute, nicht in „Los geht's“, nicht in die Erinnerung; die Eltern-Ansicht nennt nur ihre Anzahl. Auf der Stapelseite bleiben sie lernbar (Issue #15)
 - Neuer Kartentyp „Vorderseite → Rückseite“ für alles, was keine Sprache ist (Hauptstädte, Fachbegriffe …). Kein Vorlesen, Eintippen tolerant wie bei Sprachen (Issue #14)

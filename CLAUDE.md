@@ -311,6 +311,12 @@ Name, Kurzname und Farben kommen aus `APP_NAME`, `APP_SHORT_NAME`,
 
 * **Migrationen nie ändern, die schon gelaufen sein könnten.** Immer eine neue
   Datei: `php artisan make:migration add_done_to_notes_table`.
+* Der Stand bis 2026.10.18 steht zusammengefasst in
+  `0001_01_01_000000_create_cardbox_schema.php`. Sie überspringt sich, wenn
+  `users` schon existiert (Datenbanken aus der Zeit davor), und bricht ab,
+  wenn so eine Datenbank älter als 2026.10.18 ist. Ihr `down()` wirft
+  absichtlich eine Exception statt Tabellen zu löschen – nicht „reparieren“.
+  Alles Spätere sind wieder eigene Migrationen.
 * UUIDs als Primärschlüssel (`$table->uuid('id')->primary()` + `HasUuids` im Modell),
   Fremdschlüssel mit `foreignUuid(...)->constrained()->cascadeOnDelete()`.
 * Zeitstempel mit Zeitzone: `timestampsTz()`, `timestampTz()`. Die Anwendung

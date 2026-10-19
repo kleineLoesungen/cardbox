@@ -11,7 +11,6 @@ use App\Services\LeitnerService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 
 /*
  * Deck runs ("Durchgänge"): a deck learned with one plan, several at once.
@@ -303,46 +302,4 @@ describe('Zurücksetzen und Zugriff', function () {
             ->and(CardProgress::where('deck_run_id', $runs['quick']->id)->sole())
             ->box->toBe(3)->card_id->toBe($kopie->cards()->sole()->id);
     });
-});
-
-/*
- * The migration moves existing progress into one run per (person, deck):
- * down() restores the old shape, then up() must rebuild the runs.
- */
-it('überführt vorhandenen Lernstand in je einen Durchgang mit dem damaligen Standard', function () {
-    $migration = require database_path('migrations/2026_10_13_000000_create_deck_runs_table.php');
-    $migration->down();
-
-    $anna = User::factory()->create();
-    $ben = User::factory()->create();
-    $tiere = Deck::factory()->for($anna)->create();
-    $farben = Deck::factory()->for($anna)->create();
-    $hund = Card::factory()->for($tiere)->create();
-    $katze = Card::factory()->for($tiere)->create();
-    $rot = Card::factory()->for($farben)->create();
-    DB::table('learning_settings')->insert(['user_id' => $ben->id, 'box_count' => 4, 'day_gaps' => json_encode([1, 1, 2])]);
-
-    $row = fn (User $u, Card $c, string $direction, int $box) => DB::table('card_progress')->insert([
-        'id' => (string) Str::uuid(), 'user_id' => $u->id, 'card_id' => $c->id, 'direction' => $direction,
-        'box' => $box, 'due_on' => '2026-10-20', 'review_count' => 1, 'correct_count' => 1,
-        'created_at' => now(), 'updated_at' => now(),
-    ]);
-    $row($anna, $hund, 'forward', 2);
-    $row($anna, $hund, 'backward', 3);
-    $row($anna, $katze, 'forward', 1);
-    $row($anna, $rot, 'forward', 4);
-    $row($ben, $hund, 'forward', 2);
-
-    $migration->up();
-
-    $runs = DeckRun::all();
-    expect($runs)->toHaveCount(3)
-        ->and($runs->where('user_id', $anna->id)->pluck('plan')->unique()->all())->toBe(['normal'])
-        ->and($runs->firstWhere('user_id', $ben->id))->plan->toBe('quick')->box_count->toBe(4)
-        ->and(DB::table('card_progress')->whereNull('deck_run_id')->count())->toBe(0)
-        ->and(DB::table('card_progress as p')->join('cards as c', 'c.id', '=', 'p.card_id')
-            ->join('deck_runs as r', 'r.id', '=', 'p.deck_run_id')
-            ->where(fn ($q) => $q->whereColumn('r.deck_id', '!=', 'c.deck_id')->orWhereColumn('r.user_id', '!=', 'p.user_id'))
-            ->count())->toBe(0)
-        ->and(DB::table('card_progress')->where('box', 3)->value('due_on'))->toBe('2026-10-20');
 });
