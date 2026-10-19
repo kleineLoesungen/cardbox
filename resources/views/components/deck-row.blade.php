@@ -1,9 +1,9 @@
 {{--
   One deck in a list: name, direction, card count; for other people's decks
   the owner's display name (never the username). With learning stats: share
-  of mastered cards and cards due today.
+  of mastered cards and cards due today. `paused`: "Gerade nicht lernen" is on.
 --}}
-@props(['deck', 'stats' => null])
+@props(['deck', 'stats' => null, 'paused' => false])
 @php($own = $deck->user_id === auth()->id())
 <li>
   <a href="/decks/{{ $deck->id }}" class="list-row">
@@ -26,7 +26,9 @@
         </span>
       @endif
     </span>
-    @if ($stats !== null && $stats['due'] > 0)
+    @if ($paused)
+      <span class="badge badge-warning shrink-0" title="Kommt nicht auf „Heute“">pausiert</span>
+    @elseif ($stats !== null && $stats['due'] > 0)
       <span class="badge badge-brand shrink-0">{{ $stats['due'] }} fällig</span>
     @elseif ($own && $deck->is_shared)
       <span class="badge badge-brand shrink-0" title="Mit allen geteilt">geteilt</span>

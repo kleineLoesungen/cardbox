@@ -161,8 +161,8 @@
             <p class="feature-card-text">Stimmt eine Karte nicht? Ein Vorschlag an die Person, der der Stapel gehört.</p>
           </div>
           <div class="feature-card">
-            <p class="feature-card-title">Auch Mathe</p>
-            <p class="feature-card-text">Statt Sprachen „Aufgabe“ und „Ergebnis“ – fürs Einmaleins und mehr.</p>
+            <p class="feature-card-title">Auch Mathe und mehr</p>
+            <p class="feature-card-text">Statt Sprachen „Aufgabe“ und „Ergebnis“ fürs Einmaleins – oder einfach „Vorderseite“ und „Rückseite“ für alles andere.</p>
           </div>
           <div class="feature-card">
             <p class="feature-card-title">Wie eine App</p>

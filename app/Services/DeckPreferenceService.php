@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Per person and deck: "Auch rückwärts lernen" (docs/specs/einfacher-lernen.md)
- * and "Antworten eintippen" (docs/specs/schreiben-und-erinnern.md).
+ * Per person and deck: "Auch rückwärts lernen" (docs/specs/einfacher-lernen.md),
+ * "Antworten eintippen" (docs/specs/schreiben-und-erinnern.md) and "Gerade
+ * nicht lernen" (docs/specs/aktive-stapel-und-freie-karten.md).
  * Only for decks the person learns: own ones and followed shared ones.
  */
 class DeckPreferenceService
@@ -35,6 +36,24 @@ class DeckPreferenceService
             ->exists();
     }
 
+    /** "Gerade nicht lernen": the deck stays out of "Heute" (issue #15). */
+    public function paused(User $user, Deck $deck): bool
+    {
+        return DB::table('deck_preferences')
+            ->where('user_id', $user->id)
+            ->where('deck_id', $deck->id)
+            ->where('paused', true)
+            ->exists();
+    }
+
+    /**
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function setPaused(User $user, string $deckId, bool $on): Deck
+    {
+        return $this->set($user, $deckId, 'paused', $on);
+    }
+
     /**
      * @throws ModelNotFoundException<Deck>
      */
@@ -54,7 +73,7 @@ class DeckPreferenceService
     /**
      * One switch of a deck the person learns: own or followed; others are 404.
      *
-     * @param  'with_reverse'|'type_answers'  $column
+     * @param  'with_reverse'|'type_answers'|'paused'  $column
      *
      * @throws ModelNotFoundException<Deck>
      */

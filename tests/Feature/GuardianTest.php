@@ -274,6 +274,7 @@ describe('Ansicht für Eltern', function () {
             ->assertSee('Di 22.9.: nicht gelernt')
             ->assertDontSee('20.9.')
             ->assertSee('Heute: Tagesziel geschafft')
+            ->assertSee('Jede Kachel ist ein Tag, jede Zeile eine Woche')
             ->assertSee('1 Tag in Folge')
             ->getContent();
 
@@ -308,6 +309,9 @@ describe('Ansicht für Eltern', function () {
             ->assertSeeInOrder(['Zuletzt gelernt', 'Katze – cat', 'Hund – dog'])
             ->assertSee('Englisch Unit 3')
             ->assertSee('Französisch Tiere')
+            // Three-part bar per deck (issue #18).
+            ->assertSee('2 kann Ben · 1 im Karteikasten · 0 noch nicht gelernt')
+            ->assertSee('0 kann Ben · 1 im Karteikasten · 1 noch nicht gelernt')
             ->assertSee('1 fällig')
             ->assertSeeInOrder(['Knifflige Wörter', 'Zum Mitüben', 'Haus – house', 'Englisch Unit 3', 'Katze – le chat', 'Französisch Tiere'])
             ->assertSee('Ben hat dir das freigegeben')

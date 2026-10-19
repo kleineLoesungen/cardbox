@@ -10,7 +10,9 @@ namespace App\Enums;
  * needs no migration.
  *
  * `formula` and `result` are not languages but let people build arithmetic
- * cards ("3·4" → "12").
+ * cards ("3·4" → "12"); `front` and `back` are plain sides for anything else
+ * (issue #14). None of the four is read aloud; only arithmetic is checked
+ * exactly when typing.
  */
 enum Language: string
 {
@@ -27,6 +29,8 @@ enum Language: string
     case Japanese = 'ja';
     case Formula = 'formula';
     case Result = 'result';
+    case Front = 'front';
+    case Back = 'back';
 
     public function label(): string
     {
@@ -44,6 +48,8 @@ enum Language: string
             self::Japanese => 'Japanisch',
             self::Formula => 'Aufgabe',
             self::Result => 'Ergebnis',
+            self::Front => 'Vorderseite',
+            self::Back => 'Rückseite',
         };
     }
 
@@ -51,7 +57,7 @@ enum Language: string
     public function tag(): ?string
     {
         return match ($this) {
-            self::Formula, self::Result => null,
+            self::Formula, self::Result, self::Front, self::Back => null,
             default => $this->value,
         };
     }

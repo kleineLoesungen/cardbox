@@ -30,6 +30,7 @@ htmx statt Nuxt.
 | Antworten eintippen, tägliche Erinnerung | ✅ fertig | [schreiben-und-erinnern.md](docs/specs/schreiben-und-erinnern.md) |
 | Karten je Runde, knifflige Wörter | ✅ fertig | [runden-und-knifflige-woerter.md](docs/specs/runden-und-knifflige-woerter.md) |
 | Eltern sehen den Fortschritt | ✅ fertig | [eltern-ansicht.md](docs/specs/eltern-ansicht.md) |
+| Stapel pausieren, Karten „Vorderseite → Rückseite“ | ✅ fertig | [aktive-stapel-und-freie-karten.md](docs/specs/aktive-stapel-und-freie-karten.md) |
 
 Alle drei Stufen der Spezifikation sind umgesetzt. Offen ist ein Test auf
 echten Telefonen.
@@ -45,7 +46,9 @@ unter **Benutzer** freigibt. Administratoren können Konten auch direkt anlegen.
 Ein Knopf schlägt merkbare Passwörter vor, z. B. `Wolke-Tiger-Apfel-47`.
 
 **Stapel.** Ein Stapel hat eine Sprache vorne und eine hinten, z. B. Deutsch →
-Englisch. Er ist entweder privat oder mit allen geteilt. Für einen geteilten
+Englisch – oder „Aufgabe → Ergebnis“ für Mathe und „Vorderseite → Rückseite“
+für alles andere. Wer einen Stapel gerade nicht lernen will, pausiert ihn; er
+kommt dann nicht auf **Heute**. Er ist entweder privat oder mit allen geteilt. Für einen geteilten
 Stapel einer anderen Person gibt es zwei Wege:
 - **Folgen:** lernen ja, ändern nein. Korrekturen der Besitzerin kommen sofort an.
 - **Kopieren:** Man bekommt eine eigene Fassung zum Ändern, der Lernstand wird

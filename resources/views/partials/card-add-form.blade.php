@@ -40,6 +40,7 @@
   @include('partials.card-hint-field', ['id' => 'add-hint', 'value' => null])
 
   <button type="submit" class="btn btn-primary btn-lg btn-block">Speichern &amp; nächste</button>
+  <button type="submit" name="close" value="1" class="btn btn-secondary btn-block -mt-1">Speichern &amp; schließen</button>
 
   <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
     <a href="/decks/{{ $deck->id }}/import" class="text-brand hover:underline">Liste einfügen</a>

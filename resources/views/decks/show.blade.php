@@ -45,6 +45,17 @@
 
   <x-form-error />
 
+  @if ($paused)
+    <div class="alert alert-warning mb-4 flex flex-wrap items-center justify-between gap-3" role="status">
+      <span class="min-w-0">Pausiert: Dieser Stapel kommt nicht auf „Heute“.</span>
+      <form method="post" action="/decks/{{ $deck->id }}/pause" class="shrink-0">
+        @csrf
+        <input type="hidden" name="on" value="0">
+        <button type="submit" class="btn btn-secondary btn-sm">Wieder lernen</button>
+      </form>
+    </div>
+  @endif
+
   @if ($openSuggestions > 0)
     <a href="/decks/{{ $deck->id }}/suggestions" class="alert alert-info mb-4 flex items-center justify-between gap-3">
       <span class="min-w-0">
@@ -160,6 +171,20 @@
             <span class="block text-xs font-normal text-muted">Statt umzudrehen schreibst du die Antwort.</span>
           </span>
           <span class="badge {{ $typeAnswers ? 'badge-success' : 'badge-neutral' }} shrink-0">{{ $typeAnswers ? 'an' : 'aus' }}</span>
+        </button>
+      </form>
+    @endif
+    @if ($isOwner || $isFollowing)
+      {{-- Per person and deck (docs/specs/aktive-stapel-und-freie-karten.md, A). --}}
+      <form method="post" action="/decks/{{ $deck->id }}/pause">
+        @csrf
+        <input type="hidden" name="on" value="{{ $paused ? '0' : '1' }}">
+        <button type="submit" class="sheet-action flex items-center justify-between gap-3">
+          <span class="min-w-0">
+            Gerade nicht lernen
+            <span class="block text-xs font-normal text-muted">Der Stapel kommt nicht auf „Heute“. Hier kannst du ihn trotzdem lernen.</span>
+          </span>
+          <span class="badge {{ $paused ? 'badge-warning' : 'badge-neutral' }} shrink-0">{{ $paused ? 'pausiert' : 'aus' }}</span>
         </button>
       </form>
     @endif

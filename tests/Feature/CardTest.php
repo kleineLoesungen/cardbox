@@ -26,6 +26,24 @@ describe('Karten anlegen und bearbeiten', function () {
         expect($card->front)->toBe(['schnell'])->and($card->back)->toBe(['fast', 'quick']);
     });
 
+    it('speichert mit „Speichern & schließen“ und schließt das Blatt (Issue #16)', function () {
+        $ich = actingAsUser();
+        $deck = Deck::factory()->for($ich)->create();
+        $this->get("/decks/{$deck->id}")->assertSee('Speichern &amp; nächste', false)->assertSee('Speichern &amp; schließen', false);
+
+        $response = $this->withHeaders(htmx())->post("/decks/{$deck->id}/cards", ['front' => ['Haus'], 'back' => ['house'], 'close' => '1'])
+            ->assertOk()
+            ->assertHeader('HX-Trigger-After-Settle', 'sheet-close')
+            ->assertSee('hx-swap-oob="afterbegin:#card-list"', false);
+        // The confirmation comes as a toast, not as a stale line in the closed sheet.
+        expect(substr_count($response->getContent(), 'Gespeichert: Haus – house'))->toBe(1)
+            ->and($response->getContent())->toContain('toast toast-success')
+            ->and(Card::sole()->front)->toBe(['Haus']);
+
+        $this->withHeaders(htmx())->post("/decks/{$deck->id}/cards", ['front' => ['Baum'], 'back' => ['tree']])
+            ->assertHeaderMissing('HX-Trigger-After-Settle');
+    });
+
     it('weist eine leere Seite ab, als Meldung ohne Seitenumbau', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();

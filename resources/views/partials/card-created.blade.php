@@ -1,5 +1,11 @@
-{{-- Answer to POST /decks/{deck}/cards: fresh form, new row on top, new count. --}}
-@include('partials.card-add-form', ['deck' => $deck, 'saved' => $card])
+{{--
+  Answer to POST /decks/{deck}/cards: fresh form, new row on top, new count.
+  With $close the sheet closes, so the confirmation comes as a toast instead.
+--}}
+@include('partials.card-add-form', ['deck' => $deck, 'saved' => $close ? null : $card])
+@if ($close)
+  @include('partials.toast-oob', ['toast' => ['kind' => 'success', 'message' => 'Gespeichert: '.$card->frontText().' – '.$card->backText()]])
+@endif
 
 <div hx-swap-oob="afterbegin:#card-list">
   <x-card-row :card="$card" :deck="$deck" :editable="true" />

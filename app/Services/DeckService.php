@@ -50,16 +50,28 @@ class DeckService
      */
     public function mine(User $user, ?string $search = null): Collection
     {
-        return $this->search($this->mineQuery($user), $search)
-            ->with('user')
-            ->withCount(['cards', 'followers', 'suggestions as open_suggestions_count' => fn (Builder $q) => $q->where('card_suggestions.status', 'open')])
-            ->orderByRaw('user_id = ? DESC', [$user->id])
-            ->orderBy('name')
-            ->get();
+        return $this->withListData($this->search($this->mineQuery($user), $search), $user)->get();
     }
 
     /**
-     * Query behind "Meine Stapel" — also what "Los geht's" learns from.
+     * Counts and order shared by mine() and active(), so "Stapel" and
+     * "Heute" never count differently.
+     *
+     * @param  Builder<Deck>  $query
+     * @return Builder<Deck>
+     */
+    private function withListData(Builder $query, User $user): Builder
+    {
+        return $query
+            ->with('user')
+            ->withCount(['cards', 'followers', 'suggestions as open_suggestions_count' => fn (Builder $q) => $q->where('card_suggestions.status', 'open')])
+            ->orderByRaw('user_id = ? DESC', [$user->id])
+            ->orderBy('name');
+    }
+
+    /**
+     * Query behind "Meine Stapel" (the deck list), paused decks included.
+     * "Heute" and "Los geht's" learn from activeQuery().
      *
      * @return Builder<Deck>
      */
@@ -70,6 +82,45 @@ class DeckService
             ->orWhere(fn (Builder $q) => $q
                 ->where('is_shared', true)
                 ->whereHas('followers', fn (Builder $f) => $f->whereKey($user->id))));
+    }
+
+    /**
+     * The decks "Heute" learns from: "Meine Stapel" without the ones the
+     * person paused with "Gerade nicht lernen" (issue #15).
+     *
+     * @return Builder<Deck>
+     */
+    public function activeQuery(User $user): Builder
+    {
+        return $this->mineQuery($user)->whereNotExists(fn ($q) => $q
+            ->from('deck_preferences')
+            ->whereColumn('deck_preferences.deck_id', 'decks.id')
+            ->where('deck_preferences.user_id', $user->id)
+            ->where('deck_preferences.paused', true));
+    }
+
+    /**
+     * Active decks with counts, like mine().
+     *
+     * @return Collection<int, Deck>
+     */
+    public function active(User $user): Collection
+    {
+        return $this->withListData($this->activeQuery($user), $user)->get();
+    }
+
+    /**
+     * Ids of the person's paused decks among "Meine Stapel".
+     *
+     * @return list<string>
+     */
+    public function pausedIds(User $user): array
+    {
+        return $this->mineQuery($user)
+            ->whereIn('id', DB::table('deck_preferences')->where('user_id', $user->id)->where('paused', true)->select('deck_id'))
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
     }
 
     /**
@@ -265,9 +316,21 @@ class DeckService
             throw ValidationException::withMessages(['deck' => 'Deinen eigenen Stapel lernst du schon.']);
         }
 
-        $user->followedDecks()->syncWithoutDetaching([$deck->id]);
+        $this->startFollowing($user, $deck);
 
         return $deck;
+    }
+
+    /**
+     * Follows a deck. Following anew makes it active again: a pause from an
+     * earlier time of following must not hide it from "Heute" (issue #15).
+     */
+    public function startFollowing(User $user, Deck $deck): void
+    {
+        $changes = $user->followedDecks()->syncWithoutDetaching([$deck->id]);
+        if ($changes['attached'] !== []) {
+            DB::table('deck_preferences')->where('user_id', $user->id)->where('deck_id', $deck->id)->update(['paused' => false]);
+        }
     }
 
     /**
@@ -368,7 +431,7 @@ class DeckService
             }
 
             // The person's switches go along ("Auch rückwärts lernen", "Antworten eintippen"),
-            // or backward progress would be hidden.
+            // or backward progress would be hidden. Not "Gerade nicht lernen": a copy starts active.
             DB::table('deck_preferences')->insertUsing(
                 ['user_id', 'deck_id', 'with_reverse', 'type_answers', 'created_at', 'updated_at'],
                 DB::table('deck_preferences')

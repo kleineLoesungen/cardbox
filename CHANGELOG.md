@@ -7,6 +7,14 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.19.2
+- Stapel pausieren: Im Stapel unter ⋯ „Gerade nicht lernen“. Pausierte Stapel kommen nicht auf Heute, nicht in „Los geht's“, nicht in die Erinnerung; die Eltern-Ansicht nennt nur ihre Anzahl. Auf der Stapelseite bleiben sie lernbar (Issue #15)
+- Neuer Kartentyp „Vorderseite → Rückseite“ für alles, was keine Sprache ist (Hauptstädte, Fachbegriffe …). Kein Vorlesen, Eintippen tolerant wie bei Sprachen (Issue #14)
+- Karte hinzufügen: neben „Speichern & nächste“ auch „Speichern & schließen“ (Issue #16)
+- Karten auswählen: „Auswahl speichern“ bleibt beim Scrollen sichtbar (Issue #17)
+- Eltern-Ansicht: erklärt die Kalenderkacheln, zeigt das Datum darin und je Stapel einen Balken mit „kann“, „im Karteikasten“ und „noch nicht gelernt“ (Issue #18)
+- Migration: 2026_10_19_000000_add_paused_to_deck_preferences.php
+
 ## 2026.10.19
 - Antworten eintippen auf dem Handy: Die Karte ist kleiner und steht oben, das Eingabefeld direkt darunter. So bleibt das Wort lesbar, wenn die Tastatur aufgeht
 - Heute: Die grünen Punkte der Woche zeigen, wie oft das Tagesziel erreicht wurde (Ziel 20: bis 39 gewusste Karten eine 1, ab 40 eine 2 usw.), gemessen am aktuellen Tagesziel

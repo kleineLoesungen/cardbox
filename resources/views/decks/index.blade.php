@@ -100,7 +100,7 @@
     @else
       <ul class="list">
         @foreach ($decks as $deck)
-          <x-deck-row :deck="$deck" />
+          <x-deck-row :deck="$deck" :paused="in_array($deck->id, $pausedIds, true)" />
         @endforeach
       </ul>
     @endif

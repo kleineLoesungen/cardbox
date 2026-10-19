@@ -34,6 +34,8 @@
       <section class="card mt-6">
         <div class="card-header"><h2 class="card-title">Lerntage</h2></div>
         <div class="card-body stack">
+          {{-- What the tiles are (issue #18). --}}
+          <p class="text-sm text-muted">Jede Kachel ist ein Tag, jede Zeile eine Woche von Montag bis Sonntag. Unten steht die aktuelle Woche, heute ist umrandet.</p>
           <div class="day-strip" role="list" aria-label="Lerntage der letzten vier Wochen">
             @foreach (['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as $weekday)
               <span class="day-strip-head" aria-hidden="true">{{ $weekday }}</span>
@@ -41,8 +43,8 @@
             @foreach ($overview['weeks'] as $week)
               @foreach ($week as $cell)
                 @php($label = $cell['date']->locale('de')->isoFormat('dd D.M.').': '.['goal' => 'Ziel geschafft', 'learned' => 'gelernt', 'none' => 'nicht gelernt', 'future' => 'noch nicht'][$cell['state']])
-                <span role="listitem" title="{{ $label }}"
-                      @class(['day', 'day-'.$cell['state'], 'day-today' => $cell['today']])>
+                <span role="listitem" @class(['day', 'day-'.$cell['state'], 'day-today' => $cell['today']])>
+                  <span aria-hidden="true">{{ $cell['date']->day }}</span>
                   <span class="sr-only">{{ $label }}</span>
                 </span>
               @endforeach
@@ -89,17 +91,25 @@
     {{-- --- Decks: no links, parents do not see card lists ----------------- --}}
     @if ($overview['decks']->isNotEmpty())
       <h2 class="mt-6 mb-2 text-base font-semibold">Stapel</h2>
+      <p class="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" aria-hidden="true">
+        <span><span class="legend-swatch progress-split-mastered"></span> kann {{ $child->name }}</span>
+        <span><span class="legend-swatch progress-split-learning"></span> im Karteikasten</span>
+        <span><span class="legend-swatch bg-surface-sunken"></span> noch nicht gelernt</span>
+      </p>
       <ul class="list">
         @foreach ($overview['decks'] as $deck)
           @php($stats = $overview['stats'][$deck->id] ?? ['due' => 0, 'mastered_percent' => 0])
+          @php($progress = $overview['progress'][$deck->id] ?? ['new' => 0, 'learning' => 0, 'mastered' => 0, 'total' => 0, 'mastered_percent' => 0, 'learning_percent' => 0])
           <li class="list-row">
             <span class="min-w-0 flex-1">
               <span class="block truncate font-medium">{{ $deck->name }}</span>
               <span class="block truncate text-sm text-muted">{{ $deck->directionLabel() }}</span>
-              <span class="meter meter-success mt-2" title="{{ $stats['mastered_percent'] }} % kann {{ $child->name }}">
-                <span style="width: {{ $stats['mastered_percent'] }}%"></span>
+              {{-- Share of the cards: "Kann ich" · in the box · not learned yet (issue #18). --}}
+              <span class="progress-split mt-2" aria-hidden="true">
+                <span class="progress-split-mastered" style="width: {{ $progress['mastered_percent'] }}%"></span>
+                <span class="progress-split-learning" style="width: {{ $progress['learning_percent'] }}%"></span>
               </span>
-              <span class="sr-only">{{ $stats['mastered_percent'] }} % gelernt</span>
+              <span class="mt-1 block text-xs text-muted">{{ $progress['mastered'] }} kann {{ $child->name }} · {{ $progress['learning'] }} im Karteikasten · {{ $progress['new'] }} noch nicht gelernt</span>
             </span>
             @if ($stats['due'] > 0)
               <span class="badge badge-brand shrink-0">{{ $stats['due'] }} fällig</span>
@@ -107,6 +117,9 @@
           </li>
         @endforeach
       </ul>
+    @endif
+    @if ($overview['paused'] > 0)
+      <p class="mt-2 text-sm text-muted">{{ $overview['paused'] === 1 ? '1 Stapel ist gerade pausiert und fehlt hier.' : $overview['paused'].' Stapel sind gerade pausiert und fehlen hier.' }}</p>
     @endif
 
     {{-- --- Tricky words ------------------------------------------------------ --}}

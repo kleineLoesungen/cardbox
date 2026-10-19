@@ -69,7 +69,7 @@ class StudyRoundService
             ? $this->runs->getOwned($user, $deck->id, $runId)
             : ($this->runs->listOwned($user, $deck)->first() ?? $this->runs->forStandard($user, $deck));
         if (! $deck->isOwnedBy($user)) {
-            $user->followedDecks()->syncWithoutDetaching([$deck->id]);
+            $this->decks->startFollowing($user, $deck);
         }
 
         $limit = $this->leitner->roundSize($user);
@@ -107,7 +107,7 @@ class StudyRoundService
         $limit = $this->leitner->roundSize($user);
         $due = $this->dueQuery($user)
             ->toBase()
-            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->whereIn('cards.deck_id', $this->decks->activeQuery($user)->select('id'))
             ->groupBy('card_progress.card_id', 'card_progress.direction')
             ->select('card_progress.card_id', 'card_progress.direction')
             ->selectRaw("string_agg(card_progress.deck_run_id::text, ',' ORDER BY deck_runs.created_at, deck_runs.id) AS runs")
@@ -128,7 +128,7 @@ class StudyRoundService
         if (! $more) {
             $room = min($room, $this->newAllowedToday($user));
         }
-        $rows = $this->newCards($user, $this->decks->mineQuery($user)->pluck('id')->all(), $room);
+        $rows = $this->newCards($user, $this->decks->activeQuery($user)->pluck('id')->all(), $room);
 
         $runs = [];
         $new = [];
@@ -303,9 +303,13 @@ class StudyRoundService
             return;
         }
 
-        $due = $this->dueQuery($user)->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))->exists();
+        // Without any active deck there is no "nothing left": pausing everything must not fill the day (issue #15).
+        if (! $this->decks->activeQuery($user)->exists()) {
+            return;
+        }
+        $due = $this->dueQuery($user)->whereIn('cards.deck_id', $this->decks->activeQuery($user)->select('id'))->exists();
         $new = $this->newAllowedToday($user) > 0
-            && $this->newCardCount($user, $this->decks->mineQuery($user)->pluck('id')->all(), 1) > 0;
+            && $this->newCardCount($user, $this->decks->activeQuery($user)->pluck('id')->all(), 1) > 0;
         if (! $due && ! $new) {
             $this->leitner->markGoalMet($user);
         }

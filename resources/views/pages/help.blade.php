@@ -232,6 +232,18 @@
   </section>
 
   <section class="stack gap-2">
+    <h2 class="text-lg font-semibold">Einen Stapel gerade nicht lernen</h2>
+    <p class="text-muted">
+      Ein Stapel ist für dieses Schuljahr fertig, oder du willst dich erst auf
+      einen anderen konzentrieren? Im Stapel unter <strong>⋯ → Gerade nicht
+      lernen</strong> pausierst du ihn. Dann kommt er nicht mehr auf
+      <strong>Heute</strong> und nicht in <strong>Los geht's</strong>. Sein
+      Lernstand bleibt, und auf der Stapelseite kannst du ihn jederzeit
+      trotzdem lernen. Mit <strong>Wieder lernen</strong> ist er zurück.
+    </p>
+  </section>
+
+  <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Wörterbuch</h2>
     <p class="text-muted">
       Unter <strong>Wörterbuch</strong> schlägst du ein Wort nach, ohne
@@ -392,7 +404,8 @@
 
     <p class="text-sm text-muted">
       Für Latein gibt es auf den meisten Geräten keine Stimme. Bei Rechenkarten
-      (<em>Aufgabe</em> und <em>Ergebnis</em>) wird nie vorgelesen.
+      (<em>Aufgabe</em> und <em>Ergebnis</em>) und bei Karten mit
+      <em>Vorderseite</em> und <em>Rückseite</em> wird nie vorgelesen.
     </p>
   </section>
 

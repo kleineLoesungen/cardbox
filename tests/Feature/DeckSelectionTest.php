@@ -156,3 +156,12 @@ it('lässt im Wörterbuch keine Karten aus fremden privaten Stapeln lernen', fun
 
     $this->withHeaders(['HX-Request' => 'true'])->post("/dictionary/learn/{$privat->id}")->assertNotFound();
 });
+
+it('hält „Auswahl speichern“ beim Scrollen sichtbar (Issue #17)', function () {
+    $ich = actingAsUser();
+    [$deck] = book(30);
+    $ich->followedDecks()->attach($deck);
+
+    $this->get("/decks/{$deck->id}/selection")
+        ->assertSeeInOrder(['<div class="sticky-actions">', 'Auswahl speichern', '</form>'], false);
+});

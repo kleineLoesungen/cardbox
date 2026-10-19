@@ -13,7 +13,13 @@
     </p>
   @endif
 
-  @if ($decks->isEmpty())
+  @if ($decks->isEmpty() && $pausedCount > 0)
+    <div class="empty mt-6">
+      <p class="empty-title">Alle deine Stapel sind pausiert</p>
+      <p class="empty-hint">Öffne einen Stapel und tippe auf „Wieder lernen“, dann kommt er wieder auf „Heute“.</p>
+      <a href="/decks" class="btn btn-primary btn-lg">Zu meinen Stapeln</a>
+    </div>
+  @elseif ($decks->isEmpty())
     <div class="empty mt-6">
       <p class="empty-title">Los geht's mit deinem ersten Stapel</p>
       <p class="empty-hint">Ein Stapel sammelt Karten mit Wörtern – vorne zum Beispiel Deutsch, hinten Englisch.</p>
@@ -124,6 +130,12 @@
         <x-deck-row :deck="$deck" :stats="$stats[$deck->id] ?? null" />
       @endforeach
     </ul>
+    @if ($pausedCount > 0)
+      <p class="mt-3 text-center text-sm text-muted">
+        <a href="/decks" class="text-brand hover:underline">{{ $pausedCount === 1 ? '1 Stapel ist pausiert' : $pausedCount.' Stapel sind pausiert' }}</a>
+        und {{ $pausedCount === 1 ? 'kommt' : 'kommen' }} hier nicht dran.
+      </p>
+    @endif
   @endif
 </div>
 @endsection

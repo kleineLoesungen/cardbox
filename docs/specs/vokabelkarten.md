@@ -268,6 +268,8 @@ ihn vorher zurück.
 - **„Speichern & nächste"** (Hauptknopf) speichert per htmx, leert die
   Felder, setzt den Fokus zurück und zeigt kurz „Gespeichert: Haus – house".
   Das Blatt bleibt offen; so lassen sich viele Karten hintereinander tippen.
+- **„Speichern & schließen"** darunter speichert und schließt das Blatt; die
+  Bestätigung kommt dann als kurze Meldung (Issue #16).
 - „+ weitere Bedeutung" je Seite für ein zusätzliches Feld.
 - Unten zwei Links: **„Liste einfügen"** und **„Aus anderen Stapeln
   übernehmen"**.

@@ -17,16 +17,25 @@ class DeckCardController extends Controller
 {
     public function __construct(private CardService $cards, private DeckService $decks) {}
 
-    /** Saves a card and answers with a fresh form plus the new row (out of band). */
-    public function store(Request $request, string $deck): View
+    /**
+     * Saves a card and answers with a fresh form plus the new row (out of
+     * band). "Speichern & nächste" keeps the sheet open, "Speichern &
+     * schließen" closes it (issue #16).
+     */
+    public function store(Request $request, string $deck): Response
     {
         $card = $this->cards->createOwned($request->user(), $deck, $request->only('front', 'back', 'hint'));
+        $close = $request->boolean('close');
 
-        return view('partials.card-created', [
+        $response = response()->view('partials.card-created', [
             'deck' => $card->deck,
             'card' => $card,
             'count' => $card->deck->cards()->count(),
+            'close' => $close,
         ]);
+
+        // After settling: closing before the swap would let the swap open the sheet again.
+        return $close ? $response->header('HX-Trigger-After-Settle', 'sheet-close') : $response;
     }
 
     public function edit(Request $request, string $deck, string $card): View

@@ -36,7 +36,8 @@ class LearningOverviewService
     ) {}
 
     /**
-     * Due today and tomorrow across "Meine Stapel", plus the streak. `new`:
+     * Due today and tomorrow across the active decks (paused ones left out,
+     * issue #15), plus the streak. `new`:
      * new cards "Los geht's" adds today by itself; `more_new`: further new
      * cards for "Noch 20 neue Karten".
      *
@@ -49,13 +50,13 @@ class LearningOverviewService
         $today = $this->leitner->today();
 
         $row = $this->learningRows($user)
-            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->whereIn('cards.deck_id', $this->decks->activeQuery($user)->select('id'))
             ->selectRaw('count(distinct '.self::PAIR.') filter (where card_progress.due_on <= ?) as due', [$today->toDateString()])
             ->selectRaw('count(distinct '.self::PAIR.') filter (where card_progress.due_on = ?) as tomorrow', [$today->addDay()->toDateString()])
             ->first();
 
         // Enough to show today's share and "Noch 20 neue Karten" — never more.
-        $available = $this->rounds->newCardCount($user, $this->decks->mineQuery($user)->pluck('id')->all(),
+        $available = $this->rounds->newCardCount($user, $this->decks->activeQuery($user)->pluck('id')->all(),
             (int) config('learning.new_per_day') + $this->leitner->roundSize($user));
         $new = min($available, $this->rounds->newAllowedToday($user));
 
@@ -89,7 +90,7 @@ class LearningOverviewService
     }
 
     /**
-     * "Knifflige Wörter" across "Meine Stapel", most often wrong first, for
+     * "Knifflige Wörter" across the active decks, most often wrong first, for
      * the parents' view (eltern-ansicht.md, B5).
      *
      * @return list<array{word: string, deck: string}>
@@ -97,7 +98,7 @@ class LearningOverviewService
     public function hardWords(User $user, int $limit): array
     {
         $ids = $this->hardRows($user)
-            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->whereIn('cards.deck_id', $this->decks->activeQuery($user)->select('id'))
             ->groupBy('cards.id')
             ->select('cards.id')
             ->orderByRaw('max(card_progress.review_count - card_progress.correct_count) desc')
@@ -117,7 +118,8 @@ class LearningOverviewService
 
     /**
      * The cards that got to "Kann ich" last, as "front – back", for the
-     * parents' view (eltern-ansicht.md, B3). Same scope as vocabulary().
+     * parents' view (eltern-ansicht.md, B3). Like vocabulary(), but only the
+     * active decks.
      *
      * @return list<string>
      */
@@ -131,7 +133,7 @@ class LearningOverviewService
             ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
             ->where('card_progress.user_id', $user->id)
             ->whereColumn('card_progress.box', '>=', 'deck_runs.box_count')
-            ->whereIn('cards.deck_id', $this->decks->mineQuery($user)->select('id'))
+            ->whereIn('cards.deck_id', $this->decks->activeQuery($user)->select('id'))
             ->whereRaw($active, $bindings)
             ->whereRaw($learned, $learnedBindings)
             ->groupBy('card_progress.card_id')
@@ -185,14 +187,15 @@ class LearningOverviewService
     }
 
     /**
-     * "Meine Stapel" for "Heute": decks with due cards first, then own decks,
-     * then by name — together with their stats.
+     * "Meine Stapel" for "Heute": the active decks (paused ones are left out,
+     * issue #15), due cards first, then own decks, then by name — together
+     * with their stats.
      *
      * @return array{0: Collection<int, Deck>, 1: array<string, array{due: int, mastered_percent: int}>}
      */
     public function myDecksWithStats(User $user): array
     {
-        $decks = $this->decks->mine($user);
+        $decks = $this->decks->active($user);
         $stats = $this->deckStats($user, $decks);
 
         $sorted = $decks->sortBy(fn (Deck $deck) => [
@@ -264,6 +267,57 @@ class LearningOverviewService
         }
 
         return $stats;
+    }
+
+    /**
+     * Per deck how many active cards are new, in the box and in "Kann ich",
+     * for the parents' view (issue #18). A card counts by its best state over
+     * the learned directions and runs, like vocabulary().
+     *
+     * @param  Collection<int, Deck>  $decks
+     * @return array<string, array{new: int, learning: int, mastered: int, total: int, mastered_percent: float, learning_percent: float}>
+     */
+    public function deckProgress(User $user, Collection $decks): array
+    {
+        if ($decks->isEmpty()) {
+            return [];
+        }
+
+        [$active, $bindings] = $this->selection->activeCondition($user);
+        [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
+        $rows = DB::table('card_progress')
+            ->join('cards', 'cards.id', '=', 'card_progress.card_id')
+            ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
+            ->where('card_progress.user_id', $user->id)
+            ->where('card_progress.box', '>=', 1)
+            ->whereIn('cards.deck_id', $decks->modelKeys())
+            ->whereRaw($active, $bindings)
+            ->whereRaw($learned, $learnedBindings)
+            ->groupBy('cards.deck_id')
+            ->select('cards.deck_id')
+            ->selectRaw('count(distinct card_progress.card_id) filter (where card_progress.box >= deck_runs.box_count) as mastered')
+            ->selectRaw('count(distinct card_progress.card_id) as touched')
+            ->get()
+            ->keyBy('deck_id');
+        $activeCounts = $this->selection->activeCounts($user, $decks->modelKeys());
+
+        $result = [];
+        foreach ($decks as $deck) {
+            $total = $activeCounts[$deck->id] ?? (int) ($deck->cards_count ?? 0);
+            $row = $rows->get($deck->id);
+            $mastered = min($total, (int) ($row->mastered ?? 0));
+            $learning = min($total - $mastered, (int) ($row->touched ?? 0) - (int) ($row->mastered ?? 0));
+            $result[$deck->id] = [
+                'new' => $total - $mastered - $learning,
+                'learning' => $learning,
+                'mastered' => $mastered,
+                'total' => $total,
+                'mastered_percent' => $total > 0 ? round(100 * $mastered / $total, 1) : 0.0,
+                'learning_percent' => $total > 0 ? round(100 * $learning / $total, 1) : 0.0,
+            ];
+        }
+
+        return $result;
     }
 
     /**

@@ -50,6 +50,7 @@ class DeckController extends Controller
             'decks' => $tab === 'mine'
                 ? $this->decks->mine($user, $search)
                 : $this->decks->discover($user, $search, $language),
+            'pausedIds' => $tab === 'mine' ? $this->decks->pausedIds($user) : [],
         ]);
     }
 
@@ -101,6 +102,7 @@ class DeckController extends Controller
             'run' => $run,
             'withReverse' => $withReverse,
             'typeAnswers' => $this->preferences->typeAnswers($user, $model),
+            'paused' => ($isOwner || $isFollowing) && $this->preferences->paused($user, $model),
             // Cards often answered wrong (runden-und-knifflige-woerter.md, B).
             'hardIds' => $isOwner || $isFollowing ? $this->overview->hardCardIds($user, $model) : [],
             // Only needed when there is something to learn.
@@ -168,6 +170,18 @@ class DeckController extends Controller
         return redirect("/decks/{$deck}")->with('toast', [
             'kind' => 'success',
             'message' => $on ? 'Bei diesem Stapel tippst du die Antworten jetzt ein.' : 'Bei diesem Stapel drehst du die Karten jetzt wieder um.',
+        ]);
+    }
+
+    /** "Gerade nicht lernen" on or off, for the viewer and this deck (issue #15). */
+    public function pause(Request $request, string $deck): RedirectResponse
+    {
+        $on = $request->boolean('on');
+        $this->preferences->setPaused($request->user(), $deck, $on);
+
+        return redirect("/decks/{$deck}")->with('toast', [
+            'kind' => 'success',
+            'message' => $on ? 'Pausiert. Der Stapel kommt nicht mehr auf „Heute“.' : 'Der Stapel ist wieder auf „Heute“ dabei.',
         ]);
     }
 

@@ -83,14 +83,18 @@ zu dessen Ansicht.
    gestrichelt als „noch nicht“, heute umrandet). Jeder Tag zeigt einen von drei Zuständen: **Ziel geschafft**
    (gefüllt, Erfolgsfarbe), **gelernt** (halb), **nicht gelernt** (leer).
    Darunter eine Legende. Barrierefrei: Jeder Tag hat einen Text („Mo 13.10.:
-   Ziel geschafft“).
+   Ziel geschafft“). Seit Issue #18 steht darüber „Jede Kachel ist ein Tag,
+   jede Zeile eine Woche …“, und jede Kachel zeigt den Tag des Monats.
 3. **Wortschatz:** „Kann schon **124 Wörter**, +5 diese Woche“ (wie auf
    „Heute“ des Kindes) und die **zuletzt** in „Kann ich“ gekommenen bis zu
    10 Wörter („Hund – dog“).
-4. **Stapel:** die Stapel, die das Kind lernt (eigene und gefolgte), je mit
-   Name, Sprachpaar, „Kann ich“-Anteil als Balken und „3 fällig“. Kein Link
-   in den Stapel: Eltern sehen keine Kartenlisten und keine fremden privaten
-   Stapel-Seiten.
+4. **Stapel:** die Stapel, die das Kind lernt (eigene und gefolgte, ohne
+   pausierte), je mit Name, Sprachpaar, „3 fällig“ und einem dreiteiligen
+   Balken (Issue #18): „kann Ben“, „im Karteikasten“, „noch nicht gelernt“,
+   darunter die Anzahlen. Pausierte Stapel fehlen; ein Satz nennt nur, wie
+   viele es sind ([aktive-stapel-und-freie-karten.md](aktive-stapel-und-freie-karten.md)).
+   Kein Link in den Stapel: Eltern sehen keine Kartenlisten und keine fremden
+   privaten Stapel-Seiten.
 5. **Knifflige Wörter:** bis zu 20 Wörter („Hund – dog“, mit Stapelname),
    die das Kind oft falsch hat (Definition aus
    [runden-und-knifflige-woerter.md](runden-und-knifflige-woerter.md)).

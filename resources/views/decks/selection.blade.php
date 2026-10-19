@@ -46,7 +46,10 @@
       @endforeach
     </ul>
 
-    <button type="submit" class="btn btn-primary btn-lg btn-block">Auswahl speichern</button>
+    {{-- Always in view, however far the list is scrolled (issue #17). --}}
+    <div class="sticky-actions">
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Auswahl speichern</button>
+    </div>
   </form>
 
   @if ($activeIds !== null)

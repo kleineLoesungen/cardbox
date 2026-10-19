@@ -228,6 +228,15 @@ describe('Verschicken', function () {
             ->and(DB::table('learning_settings')->where('user_id', $ich->id)->value('reminder_sent_on'))->toStartWith('2026-10-14');
     });
 
+    it('erinnert nicht an Karten aus pausierten Stapeln (Issue #15)', function () {
+        $push = fakePush();
+        $ich = remindable();
+        $this->post('/decks/'.Deck::where('user_id', $ich->id)->sole()->id.'/pause', ['on' => '1']);
+
+        runReminders()->assertJson(['sent' => 0, 'skipped' => 1]);
+        expect($push->sent)->toBe([]);
+    });
+
     it('lässt gesperrte und nicht freigegebene Konten aus', function () {
         $push = fakePush();
         $gesperrt = remindable();
