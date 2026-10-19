@@ -46,7 +46,8 @@ in der Sitzung; der Zurück-Weg ist also je Gerät und Anmeldung.
   direkt an der Wischzone.
 - Ein gemeinsamer Abstand `--safe-bottom` (mindestens 0,5 rem, auf dem
   iPhone die Wischleiste) für Leiste, schwebende Knöpfe, Meldungen, Blätter
-  und die Lernrunde. Seitlich halten Inhalt, Leiste, schwebender Knopf und
+  und die Lernrunde (dort zusätzlich 2,5 rem, weil keine Leiste darunter
+  liegt). Seitlich halten Inhalt, Leiste, schwebender Knopf und
   Blätter im Querformat Abstand zur Notch; Kopfzeile und Lernrunde oben
   Abstand zur Statusleiste, falls ein Gerät dort einen Rand meldet.
 

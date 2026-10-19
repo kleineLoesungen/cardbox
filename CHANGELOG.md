@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.19.6
+- Lernrunde: Die Knöpfe unten (Umdrehen, Gewusst/Nochmal, Prüfen, Weiter) stehen höher und damit weiter weg vom unteren Rand
+
 ## 2026.10.19.5
 - Zurück einheitlich: Eine Stapelseite führt dorthin zurück, woher man kam („← Heute“, „← Stapel“, „← Wörterbuch“), und die untere Leiste markiert diesen Bereich. Eine Lernrunde endet mit ✕ oder „Fertig“ dort, wo sie gestartet wurde
 - iPhone: Untere Leiste, „Neuer Stapel“ und die Knöpfe der Lernrunde halten Abstand zur Wischleiste am unteren Rand; im Querformat auch zur Notch (Issue #19)
