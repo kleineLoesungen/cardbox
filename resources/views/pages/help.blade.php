@@ -247,8 +247,16 @@
       wird je Wort, höchstens eine Minute, eine Pause kostet also nicht das
       ganze Duell. Richtige Antworten zählen fürs Tagesziel, am Karteikasten
       ändert sich nichts. Wer das Duell angelegt hat, kann Mitspieler wieder
-      entfernen. Das Ergebnis ist 24 Stunden nach dem Ende zu sehen – auch
-      für alle, die nur den Code haben. Danach wird das Duell gelöscht.
+      entfernen.
+    </p>
+    <p class="text-muted">
+      Ein Duell kann bis zu fünf <strong>Runden</strong> mit je
+      {{ \App\Services\DuelService::CARDS }} Wörtern haben – Wörter wiederholen
+      sich erst, wenn der Stapel durch ist. Nach jeder Runde gibt es die
+      Rangliste, dann startet, wer das Duell angelegt hat, die nächste.
+      Gewonnen hat, wer über alle Runden die meisten Wörter weiß. Das
+      Ergebnis ist 24 Stunden nach dem Ende zu sehen – auch für alle, die nur
+      den Code haben. Danach wird das Duell gelöscht.
     </p>
   </section>
 

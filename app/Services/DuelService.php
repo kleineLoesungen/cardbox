@@ -19,29 +19,38 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Duels (docs/specs/duell.md): someone picks a deck and a number of players,
- * everybody gets the same ten words, most right answers win, then the
- * shorter time.
+ * Duels (docs/specs/duell.md): someone picks a deck, a number of players and
+ * one to five rounds of ten words; everybody gets the same words, after each
+ * round the ranking, then the creator starts the next round. Most right
+ * answers over all rounds win, then the shorter time.
  *
+ * * All rounds are drawn when the duel is made, without repeating a word
+ *   until the deck ran out — the next round only opens the next cards.
  * * Members join with the code; guests with the code and a name and get a
  *   secret link instead of an account — no user row, no approval touched.
  * * The questions are copied when the duel is made, so editing or deleting
  *   the deck changes nothing, and other players never see the deck itself.
  * * Time is measured here, per card from showing to answering, at most
  *   MAX_CARD_MS — a break does not cost the whole duel.
- * * There is no scheduler: a duel past its 24 hours is closed when somebody
- *   looks at it. Its result stays visible for RESULT_HOURS after the end —
+ * * Each round has HOURS to play; then it is over for whoever did not
+ *   finish. The creator has HOURS to start the next round, else the duel
+ *   ends. There is no scheduler: all this is checked when somebody looks
+ *   (closeIfDue). The result stays visible for RESULT_HOURS after the end —
  *   to players and to anybody with the code — then the duel with code,
  *   ranking and results is deleted (prune(), on every way in).
  *
  * @phpstan-type DuelCard array{position: int, question: string, hint: string|null, answers: list<string>, choices: list<string>|null, correct_choice: int|null}
- * @phpstan-type Standing array{player: DuelPlayer, name: string, correct: int, time_ms: int, finished: bool, winner: bool}
+ * @phpstan-type DuelQuestion array{position: int, round: int, question: string, hint: string|null, answers: list<string>, choices: list<string>|null, correct_choice: int|null, card_id: string}
+ * @phpstan-type Standing array{player: DuelPlayer, name: string, correct: int, time_ms: int, played: bool, finished: bool, winner: bool}
+ * @phpstan-type RoundStanding array{player: DuelPlayer, name: string, correct: int, time_ms: int, finished: bool}
  */
 class DuelService
 {
     public const CARDS = 10;
 
     public const MIN_CARDS = 4;
+
+    public const MAX_ROUNDS = 5;
 
     public const MIN_PLAYERS = 2;
 
@@ -70,13 +79,14 @@ class DuelService
     // -------------------------------------------------------------------------
 
     /**
-     * "Duell starten" on a deck the person learns: draws the cards, fixes
-     * the choices, makes the code. The creator is the first player.
+     * "Duell starten" on a deck the person learns: draws the cards of all
+     * rounds, fixes the choices, makes the code. The creator is the first
+     * player.
      *
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck>
      */
-    public function create(User $user, string $deckId, mixed $players, mixed $mode): Duel
+    public function create(User $user, string $deckId, mixed $players, mixed $mode, mixed $rounds = 1): Duel
     {
         $deck = $this->decks->getVisible($user, $deckId);
         if (! $deck->isOwnedBy($user) && ! $this->decks->isFollowing($user, $deck)) {
@@ -87,6 +97,10 @@ class DuelService
         if ($count === false || $count < self::MIN_PLAYERS || $count > self::MAX_PLAYERS) {
             throw ValidationException::withMessages(['players' => 'Bitte '.self::MIN_PLAYERS.' bis '.self::MAX_PLAYERS.' Spieler wählen.']);
         }
+        $roundCount = filter_var($rounds, FILTER_VALIDATE_INT);
+        if ($roundCount === false || $roundCount < 1 || $roundCount > self::MAX_ROUNDS) {
+            throw ValidationException::withMessages(['rounds' => 'Bitte 1 bis '.self::MAX_ROUNDS.' Runden wählen.']);
+        }
         if (! in_array($mode, self::MODES, true)) {
             throw ValidationException::withMessages(['mode' => 'Bitte „Auswahl aus 4“ oder „Eintippen“ wählen.']);
         }
@@ -95,9 +109,9 @@ class DuelService
         if ($cards->count() < self::MIN_CARDS) {
             throw ValidationException::withMessages(['deck' => 'Für ein Duell braucht der Stapel mindestens '.self::MIN_CARDS.' Karten.']);
         }
-        $rows = $this->questions($cards, $mode === 'choice');
+        ['rows' => $rows, 'repeat_from' => $repeatFrom] = $this->drawRounds($cards, $roundCount, $mode === 'choice');
 
-        return DB::transaction(function () use ($user, $deck, $count, $mode, $rows) {
+        return DB::transaction(function () use ($user, $deck, $count, $mode, $roundCount, $rows, $repeatFrom) {
             $duel = $this->insertDuel([
                 'creator_id' => $user->id,
                 'deck_id' => $deck->id,
@@ -106,17 +120,22 @@ class DuelService
                 'back_language' => $deck->back_language,
                 'mode' => $mode,
                 'player_count' => $count,
+                'rounds' => $roundCount,
+                'round' => 1,
+                'repeat_from_round' => $repeatFrom,
                 'expires_at' => now()->addHours(self::HOURS),
                 'created_at' => now(),
             ]);
             DB::table('duel_cards')->insert(array_map(fn (array $row) => [
                 'duel_id' => $duel->id,
                 'position' => $row['position'],
+                'round' => $row['round'],
                 'question' => $row['question'],
                 'hint' => $row['hint'],
                 'answers' => json_encode($row['answers'], JSON_UNESCAPED_UNICODE),
                 'choices' => $row['choices'] === null ? null : json_encode($row['choices'], JSON_UNESCAPED_UNICODE),
                 'correct_choice' => $row['correct_choice'],
+                'card_id' => $row['card_id'],
             ], $rows));
             $this->addPlayer($duel, ['user_id' => $user->id]);
 
@@ -125,19 +144,54 @@ class DuelService
     }
 
     /**
-     * "Revanche": a new duel with the same deck, mode and number of players
-     * — new cards, new code.
+     * "Runde N starten": only the creator, only between rounds. Who did not
+     * finish the last round skips its rest.
      *
-     * @throws ValidationException
-     * @throws ModelNotFoundException<Deck|Duel>
+     * @throws ValidationException when the time for it ran out
+     * @throws ModelNotFoundException<Duel>
      */
-    public function rematch(User $user, Duel $duel): Duel
+    public function nextRound(User $user, string $duelId): Duel
     {
-        if (! $this->canRematch($user, $duel)) {
-            throw (new ModelNotFoundException)->setModel(Duel::class, [$duel->id]);
-        }
+        ['duel' => $duel] = $this->getForMember($user, $duelId);
 
-        return $this->create($user, (string) $duel->deck_id, $duel->player_count, $duel->mode);
+        return DB::transaction(function () use ($user, $duel) {
+            /** @var Duel $locked */
+            $locked = Duel::whereKey($duel->id)->lockForUpdate()->firstOrFail();
+            if ($this->canManage($user, $locked) && $locked->isFinished() && $locked->round < $locked->rounds) {
+                // The page was still open when the time for the next round ran out.
+                throw ValidationException::withMessages(['round' => 'Die Zeit für Runde '.($locked->round + 1).' ist abgelaufen – das Duell ist beendet.']);
+            }
+            if (! $this->canManage($user, $locked) || ! $locked->isBetweenRounds() || $locked->round >= $locked->rounds) {
+                throw (new ModelNotFoundException)->setModel(Duel::class, [$duel->id]);
+            }
+            $start = $this->lastPosition($locked, $locked->round);
+            $locked->forceFill([
+                'round' => $locked->round + 1,
+                'round_finished_at' => null,
+                'expires_at' => now()->addHours(self::HOURS),
+            ])->save();
+            $locked->players()->update([
+                'position' => $start,
+                'round_correct' => 0,
+                'round_time_ms' => 0,
+                'shown_at' => null,
+                'finished_at' => null,
+            ]);
+
+            return $locked;
+        });
+    }
+
+    /** The creator may take players out and start the next round. */
+    public function canStartNextRound(User $user, Duel $duel): bool
+    {
+        return $this->canManage($user, $duel) && $duel->isBetweenRounds() && $duel->round < $duel->rounds;
+    }
+
+    /** Until when the creator may start the next round; null unless between rounds. */
+    public function nextRoundUntil(Duel $duel): ?Carbon
+    {
+        return $duel->isBetweenRounds() ? $duel->round_finished_at?->copy()->addHours(self::HOURS) : null;
     }
 
     public function isPlayer(User $user, Duel $duel): bool
@@ -153,14 +207,22 @@ class DuelService
 
     /**
      * Deletes duels whose result has been shown long enough: RESULT_HOURS
-     * after the end, or after the 24 hours to play plus RESULT_HOURS for a
-     * duel nobody looked at since. Code, ranking and results go with it.
+     * after the end — or, for a duel nobody looked at since, after the round
+     * deadline plus the creator's time for the next round plus RESULT_HOURS.
+     * Code, ranking and results go with it.
      */
     public function prune(): void
     {
+        $result = now()->subHours(self::RESULT_HOURS);
+        $waited = now()->subHours(self::HOURS + self::RESULT_HOURS);
         Duel::where(fn ($q) => $q
-            ->where('finished_at', '<', now()->subHours(self::RESULT_HOURS))
-            ->orWhere('expires_at', '<', now()->subHours(self::RESULT_HOURS)))
+            ->where('finished_at', '<', $result)
+            ->orWhere(fn ($q) => $q->whereNull('finished_at')->where(fn ($q) => $q
+                // The last round ran out: over at its deadline.
+                ->where(fn ($q) => $q->whereColumn('round', '>=', 'rounds')->whereNull('round_finished_at')->where('expires_at', '<', $result))
+                // Another round ran out, or waits for the creator: plus the creator's time.
+                ->orWhere(fn ($q) => $q->whereColumn('round', '<', 'rounds')->whereNull('round_finished_at')->where('expires_at', '<', $waited))
+                ->orWhere('round_finished_at', '<', $waited))))
             ->delete();
     }
 
@@ -168,19 +230,6 @@ class DuelService
     public function canManage(User $user, Duel $duel): bool
     {
         return $duel->creator_id === $user->id;
-    }
-
-    /** Only with a deck that still exists and that the person learns. */
-    public function canRematch(User $user, Duel $duel): bool
-    {
-        if ($duel->deck_id === null) {
-            return false;
-        }
-        $deck = Deck::find($duel->deck_id);
-
-        return $deck !== null
-            && $this->decks->visibleTo($user)->whereKey($deck->id)->exists()
-            && ($deck->isOwnedBy($user) || $this->decks->isFollowing($user, $deck));
     }
 
     /** The code as shown ("D7P2-M9QX"), for the duel page; null after a change of APP_KEY. */
@@ -351,34 +400,76 @@ class DuelService
     }
 
     /**
-     * Ranking: finished players by right answers, then time; the rest below.
-     * Winners only once the duel is over and at least two played.
+     * Overall ranking: right answers of all finished rounds, then the shorter
+     * time of those rounds. A round somebody did not finish counts nothing —
+     * so stopping early never pays off. Who finished no round yet stands
+     * below. Winners once the duel is over and at least two took part
+     * (answered a card); a winner finished a round.
+     * `finished`: done with the round that is up.
      *
      * @return list<Standing>
      */
     public function standings(Duel $duel): array
     {
         $players = $duel->relationLoaded('players') ? $duel->players : $duel->players()->with('user')->get();
-        $finished = $players->filter(fn (DuelPlayer $p) => $p->finished_at !== null)
-            ->sortBy([['correct', 'desc'], ['time_ms', 'asc']])
-            ->values();
-        $open = $players->filter(fn (DuelPlayer $p) => $p->finished_at === null)->sortBy('joined_at')->values();
-
-        $best = $finished->first();
-        $decided = $duel->isFinished() && $finished->count() >= 2;
+        $sums = DB::table('duel_round_results')
+            ->whereIn('player_id', $players->modelKeys())
+            ->groupBy('player_id')
+            ->select('player_id')
+            ->selectRaw('sum(correct) as correct, sum(time_ms) as time_ms')
+            ->get()
+            ->keyBy('player_id');
 
         $rows = [];
-        foreach ($finished->concat($open) as $p) {
+        foreach ($players as $p) {
+            $sum = $sums->get($p->id);
             $rows[] = [
                 'player' => $p,
                 'name' => $p->displayName(),
-                'correct' => $p->correct,
-                'time_ms' => $p->time_ms,
+                'correct' => (int) ($sum->correct ?? 0),
+                'time_ms' => (int) ($sum->time_ms ?? 0),
+                'played' => $sum !== null,
                 'finished' => $p->finished_at !== null,
-                'winner' => $decided && $best !== null && $p->finished_at !== null
-                    && $p->correct === $best->correct && $p->time_ms === $best->time_ms,
+                'winner' => false,
             ];
         }
+        usort($rows, fn (array $a, array $b) => [$b['played'], $b['correct'], $a['time_ms'], $a['player']->joined_at]
+            <=> [$a['played'], $a['correct'], $b['time_ms'], $b['player']->joined_at]);
+
+        $played = array_values(array_filter($rows, fn (array $r) => $r['played']));
+        $tookPart = $players->filter(fn (DuelPlayer $p) => $p->answered > 0)->count();
+        if ($duel->isFinished() && $tookPart >= 2 && $played !== []) {
+            foreach ($rows as $i => $row) {
+                $rows[$i]['winner'] = $row['played'] && $row['correct'] === $played[0]['correct'] && $row['time_ms'] === $played[0]['time_ms'];
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Ranking of one round: who finished it, by right answers, then time;
+     * the others below as "nicht fertig".
+     *
+     * @return list<RoundStanding>
+     */
+    public function roundStandings(Duel $duel, int $round): array
+    {
+        $players = $duel->players()->with('user')->get();
+        $results = DB::table('duel_round_results')->whereIn('player_id', $players->modelKeys())->where('round', $round)->get()->keyBy('player_id');
+
+        $rows = [];
+        foreach ($players as $p) {
+            $result = $results->get($p->id);
+            $rows[] = [
+                'player' => $p,
+                'name' => $p->displayName(),
+                'correct' => (int) ($result->correct ?? 0),
+                'time_ms' => (int) ($result->time_ms ?? 0),
+                'finished' => $result !== null,
+            ];
+        }
+        usort($rows, fn (array $a, array $b) => [$b['finished'], $b['correct'], $a['time_ms']] <=> [$a['finished'], $a['correct'], $b['time_ms']]);
 
         return $rows;
     }
@@ -386,12 +477,19 @@ class DuelService
     /** Free places while the duel runs. */
     public function freeSlots(Duel $duel): int
     {
-        return $duel->isFinished() ? 0 : max(0, $duel->player_count - $duel->players()->count());
+        return $duel->isFinished() || $duel->round > 1 || $duel->isBetweenRounds() ? 0 : max(0, $duel->player_count - $duel->players()->count());
     }
 
+    /** Words in the round that is up. */
     public function cardCount(Duel $duel): int
     {
-        return DB::table('duel_cards')->where('duel_id', $duel->id)->count();
+        return DB::table('duel_cards')->where('duel_id', $duel->id)->where('round', $duel->round)->count();
+    }
+
+    /** Position of the first word of the round that is up, minus one. */
+    public function roundStart(Duel $duel): int
+    {
+        return $duel->round > 1 ? $this->lastPosition($duel, $duel->round - 1) : 0;
     }
 
     // -------------------------------------------------------------------------
@@ -406,10 +504,10 @@ class DuelService
      */
     public function current(Duel $duel, DuelPlayer $player): ?array
     {
-        if ($player->finished_at !== null || $duel->isFinished()) {
+        if ($player->finished_at !== null || $duel->isFinished() || $duel->isBetweenRounds()) {
             return null;
         }
-        $card = $this->card($duel, $player->position + 1);
+        $card = $this->card($duel, $player->position + 1, $duel->round);
         if ($card !== null && $player->shown_at === null) {
             $player->forceFill(['shown_at' => now()])->save();
         }
@@ -419,30 +517,33 @@ class DuelService
 
     /**
      * Rates the answer to the card that is up (`step` = its position). An
-     * answer to another card or a second one is ignored (null). Members get
-     * right answers counted for their daily goal.
+     * answer to another card, a second one or one between rounds is ignored
+     * (null). Members get right answers counted for their daily goal. The
+     * last card of a round stores the player's round result.
      *
      * @return array{right: bool, verdict: 'right'|'close'|'wrong', expected: string, done: bool}|null
      */
     public function answer(Duel $duel, DuelPlayer $player, int $step, mixed $choice, mixed $typed): ?array
     {
         return DB::transaction(function () use ($duel, $player, $step, $choice, $typed) {
+            // Duel before player, like nextRound(): the same order never deadlocks.
+            $fresh = Duel::whereKey($duel->id)->lockForUpdate()->first();
             /** @var DuelPlayer $locked */
             $locked = DuelPlayer::whereKey($player->id)->lockForUpdate()->firstOrFail();
-            if ($locked->finished_at !== null || $duel->fresh()?->isFinished() || $step !== $locked->position + 1) {
+            if ($fresh === null || $locked->finished_at !== null || $fresh->isFinished() || $fresh->isBetweenRounds() || $step !== $locked->position + 1) {
                 return null;
             }
-            $card = $this->card($duel, $step);
+            $card = $this->card($fresh, $step, $fresh->round);
             if ($card === null) {
                 return null;
             }
 
-            if ($duel->mode === 'choice') {
+            if ($fresh->mode === 'choice') {
                 $picked = filter_var($choice, FILTER_VALIDATE_INT);
                 $verdict = $picked !== false && $picked === $card['correct_choice'] ? 'right' : 'wrong';
                 $expected = $card['answers'][0] ?? '';
             } else {
-                $exact = in_array($duel->back_language, ['formula', 'result'], true);
+                $exact = in_array($fresh->back_language, ['formula', 'result'], true);
                 $check = $this->checker->check($card['answers'], is_string($typed) ? $typed : '', $exact);
                 $verdict = $check['verdict'];
                 $expected = $check['expected'];
@@ -453,11 +554,14 @@ class DuelService
             $elapsed = $locked->shown_at === null
                 ? self::MAX_CARD_MS
                 : min(self::MAX_CARD_MS, max(0, (int) $locked->shown_at->diffInMilliseconds(now())));
-            $done = $step >= $this->cardCount($duel);
+            $done = $step >= $this->lastPosition($fresh, $fresh->round);
             $locked->forceFill([
                 'position' => $step,
                 'correct' => $locked->correct + ($right ? 1 : 0),
                 'time_ms' => $locked->time_ms + $elapsed,
+                'round_correct' => $locked->round_correct + ($right ? 1 : 0),
+                'round_time_ms' => $locked->round_time_ms + $elapsed,
+                'answered' => $locked->answered + 1,
                 'shown_at' => null,
                 'finished_at' => $done ? now() : null,
             ])->save();
@@ -466,7 +570,13 @@ class DuelService
                 $this->leitner->countAnswer(User::findOrFail($locked->user_id));
             }
             if ($done) {
-                $this->closeIfDue($duel);
+                DB::table('duel_round_results')->insert([
+                    'player_id' => $locked->id,
+                    'round' => $fresh->round,
+                    'correct' => $locked->round_correct,
+                    'time_ms' => $locked->round_time_ms,
+                ]);
+                $this->closeIfDue($fresh);
             }
 
             return ['right' => $right, 'verdict' => $verdict, 'expected' => $expected, 'done' => $done];
@@ -498,20 +608,39 @@ class DuelService
     // -------------------------------------------------------------------------
 
     /**
-     * Over when as many as set have finished, or 24 hours after it was made.
+     * The round that is up ends when everybody finished it (in round 1: as
+     * many as set), or when its HOURS are over. Then the duel ends after the
+     * last round; otherwise it waits for the creator, for HOURS at most.
      */
     private function closeIfDue(Duel $duel): void
     {
         if ($duel->isFinished()) {
             return;
         }
-        $finished = $duel->relationLoaded('players')
-            ? $duel->players->whereNotNull('finished_at')->count()
-            : $duel->players()->whereNotNull('finished_at')->count();
-        if ($finished >= $duel->player_count) {
-            $duel->forceFill(['finished_at' => now()])->save();
-        } elseif ($duel->expires_at->isPast()) {
-            $duel->forceFill(['finished_at' => $duel->expires_at])->save();
+        if ($duel->isBetweenRounds()) {
+            $until = $duel->round_finished_at->copy()->addHours(self::HOURS);
+            if ($until->isPast()) {
+                $duel->forceFill(['finished_at' => $until])->save();
+            }
+
+            return;
+        }
+
+        $players = $duel->relationLoaded('players') ? $duel->players : $duel->players()->get();
+        $finished = $players->whereNotNull('finished_at')->count();
+        $needed = $duel->round === 1 ? $duel->player_count : $players->count();
+        $end = match (true) {
+            $finished >= $needed => now(),
+            $duel->expires_at->isPast() => $duel->expires_at,
+            default => null,
+        };
+        if ($end === null) {
+            return;
+        }
+        $duel->forceFill($duel->round >= $duel->rounds ? ['finished_at' => $end] : ['round_finished_at' => $end])->save();
+        if ($duel->isBetweenRounds()) {
+            // The creator may have waited too long already (a duel nobody looked at).
+            $this->closeIfDue($duel);
         }
     }
 
@@ -535,11 +664,14 @@ class DuelService
         return $duel;
     }
 
-    /** @throws ValidationException */
+    /** Joining only while round 1 runs. @throws ValidationException */
     private function ensureOpen(?Duel $duel): Duel
     {
         if ($duel === null || $duel->isFinished()) {
             throw ValidationException::withMessages(['code' => self::WRONG_CODE]);
+        }
+        if ($duel->round > 1 || $duel->isBetweenRounds()) {
+            throw ValidationException::withMessages(['code' => 'Das Duell läuft schon – einsteigen geht nur in Runde 1.']);
         }
 
         return $duel;
@@ -609,15 +741,53 @@ class DuelService
     }
 
     /**
-     * Ten random cards front → back; with choices three wrong answers each,
-     * drawn from the deck's other main meanings.
+     * The questions of all rounds: per round up to ten cards that were not
+     * up yet; when fewer are left, the rest is filled with earlier ones and
+     * the drawing starts over. `repeat_from` is the first round with words
+     * that came before (null: none).
      *
-     * @param  Collection<int, Card>  $cards
-     * @return list<DuelCard>
+     * @param  Collection<int, Card>  $cards  active cards of the deck
+     * @return array{rows: list<DuelQuestion>, repeat_from: int|null}
      *
      * @throws ValidationException
      */
-    private function questions(Collection $cards, bool $withChoices): array
+    private function drawRounds(Collection $cards, int $rounds, bool $withChoices): array
+    {
+        $need = min(self::CARDS, $cards->count());
+        $used = [];
+        $rows = [];
+        $repeatFrom = null;
+        for ($round = 1; $round <= $rounds; $round++) {
+            $fresh = $cards->reject(fn (Card $c) => in_array($c->id, $used, true))->shuffle()->values();
+            if ($fresh->count() >= $need) {
+                $picked = $fresh->take($need)->values();
+                $used = [...$used, ...$picked->modelKeys()];
+            } else {
+                // All words were up: the fresh rest, then earlier ones — and a new cycle.
+                $again = $cards->filter(fn (Card $c) => in_array($c->id, $used, true))->shuffle()->take($need - $fresh->count());
+                $picked = $fresh->concat($again)->shuffle()->values();
+                $used = $picked->modelKeys();
+                $repeatFrom ??= $round;
+            }
+            foreach ($this->questions($picked, $cards, $withChoices) as $row) {
+                $rows[] = ['position' => count($rows) + 1, 'round' => $round] + $row;
+            }
+        }
+
+        return ['rows' => $rows, 'repeat_from' => $repeatFrom];
+    }
+
+    /**
+     * The drawn cards front → back; with choices three wrong answers each,
+     * drawn from the main meanings of all `$cards` of the deck.
+     *
+     * @param  Collection<int, Card>  $picked
+     * @param  Collection<int, Card>  $cards
+     * @return list<array{question: string, hint: string|null, answers: list<string>, choices: list<string>|null, correct_choice: int|null, card_id: string}>
+     *
+     * @throws ValidationException
+     */
+    private function questions(Collection $picked, Collection $cards, bool $withChoices): array
     {
         // Main meanings of the deck, once each (a list: "42" must stay a string).
         $pool = [];
@@ -630,9 +800,8 @@ class DuelService
             throw $tooFew;
         }
 
-        $picked = $cards->shuffle()->take(self::CARDS)->values();
         $rows = [];
-        foreach ($picked as $i => $card) {
+        foreach ($picked as $card) {
             $choices = null;
             $correct = null;
             if ($withChoices) {
@@ -648,16 +817,22 @@ class DuelService
                 $correct = (int) array_search($card->backText(), $choices, true);
             }
             $rows[] = [
-                'position' => $i + 1,
                 'question' => $card->frontText(),
                 'hint' => $card->hint,
                 'answers' => $card->back,
                 'choices' => $choices,
                 'correct_choice' => $correct,
+                'card_id' => $card->id,
             ];
         }
 
         return $rows;
+    }
+
+    /** Position of the last word of a round. */
+    private function lastPosition(Duel $duel, int $round): int
+    {
+        return (int) DB::table('duel_cards')->where('duel_id', $duel->id)->where('round', '<=', $round)->max('position');
     }
 
     /** Comparable form of an answer: case and outer spaces do not matter. */
@@ -667,9 +842,9 @@ class DuelService
     }
 
     /** @return DuelCard|null */
-    private function card(Duel $duel, int $position): ?array
+    private function card(Duel $duel, int $position, int $round): ?array
     {
-        $row = DB::table('duel_cards')->where('duel_id', $duel->id)->where('position', $position)->first();
+        $row = DB::table('duel_cards')->where('duel_id', $duel->id)->where('position', $position)->where('round', $round)->first();
         if ($row === null) {
             return null;
         }

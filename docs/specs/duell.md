@@ -23,7 +23,7 @@ Entscheidungen (Rückfragen vom 20.10.2026):
 > Er gilt nur unter den Leuten mit demselben Code und nur für dieses eine
 > Duell. Es gibt keine dauerhafte Rangliste, keine Punkte, die sich
 > ansammeln, und keine Siegesserie. Wer verliert, sieht seine eigene
-> Leistung und bekommt „Revanche“ angeboten.
+> Leistung; bei mehreren Runden gibt es nach jeder Runde eine neue Chance.
 
 ## Ziel
 
@@ -91,8 +91,8 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
   „Heb dir diesen Link auf – damit siehst du später, wer gewonnen hat.“ Im
   selben Browser führt `/duell` auch ohne Link zurück zum laufenden Duell.
 - Gäste erscheinen in der Liste mit „(Gast)“ hinter dem Namen.
-- Für Gäste zählt nichts fürs Tagesziel (sie haben keins). „Revanche“
-  bieten wir ihnen nicht an, sie können aber einen neuen Code bekommen.
+- Für Gäste zählt nichts fürs Tagesziel (sie haben keins). Runden starten
+  können nur Mitglieder (die Erstellerin), Gäste spielen alle Runden mit.
 - Die Erstellerin kann jeden Teilnehmer **entfernen**, Gäste wie Mitglieder,
   z. B. wenn ein Code bei Fremden gelandet ist oder ein Name unpassend ist.
   Ein entfernter Gast-Link führt danach ins Leere.
@@ -128,11 +128,43 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
 - Danach nimmt der Code niemanden mehr auf, er zeigt nur noch das Ergebnis.
 - Spätestens 24 Stunden nach dem Anlegen ist es auch beendet, wenn nicht
   alle gespielt haben. Wer dabei, aber nicht fertig ist, steht mit „nicht
-  fertig“ unten; freie Plätze verfallen. Hat dann nur eine Person gespielt,
-  heißt es statt eines Siegers „Niemand hat mitgespielt.“
-- **„Revanche“** legt ein neues Duell mit demselben Stapel und derselben
-  Abfrageart an. Es hat neue Karten und einen neuen Code, den man wieder
-  weitergibt.
+  fertig“ unten; freie Plätze verfallen. Hat dann nur eine Person
+  überhaupt eine Karte beantwortet, heißt es statt eines Siegers „Niemand
+  hat mitgespielt.“
+- **Nur fertig gespielte Runden zählen.** Wer eine Runde abbricht, bekommt
+  für sie weder Punkte noch Zeit und kann mit ihr nicht gewinnen – sonst
+  wäre Aufhören bei gutem Stand ein Vorteil (kürzere Zeit).
+- **Runden (Entscheidungen vom 20.10.2026):**
+  - **Beim Anlegen** wählt man **1 bis 5 Runden** (Vorgabe 1), je Runde
+    10 Wörter. Andere Zahlen ergeben „Bitte 1 bis 5 Runden wählen.“
+  - **Wörter aller Runden** zieht die App schon beim Anlegen. Keine Runde
+    wiederholt ein Wort, bis der Stapel durch ist. Danach kommen die
+    restlichen neuen Wörter dran, aufgefüllt mit früheren, und es geht von
+    vorn los. Die Duellseite sagt dann „Alle Wörter des Stapels waren schon
+    dran – ab Runde N kommen sie wieder.“ Weil alles vorab gezogen ist,
+    bleiben spätere Runden spielbar, auch wenn der Stapel geändert oder
+    gelöscht wird.
+  - **Dieselben Spieler** spielen alle Runden. Einsteigen geht nur in
+    Runde 1. Danach sagt der Code „Das Duell läuft schon – einsteigen geht
+    nur in Runde 1.“
+  - **Ende einer Runde:** wenn alle gespielt haben (in Runde 1: so viele wie
+    angegeben), spätestens 24 Stunden nach ihrem Start. Dann zeigt die
+    Duellseite „Runde N ist fertig!“, die **Rangliste der Runde** und darunter
+    den **Zwischenstand**.
+  - **Nächste Runde:** Nur die Erstellerin startet sie, mit **„Runde N
+    starten“**, innerhalb von 24 Stunden; sonst endet das Duell nach der
+    zuletzt gespielten Runde. Die anderen sehen „Anna startet gleich Runde
+    N.“ Wer die vorige Runde nicht fertig gespielt hat, steigt in der neuen
+    Runde vorn ein; die abgebrochene Runde zählt für sie nicht.
+  - Ist die Frist abgelaufen, während die Seite noch offen war, meldet
+    „Runde N starten“: „Die Zeit für Runde N ist abgelaufen – das Duell ist
+    beendet.“
+  - **Gesamtsieg:** die meisten richtigen Antworten aller fertig
+    gespielten Runden zusammen, bei Gleichstand die kürzere Zeit dieser
+    Runden. Am Ende stehen die Rangliste
+    der letzten Runde und „Gesamt“.
+  - Eine Revanche als neues Duell gibt es nicht mehr; wer weiterspielen
+    will, legt ein neues Duell an.
 - **Ergebnis nach dem Ende (Entscheidung vom 20.10.2026):** Das Ergebnis
   bleibt **24 Stunden nach dem Ende** sichtbar, für die Spieler auf ihrer
   Duellseite und **für jeden mit dem Code**. Wer den Code eines beendeten
@@ -168,12 +200,12 @@ Alles in der Gruppe `auth`, keine neue Rolle.
 | Route | Zweck | Prüfung im Service |
 |---|---|---|
 | `GET /duels` | Liste, Code eingeben | eigene Duelle |
-| `POST /decks/{deck}/duels` | anlegen | Stapel sichtbar und gelernt (eigener oder gefolgter), sonst 404; mindestens 4 Karten; `throttle:20,60,duel-create` (auch Revanche) |
+| `POST /decks/{deck}/duels` | anlegen | Stapel sichtbar und gelernt (eigener oder gefolgter), sonst 404; mindestens 4 Karten; `throttle:20,60,duel-create` |
 | `POST /duels/join` | Code eingeben | `throttle:10,60,duel-code` |
 | `GET /duels/{duel}` | Duellseite und Ergebnis | nur Teilnehmende, sonst **404** |
 | `GET /duels/{duel}/play` | spielen (die Uhr der Karte startet beim Anzeigen) | nur Teilnehmende |
 | `POST /duels/{duel}/answer` | Antwort (htmx) | nur Teilnehmende, nur die aktuelle Karte |
-| `POST /duels/{duel}/rematch` | Revanche | nur Teilnehmende, die den Stapel selbst lernen; `throttle:20,60,duel-create` |
+| `POST /duels/{duel}/next-round` | nächste Runde starten | nur die Erstellerin, nur zwischen den Runden und vor der letzten, sonst 404 |
 | `POST /duels/{duel}/players/{player}/delete` | Entfernen | nur die Erstellerin, nur solange das Duell läuft, nie sich selbst; sonst 404 |
 
 **Öffentlich, für Gäste** – bewusst in `PUBLIC_ROUTES` von
@@ -225,6 +257,21 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
   - `shown_at` (wann die aktuelle Karte erschien), `joined_at`,
     `finished_at` (null = nicht fertig).
 
+Migration `2026_10_20_100000_add_rounds_to_duels.php` (Runden):
+
+- `duels.rounds` (1–5) und `duels.round` (die laufende Runde),
+  `duels.round_finished_at` (die laufende Runde ist vorbei und wartet auf
+  die Erstellerin), `duels.repeat_from_round` (erste Runde mit Wörtern, die
+  schon dran waren; null = keine);
+- `duel_cards.round` und `duel_cards.card_id` (die Karte des Stapels, ohne
+  Fremdschlüssel); Positionen zählen über alle Runden durch;
+- `duel_players.round_correct`, `round_time_ms` (laufende Runde),
+  `correct`/`time_ms` bleiben die Summen, `answered` (beantwortete Karten
+  aller Runden; 0 = hat nicht mitgespielt);
+- neue Tabelle `duel_round_results` (`player_id` → duel_players, `round`,
+  `correct`, `time_ms`): das Ergebnis je Spieler und fertiger Runde; die
+  Wertung rechnet nur damit.
+
 ## Betroffene Stellen
 
 - **Services:** neu `DuelService`. Er übernimmt:
@@ -233,7 +280,8 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
   - `getForPlayer` (404, wenn man nicht teilnimmt);
   - aktuelle Karte und Antwort werten (Auswahl oder AnswerCheckService),
     Zeit und Tagesziel (`LeitnerService::countAnswer`);
-  - Ergebnis mit Reihenfolge, Liste, Revanche;
+  - Runden: `drawRounds` (alle Runden beim Anlegen, ohne Wiederholung),
+    `nextRound`, `roundStandings`, Gesamtwertung in `standings`;
   - `prune` löscht Duelle 24 Stunden nach dem Ende; Ergebnis per Code.
 
 - **Controller:** neu `DuelController`, für Mitglieder und – mit eigenen
@@ -288,7 +336,17 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
     Code nicht mehr.
   - Bei nur einem Spieler nach 24 Stunden gibt es keinen Sieger.
   - Nach 24 Stunden steht es fest, mit „nicht fertig“.
-  - Revanche.
+  - Eine abgebrochene Runde zählt nicht; wer abbricht, gewinnt nicht.
+- **Runden:** mehrere Runden ohne Wiederholung, Rangliste je Runde,
+  Zwischenstand, nur die Erstellerin startet die nächste (sonst 404, nach
+  Ablauf der Frist eine Meldung),
+  Gesamtsieg nach Summe; Ablauf einer Runde nach 24 Stunden mit „nicht
+  fertig“ und Weiterspielen ab der neuen Runde; Ende, wenn die nächste
+  Runde nicht startet; Einsteigen nur in Runde 1; Wiederholung erst, wenn
+  der Stapel durch ist, mit Hinweis; Rundenzahl 1–5; spielbar trotz
+  gelöschtem Stapel; wer nie gespielt hat, zählt ab Runde 2 nicht als
+  Spieler; Entfernen des Letzten, der noch spielt, beendet die Runde;
+  Aufräumen nach Pause und Ergebniszeit.
 - **Trennung:**
   - Nicht Teilnehmende bekommen 404, auch Admins.
   - Ungültige IDs ergeben 404.
@@ -322,8 +380,8 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
   60-s-Grenze und die Messung auf dem Server begrenzen das, verhindern es
   aber nicht. Bei Kindern unter sich ist das hinnehmbar.
 - **Gefühl beim Verlieren:** Es gibt keine dauerhafte Rangliste. Das
-  Ergebnis nennt für jeden die eigene Leistung, „Revanche“ ist der
-  nächste Schritt.
+  Ergebnis nennt für jeden die eigene Leistung; bei mehreren Runden gibt es
+  nach jeder Runde eine neue Chance.
 - **Zielgruppe ab 10 Jahren und Gäste:** Mit Gästen kann ein weitergegebener
   Code Fremde ins Duell bringen. Dagegen helfen:
   - Ein Code nimmt nur 24 Stunden lang Spieler auf; danach zeigt er noch

@@ -115,13 +115,13 @@
 <x-sheet id="box-sheet" title="Karten im Fach"></x-sheet>
 
 @if ($canDuel)
-  <x-sheet id="duel-sheet" title="Duell starten" :data-open-on-load="$errors->hasAny(['players', 'mode', 'deck']) ? 'true' : null">
+  <x-sheet id="duel-sheet" title="Duell starten" :data-open-on-load="$errors->hasAny(['players', 'rounds', 'mode', 'deck']) ? 'true' : null">
     <form method="post" action="/decks/{{ $deck->id }}/duels" class="stack">
       @csrf
-      @if ($errors->hasAny(['players', 'mode', 'deck']))
-        <div class="alert alert-danger" role="alert">{{ $errors->first('players') ?: $errors->first('mode') ?: $errors->first('deck') }}</div>
+      @if ($errors->hasAny(['players', 'rounds', 'mode', 'deck']))
+        <div class="alert alert-danger" role="alert">{{ $errors->first('players') ?: $errors->first('rounds') ?: $errors->first('mode') ?: $errors->first('deck') }}</div>
       @endif
-      <p class="text-sm text-muted">Alle bekommen dieselben {{ \App\Services\DuelService::CARDS }} Wörter aus diesem Stapel. Wer mehr weiß, gewinnt – bei Gleichstand die schnellere Zeit.</p>
+      <p class="text-sm text-muted">Alle bekommen je Runde dieselben {{ \App\Services\DuelService::CARDS }} Wörter aus diesem Stapel. Wer mehr weiß, gewinnt – bei Gleichstand die schnellere Zeit.</p>
       <div class="field">
         <label class="label" for="duel-players">Wie viele spielen mit? (du eingerechnet)</label>
         <select class="select" id="duel-players" name="players">
@@ -129,6 +129,15 @@
             <option value="{{ $players }}" @selected((int) old('players', 2) === $players)>{{ $players }} Spieler</option>
           @endfor
         </select>
+      </div>
+      <div class="field">
+        <label class="label" for="duel-rounds">Wie viele Runden? (je {{ \App\Services\DuelService::CARDS }} Wörter)</label>
+        <select class="select" id="duel-rounds" name="rounds">
+          @for ($rounds = 1; $rounds <= \App\Services\DuelService::MAX_ROUNDS; $rounds++)
+            <option value="{{ $rounds }}" @selected((int) old('rounds', 1) === $rounds)>{{ $rounds === 1 ? '1 Runde' : $rounds.' Runden' }}</option>
+          @endfor
+        </select>
+        <p class="hint">Nach jeder Runde gibt es die Rangliste, dann startest du die nächste. Wörter wiederholen sich erst, wenn der Stapel durch ist.</p>
       </div>
       <fieldset class="field">
         <legend class="label">Wie wird gefragt?</legend>

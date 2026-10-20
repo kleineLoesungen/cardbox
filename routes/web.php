@@ -202,13 +202,13 @@ Route::middleware('auth')->group(function () {
     // Duels (docs/specs/duell.md): only players see a duel; others get 404.
     Route::get('/duels', [DuelController::class, 'index']);
     Route::post('/duels/join', [DuelController::class, 'join'])->middleware('throttle:10,60,duel-code');
-    // Throttled: every duel copies ten cards into the database.
+    // Throttled: every duel copies up to fifty cards into the database.
     Route::post('/decks/{deck}/duels', [DuelController::class, 'store'])->whereUuid('deck')->middleware('throttle:20,60,duel-create');
     Route::whereUuid('duel')->prefix('/duels/{duel}')->group(function () {
         Route::get('/', [DuelController::class, 'show']);
         Route::get('/play', [DuelController::class, 'play']);
         Route::post('/answer', [DuelController::class, 'answer']);
-        Route::post('/rematch', [DuelController::class, 'rematch'])->middleware('throttle:20,60,duel-create');
+        Route::post('/next-round', [DuelController::class, 'nextRound']);
         Route::post('/players/{player}/delete', [DuelController::class, 'removePlayer'])->whereUuid('player');
     });
 

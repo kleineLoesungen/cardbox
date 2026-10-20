@@ -45,7 +45,7 @@ class DuelController extends Controller
     public function store(Request $request, string $deck): RedirectResponse
     {
         try {
-            $duel = $this->duels->create($request->user(), $deck, $request->input('players'), $request->input('mode'));
+            $duel = $this->duels->create($request->user(), $deck, $request->input('players'), $request->input('mode'), $request->input('rounds', 1));
         } catch (ValidationException $e) {
             throw $e->redirectTo("/decks/{$deck}");
         }
@@ -71,7 +71,7 @@ class DuelController extends Controller
 
         return $this->page($model, $player, "/duels/{$model->id}", [
             'canManage' => $this->duels->canManage($request->user(), $model),
-            'canRematch' => $model->isFinished() && $this->duels->canRematch($request->user(), $model),
+            'canStartNextRound' => $this->duels->canStartNextRound($request->user(), $model),
         ]);
     }
 
@@ -89,16 +89,16 @@ class DuelController extends Controller
         return $this->rate($request, $model, $player, "/duels/{$model->id}");
     }
 
-    public function rematch(Request $request, string $duel): RedirectResponse
+    /** "Runde N starten" (creator, between rounds). */
+    public function nextRound(Request $request, string $duel): RedirectResponse
     {
-        ['duel' => $model] = $this->duels->getForMember($request->user(), $duel);
         try {
-            $new = $this->duels->rematch($request->user(), $model);
+            $model = $this->duels->nextRound($request->user(), $duel);
         } catch (ValidationException $e) {
-            throw $e->redirectTo("/duels/{$model->id}");
+            throw $e->redirectTo("/duels/{$duel}");
         }
 
-        return redirect("/duels/{$new->id}");
+        return redirect("/duels/{$model->id}")->with('toast', ['kind' => 'success', 'message' => "Runde {$model->round} läuft – jetzt können alle spielen."]);
     }
 
     public function removePlayer(Request $request, string $duel, string $player): RedirectResponse
@@ -231,9 +231,14 @@ class DuelController extends Controller
             // While places are free to join, and after the end to see the result.
             'code' => $free > 0 || $duel->isFinished() ? $this->duels->code($duel) : null,
             'resultUntil' => $this->duels->resultUntil($duel),
+            'nextRoundUntil' => $this->duels->nextRoundUntil($duel),
+            'roundStart' => $this->duels->roundStart($duel),
+            'creatorName' => $duel->creator()->value('name') ?? '',
+            // The ranking of the round that is up, once it is over.
+            'roundStandings' => $duel->rounds > 1 && ($duel->isBetweenRounds() || $duel->isFinished()) ? $this->duels->roundStandings($duel, $duel->round) : null,
             'guest' => false,
             'canManage' => false,
-            'canRematch' => false,
+            'canStartNextRound' => false,
             'guestLink' => null,
         ]);
     }
@@ -252,6 +257,7 @@ class DuelController extends Controller
             'duel' => $duel,
             'card' => $card,
             'cards' => $this->duels->cardCount($duel),
+            'offset' => $this->duels->roundStart($duel),
             'base' => $base,
             'result' => null,
         ]);
@@ -268,13 +274,14 @@ class DuelController extends Controller
 
             return $card === null
                 ? response('', 200)->header('HX-Redirect', $base)
-                : view('duels.partials.play-body', ['duel' => $duel, 'card' => $card, 'cards' => $this->duels->cardCount($duel), 'base' => $base, 'result' => null]);
+                : view('duels.partials.play-body', ['duel' => $duel, 'card' => $card, 'cards' => $this->duels->cardCount($duel), 'offset' => $this->duels->roundStart($duel), 'base' => $base, 'result' => null]);
         }
 
         return view('duels.partials.play-body', [
             'duel' => $duel,
             'card' => null,
             'cards' => $this->duels->cardCount($duel),
+            'offset' => $this->duels->roundStart($duel),
             'base' => $base,
             'result' => $result + ['step' => $step],
         ]);

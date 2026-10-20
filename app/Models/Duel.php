@@ -21,6 +21,10 @@ use Illuminate\Support\Carbon;
  * @property string $back_language
  * @property string $mode
  * @property int $player_count
+ * @property int $rounds
+ * @property int $round
+ * @property Carbon|null $round_finished_at
+ * @property int|null $repeat_from_round
  * @property string $code_hash
  * @property string $code_encrypted
  * @property Carbon $expires_at
@@ -37,6 +41,10 @@ class Duel extends Model
     {
         return [
             'player_count' => 'integer',
+            'rounds' => 'integer',
+            'round' => 'integer',
+            'round_finished_at' => 'datetime',
+            'repeat_from_round' => 'integer',
             'expires_at' => 'datetime',
             'finished_at' => 'datetime',
             'created_at' => 'datetime',
@@ -58,5 +66,11 @@ class Duel extends Model
     public function isFinished(): bool
     {
         return $this->finished_at !== null;
+    }
+
+    /** The round that is up is over and waits for the creator to start the next one. */
+    public function isBetweenRounds(): bool
+    {
+        return ! $this->isFinished() && $this->round_finished_at !== null;
     }
 }

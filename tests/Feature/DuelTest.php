@@ -30,9 +30,9 @@ function duelDeck(User $owner, int $cards = 12, array $attributes = []): Deck
 }
 
 /** Creates a duel as the logged-in person and returns it. */
-function makeDuel(Deck $deck, int $players = 2, string $mode = 'choice'): Duel
+function makeDuel(Deck $deck, int $players = 2, string $mode = 'choice', int $rounds = 1): Duel
 {
-    test()->post("/decks/{$deck->id}/duels", ['players' => (string) $players, 'mode' => $mode])->assertRedirect();
+    test()->post("/decks/{$deck->id}/duels", ['players' => (string) $players, 'mode' => $mode, 'rounds' => (string) $rounds])->assertRedirect();
 
     return Duel::latest('created_at')->firstOrFail();
 }
@@ -62,14 +62,15 @@ function duelAnswer(string $base, Duel $duel, int $step, bool|string $answer): T
     return test()->withHeaders(['HX-Request' => 'true'])->post("{$base}/answer", ['step' => (string) $step] + $input);
 }
 
-/** Plays all cards: `$right` of them right, each after `$seconds`. */
+/** Plays the round that is up: `$right` of its cards right, each after `$seconds`. */
 function playDuel(string $base, Duel $duel, int $right, int $seconds = 2): void
 {
-    $count = DB::table('duel_cards')->where('duel_id', $duel->id)->count();
-    for ($step = 1; $step <= $count; $step++) {
+    $round = $duel->fresh()->round;
+    $positions = DB::table('duel_cards')->where('duel_id', $duel->id)->where('round', $round)->orderBy('position')->pluck('position')->all();
+    foreach ($positions as $i => $step) {
         test()->get("{$base}/play");
         test()->travel($seconds)->seconds();
-        duelAnswer($base, $duel, $step, $step <= $right)->assertOk();
+        duelAnswer($base, $duel, $step, $i < $right)->assertOk();
         test()->flushHeaders();
     }
 }
@@ -354,15 +355,22 @@ describe('Ergebnis', function () {
         $this->flushHeaders()->get("/duels/{$duel->id}")->assertSee('Unentschieden: ');
     });
 
-    it('zeigt eine fehlgeschlagene Revanche an', function () {
-        $anna = actingAsUser();
-        $deck = duelDeck($anna, 4);
-        $duel = makeDuel($deck, 2);
-        $this->travel(25)->hours();
-        $deck->cards()->first()->delete();
+    it('wertet eine abgebrochene Runde nicht: wer nicht fertig spielt, gewinnt nicht', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $duel = makeDuel(duelDeck($anna), 2);
+        $ben = User::factory()->create(['name' => 'Ben']);
+        $this->actingAs($ben)->post('/duels/join', ['code' => duelCode($duel)]);
+        foreach (range(1, 5) as $step) {
+            duelAnswer("/duels/{$duel->id}", $duel, $step, true);
+            $this->flushHeaders();
+        }
+        $this->actingAs($anna);
+        playDuel("/duels/{$duel->id}", $duel, 2);
 
-        $this->from("/duels/{$duel->id}")->post("/duels/{$duel->id}/rematch")->assertRedirect("/duels/{$duel->id}");
-        $this->get("/duels/{$duel->id}")->assertSee('mindestens 4 Karten');
+        $this->travel(25)->hours();
+        $this->flushHeaders()->get("/duels/{$duel->id}")
+            ->assertSee('🏆 Anna gewinnt!')
+            ->assertSeeInOrder(['Anna', '2 / 10 richtig', 'Ben', 'nicht fertig']);
     });
 
     it('lässt nach dem Ende niemanden mehr entfernen', function () {
@@ -388,25 +396,192 @@ describe('Ergebnis', function () {
         $this->post('/duels/join', ['code' => $code])->assertRedirect("/duels/{$duel->id}");
     });
 
-    it('bietet eine Revanche mit neuen Wörtern und neuem Code', function () {
-        $anna = actingAsUser();
-        $duel = makeDuel(duelDeck($anna, 20), 2);
-        $ben = User::factory()->create();
+});
+
+describe('Runden', function () {
+    it('spielt mehrere Runden ohne Wiederholung: Rangliste je Runde, die Erstellerin startet die nächste', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $deck = duelDeck($anna, 30);
+        $duel = makeDuel($deck, 2, 'choice', 3);
+        $ben = User::factory()->create(['name' => 'Ben']);
         $this->actingAs($ben)->post('/duels/join', ['code' => duelCode($duel)]);
-        playDuel("/duels/{$duel->id}", $duel, 3);
+        $base = "/duels/{$duel->id}";
+        $cardIds = fn (int $round) => DB::table('duel_cards')->where('duel_id', $duel->id)->where('round', $round)->pluck('card_id')->all();
+
+        expect(DB::table('duel_cards')->where('duel_id', $duel->id)->count())->toBe(30)
+            ->and(array_unique([...$cardIds(1), ...$cardIds(2), ...$cardIds(3)]))->toHaveCount(30);
+
+        // Round 1.
+        $this->get($base)->assertSee('Runde 1 von 3')->assertSee("Los geht's – Runde 1");
+        playDuel($base, $duel, 6, 2);
         $this->actingAs($anna);
-        playDuel("/duels/{$duel->id}", $duel, 4);
+        playDuel($base, $duel, 8, 3);
+        $this->flushHeaders()->get($base)
+            ->assertSee('Runde 1 ist fertig!')
+            ->assertSee('Runde 2 starten')
+            ->assertSeeInOrder(['Runde 1', 'Anna', '8 / 10 richtig', 'Ben', '6 / 10 richtig', 'Zwischenstand']);
+        $this->actingAs($ben)->get($base)->assertSee('Anna startet gleich Runde 2.')->assertDontSee('Runde 2 starten');
+        $this->post("{$base}/next-round")->assertNotFound();
+        $this->get("{$base}/play")->assertRedirect($base);
 
-        $this->flushHeaders()->get("/duels/{$duel->id}")->assertSee('Revanche');
-        $this->post("/duels/{$duel->id}/rematch")->assertRedirect();
-        $neu = Duel::latest('created_at')->firstOrFail();
+        // Round 2: the creator starts it, the words are new, progress counts from 1.
+        $this->actingAs($anna)->post("{$base}/next-round")->assertRedirect($base)
+            ->assertSessionHas('toast.message', 'Runde 2 läuft – jetzt können alle spielen.');
+        $this->get("{$base}/play")->assertSee('1 / 10')->assertSee('Runde 2 von 3');
+        playDuel($base, $duel, 2, 2);
+        $this->actingAs($ben);
+        playDuel($base, $duel, 10, 2);
+        $this->actingAs($anna)->post("{$base}/next-round");
 
-        expect($neu->id)->not->toBe($duel->id)
-            ->and($neu->player_count)->toBe(2)
-            ->and(duelCode($neu))->not->toBe(duelCode($duel));
-        // Ben does not learn Anna's private deck: no rematch for him.
-        $this->actingAs($ben)->get("/duels/{$duel->id}")->assertDontSee('Revanche');
-        $this->post("/duels/{$duel->id}/rematch")->assertNotFound();
+        // Round 3, then the end: totals decide.
+        playDuel($base, $duel, 5, 2);
+        $this->actingAs($ben);
+        playDuel($base, $duel, 5, 2);
+
+        expect($duel->fresh()->isFinished())->toBeTrue();
+        $this->flushHeaders()->get($base)
+            ->assertSee('🏆 Ben gewinnt!')
+            ->assertSeeInOrder(['Runde 3', 'Gesamt', 'Ben', '21 richtig', 'Anna', '15 richtig'])
+            ->assertDontSee('Runde 4 starten');
+        $this->actingAs($anna)->post("{$base}/next-round")->assertNotFound();
+    });
+
+    it('beendet eine Runde nach 24 Stunden und das Duell, wenn keine neue Runde startet', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $duel = makeDuel(duelDeck($anna, 30), 2, 'choice', 3);
+        $ben = User::factory()->create(['name' => 'Ben']);
+        $this->actingAs($ben)->post('/duels/join', ['code' => duelCode($duel)]);
+        $base = "/duels/{$duel->id}";
+        playDuel($base, $duel, 7);
+        $this->actingAs($anna);
+        duelAnswer($base, $duel, 1, true);
+        $this->flushHeaders();
+
+        // Round 1 ran out: Anna did not finish it.
+        $this->travel(25)->hours();
+        $this->get($base)->assertSee('Runde 1 ist fertig!')->assertSeeInOrder(['Ben', '7 / 10 richtig', 'Anna', 'nicht fertig']);
+
+        // Round 2 starts: Anna skips the rest of round 1.
+        $this->post("{$base}/next-round");
+        $this->get("{$base}/play")->assertSee('1 / 10');
+        expect($duel->players()->where('user_id', $anna->id)->value('position'))->toBe(10);
+
+        // Nobody finishes round 2, and nobody starts round 3: the duel ends.
+        $this->travel(25)->hours();
+        $this->get($base)->assertSee('Runde 2 ist fertig!');
+        $this->travel(25)->hours();
+        $this->get($base)->assertSee('🏆 Ben gewinnt!');
+        expect($duel->fresh()->isFinished())->toBeTrue();
+    });
+
+    it('lässt nur in Runde 1 einsteigen', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna, 30), 3, 'choice', 2);
+        $code = duelCode($duel);
+        $ben = User::factory()->create();
+        $this->actingAs($ben)->post('/duels/join', ['code' => $code]);
+        $this->actingAs($anna);
+        $this->travel(25)->hours();
+        $this->get("/duels/{$duel->id}");
+        $this->post("/duels/{$duel->id}/next-round");
+
+        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => $code])
+            ->assertSessionHasErrors(['code' => 'Das Duell läuft schon – einsteigen geht nur in Runde 1.'], null, 'duel');
+    });
+
+    it('wiederholt Wörter erst, wenn der Stapel durch ist, und sagt das', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna, 15), 2, 'choice', 3);
+        $round = fn (int $r) => DB::table('duel_cards')->where('duel_id', $duel->id)->where('round', $r)->pluck('card_id')->all();
+
+        expect($duel->repeat_from_round)->toBe(2)
+            ->and($round(2))->toHaveCount(10)
+            ->and(array_diff(array_diff(Card::pluck('id')->all(), $round(1)), $round(2)))->toBe([])
+            ->and(array_unique($round(2)))->toHaveCount(10);
+
+        $this->travel(25)->hours();
+        $this->get("/duels/{$duel->id}");
+        $this->post("/duels/{$duel->id}/next-round");
+        $this->get("/duels/{$duel->id}")->assertSee('ab Runde 2 kommen sie wieder');
+    });
+
+    it('prüft die Rundenzahl', function (string $rounds) {
+        $ich = actingAsUser();
+        $deck = duelDeck($ich);
+
+        $this->post("/decks/{$deck->id}/duels", ['players' => '2', 'mode' => 'choice', 'rounds' => $rounds])->assertSessionHasErrors(['rounds' => 'Bitte 1 bis 5 Runden wählen.']);
+    })->with(['0', '6', 'drei']);
+
+    it('bleibt spielbar, wenn der Stapel nach dem Anlegen gelöscht wird', function () {
+        $anna = actingAsUser();
+        $deck = duelDeck($anna, 30);
+        $duel = makeDuel($deck, 2, 'choice', 2);
+        $this->post("/decks/{$deck->id}/delete");
+
+        $this->travel(25)->hours();
+        $this->get("/duels/{$duel->id}");
+        $this->post("/duels/{$duel->id}/next-round")->assertRedirect();
+        $this->get("/duels/{$duel->id}/play")->assertOk()->assertSee('Runde 2 von 2');
+    });
+
+    it('wertet ab Runde 2 nicht, wer nie gespielt hat', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $duel = makeDuel(duelDeck($anna, 30), 2, 'choice', 2);
+        $this->actingAs(User::factory()->create(['name' => 'Ben']))->post('/duels/join', ['code' => duelCode($duel)]);
+        $base = "/duels/{$duel->id}";
+        $this->actingAs($anna);
+        playDuel($base, $duel, 6);
+        $this->travel(25)->hours();
+        $this->flushHeaders()->get($base);
+        $this->post("{$base}/next-round");
+        playDuel($base, $duel, 6);
+
+        $this->travel(25)->hours();
+        $this->flushHeaders()->get($base)
+            ->assertSee('Niemand hat mitgespielt.')
+            ->assertSeeInOrder(['Anna', '12 richtig', 'Ben', 'nicht fertig'])
+            ->assertDontSee('0:00 min');
+    });
+
+    it('beendet die Runde, wenn die Erstellerin den Letzten entfernt, der noch spielt', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $duel = makeDuel(duelDeck($anna, 30), 3, 'choice', 3);
+        $code = duelCode($duel);
+        $ben = User::factory()->create();
+        $clara = User::factory()->create();
+        $base = "/duels/{$duel->id}";
+        $this->actingAs($ben)->post('/duels/join', ['code' => $code]);
+        $this->actingAs($clara)->post('/duels/join', ['code' => $code]);
+        foreach ([$ben, $clara, $anna] as $user) {
+            $this->actingAs($user);
+            playDuel($base, $duel, 5);
+        }
+        $this->flushHeaders()->post("{$base}/next-round");
+        foreach ([$ben, $anna] as $user) {
+            $this->actingAs($user);
+            playDuel($base, $duel, 5);
+        }
+        expect($duel->fresh()->isBetweenRounds())->toBeFalse();
+
+        $player = $duel->players()->where('user_id', $clara->id)->sole();
+        $this->flushHeaders()->post("{$base}/players/{$player->id}/delete")->assertRedirect();
+        expect($duel->fresh()->isBetweenRounds())->toBeTrue();
+        $this->get($base)->assertSee('Runde 2 ist fertig!')->assertSee('Runde 3 starten');
+    });
+
+    it('meldet eine zu spät gestartete Runde, statt ins Leere zu führen', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna, 30), 2, 'choice', 2);
+        $base = "/duels/{$duel->id}";
+        $this->travel(25)->hours();
+        $this->get($base)->assertSee('Runde 2 starten');
+
+        // The page stays open while the time to start round 2 runs out.
+        $this->travel(24)->hours();
+        $this->post("{$base}/next-round")->assertRedirect($base)
+            ->assertSessionHasErrors(['round' => 'Die Zeit für Runde 2 ist abgelaufen – das Duell ist beendet.']);
+        $this->followingRedirects()->post("{$base}/next-round")
+            ->assertSee('Die Zeit für Runde 2 ist abgelaufen')->assertDontSee('Runde 2 starten');
     });
 });
 
@@ -525,7 +700,7 @@ describe('Trennung und Aufräumen', function () {
         $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => $code])->assertRedirect("/duell/ergebnis/{$duel->id}");
         $this->get("/duell/ergebnis/{$duel->id}")
             ->assertOk()->assertSee('🏆 Ben gewinnt!')->assertSee('Das Ergebnis ist bis')
-            ->assertDontSee("Los geht's")->assertDontSee('Entfernen')->assertDontSee('Revanche');
+            ->assertDontSee("Los geht's")->assertDontSee('Entfernen')->assertDontSee('starten');
         expect($duel->players()->count())->toBe(2);
         auth()->logout();
         $this->flushSession();
@@ -572,6 +747,34 @@ describe('Trennung und Aufräumen', function () {
         $this->travel(49)->hours();
         $this->get('/duels')->assertOk()->assertSee('Noch keine Duelle.');
         expect(Duel::find($duel->id))->toBeNull();
+    });
+
+    it('löscht ein Duell mit Runden, das niemand mehr angesehen hat, erst nach Pause und Ergebniszeit', function () {
+        $anna = actingAsUser();
+        $unseen = makeDuel(duelDeck($anna, 30), 2, 'choice', 3);
+        $waiting = makeDuel(duelDeck($anna, 30), 2, 'choice', 3);
+        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => duelCode($waiting)]);
+        playDuel("/duels/{$waiting->id}", $waiting, 5);
+        $this->actingAs($anna);
+        playDuel("/duels/{$waiting->id}", $waiting, 5);
+        expect($waiting->fresh()->isBetweenRounds())->toBeTrue();
+        // Somebody else's list prunes, but looks at neither duel.
+        $this->actingAs(User::factory()->create());
+
+        // Round 1 ends after 24 hours, then 24 to start round 2, then 24 for the result.
+        $this->travel(47)->hours();
+        $this->flushHeaders()->get('/duels');
+        expect(Duel::find($waiting->id))->not->toBeNull();
+        $this->travel(2)->hours();
+        $this->get('/duels');
+        expect(Duel::find($waiting->id))->toBeNull()
+            ->and(Duel::find($unseen->id))->not->toBeNull();
+        $this->travel(22)->hours();
+        $this->get('/duels');
+        expect(Duel::find($unseen->id))->not->toBeNull();
+        $this->travel(2)->hours();
+        $this->get('/duels');
+        expect(Duel::find($unseen->id))->toBeNull();
     });
 
     it('lässt das Duell bestehen, wenn der Stapel gelöscht wird', function () {

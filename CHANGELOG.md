@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.20.2
+- Duell mit Runden: Beim Anlegen 1 bis 5 Runden wählen, je 10 Wörter. Wörter wiederholen sich erst, wenn der Stapel durch ist. Nach jeder Runde (alle haben gespielt, spätestens nach 24 Stunden) erscheint die Rangliste, dann startet die Erstellerin innerhalb von 24 Stunden die nächste Runde. Wer über alle fertig gespielten Runden die meisten Wörter weiß, gewinnt, bei Gleichstand die kürzere Zeit; eine abgebrochene Runde zählt nicht. Einsteigen nur in Runde 1. „Revanche“ entfällt – stattdessen Runden
+- Migration: 2026_10_20_100000_add_rounds_to_duels.php
+
 ## 2026.10.20
 - Duell: Auf der Seite eines Stapels „Duell starten“ – Spielerzahl (2 bis 10) und Abfrage („Auswahl aus 4“ oder „Eintippen“) wählen, Code weitergeben. Alle bekommen dieselben 10 Wörter, wer mehr weiß, gewinnt, bei Gleichstand die kürzere Zeit. Jede und jeder spielt einmal, innerhalb von 24 Stunden; das Duell endet, sobald alle gespielt haben. Mitspielen unter Mehr → Duelle oder ohne Konto unter /duell (mit Name und persönlichem Link). Die Erstellerin kann Mitspieler entfernen, „Revanche“ startet ein neues Duell
 - Betrieb: /duell und die Gast-Links sind öffentlich (gebremst je IP, nur mit gültigem Code und freiem Platz); Gäste bekommen kein Konto. Das Ergebnis bleibt 24 Stunden nach dem Ende sichtbar, auch für alle mit dem Code; danach werden Duell, Code und Ergebnisse gelöscht

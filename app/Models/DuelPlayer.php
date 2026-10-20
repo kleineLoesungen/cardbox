@@ -19,6 +19,9 @@ use Illuminate\Support\Carbon;
  * @property int $position
  * @property int $correct
  * @property int $time_ms
+ * @property int $round_correct
+ * @property int $round_time_ms
+ * @property int $answered
  * @property Carbon|null $shown_at
  * @property Carbon $joined_at
  * @property Carbon|null $finished_at
@@ -35,6 +38,9 @@ class DuelPlayer extends Model
             'position' => 'integer',
             'correct' => 'integer',
             'time_ms' => 'integer',
+            'round_correct' => 'integer',
+            'round_time_ms' => 'integer',
+            'answered' => 'integer',
             'shown_at' => 'datetime',
             'joined_at' => 'datetime',
             'finished_at' => 'datetime',

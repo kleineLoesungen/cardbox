@@ -37,8 +37,10 @@
             <span class="min-w-0 flex-1">
               <span class="block truncate font-medium">{{ $duel->deck_name }}</span>
               <span class="block truncate text-sm text-muted">
-                @if (! $duel->isFinished())
-                  läuft · {{ $done }} von {{ $duel->player_count }} fertig
+                @if ($duel->isBetweenRounds())
+                  Runde {{ $duel->round }} von {{ $duel->rounds }} fertig · nächste Runde folgt
+                @elseif (! $duel->isFinished())
+                  {{ $duel->rounds > 1 ? 'Runde '.$duel->round.' von '.$duel->rounds.' · ' : 'läuft · ' }}{{ $done }} von {{ $duel->round === 1 ? $duel->player_count : count($rows) }} fertig
                 @elseif ($winners !== [])
                   🏆 {{ implode(' und ', array_column($winners, 'name')) }}
                 @else
