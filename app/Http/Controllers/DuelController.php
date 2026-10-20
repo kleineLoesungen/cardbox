@@ -24,6 +24,9 @@ class DuelController extends Controller
     /** Secret links of guests in this browser (encrypted), so /duell leads back without the link. */
     private const GUEST_SESSION = 'duel_guest_links';
 
+    /** Finished duels whose code this session entered: their result may be shown. */
+    private const RESULT_SESSION = 'duel_results';
+
     public function __construct(private DuelService $duels) {}
 
     // --- Members ----------------------------------------------------------
@@ -50,15 +53,16 @@ class DuelController extends Controller
         return redirect("/duels/{$duel->id}");
     }
 
+    /** Joins, leads to the own duel, or — for a finished one — to its result. */
     public function join(Request $request): RedirectResponse
     {
         try {
-            $duel = $this->duels->join($request->user(), $request->input('code'));
+            ['duel' => $duel, 'player' => $player] = $this->duels->join($request->user(), $request->input('code'));
         } catch (ValidationException $e) {
             throw $e->errorBag('duel')->redirectTo('/duels');
         }
 
-        return redirect("/duels/{$duel->id}");
+        return $player !== null ? redirect("/duels/{$duel->id}") : $this->toResult($request, $duel);
     }
 
     public function show(Request $request, string $duel): View
@@ -125,13 +129,17 @@ class DuelController extends Controller
         return view('duels.guest', ['links' => $links]);
     }
 
+    /** Joins as a guest, or — for a finished duel — leads to its result. */
     public function guestJoin(Request $request): RedirectResponse
     {
         if ($request->user() !== null) {
             return redirect('/duels');
         }
         $known = $this->guestLinks($request);
-        ['token' => $token] = $this->duels->joinAsGuest($request->input('code'), $request->input('name'), $known);
+        ['duel' => $duel, 'token' => $token] = $this->duels->joinAsGuest($request->input('code'), $request->input('name'), $known);
+        if ($token === null) {
+            return $this->toResult($request, $duel);
+        }
         if (! in_array($token, $known, true)) {
             // Sealed: the session row must not hold a working link in plain text.
             $request->session()->push(self::GUEST_SESSION, Crypt::encryptString($token));
@@ -144,7 +152,7 @@ class DuelController extends Controller
     {
         ['duel' => $model, 'player' => $player] = $this->duels->getForGuest($token);
 
-        return $this->page($model, $player, "/duell/{$token}", ['guestLink' => url("/duell/{$token}")]);
+        return $this->page($model, $player, "/duell/{$token}", ['guest' => true, 'guestLink' => url("/duell/{$token}")]);
     }
 
     public function guestPlay(Request $request, string $token): View|Response|RedirectResponse
@@ -161,7 +169,28 @@ class DuelController extends Controller
         return $this->rate($request, $model, $player, "/duell/{$token}");
     }
 
+    /**
+     * The result of a finished duel for somebody who entered its code but
+     * does not take part. A GET page, so reloading sends nothing again; it
+     * opens only in the session that entered the code.
+     */
+    public function result(Request $request, string $duel): View
+    {
+        if (! in_array($duel, (array) $request->session()->get(self::RESULT_SESSION, []), true)) {
+            abort(404);
+        }
+
+        return $this->page($this->duels->getResult($duel), null, '', ['guest' => $request->user() === null]);
+    }
+
     // --- Shared ---------------------------------------------------------------
+
+    private function toResult(Request $request, Duel $duel): RedirectResponse
+    {
+        $request->session()->push(self::RESULT_SESSION, $duel->id);
+
+        return redirect("/duell/ergebnis/{$duel->id}");
+    }
 
     /**
      * The guest links this browser holds (sealed in the session).
@@ -182,8 +211,13 @@ class DuelController extends Controller
         return $tokens;
     }
 
-    /** @param  array<string, mixed>  $extra */
-    private function page(Duel $duel, DuelPlayer $player, string $base, array $extra): View
+    /**
+     * The duel page; without `$player` only the result (a finished duel seen
+     * by the code).
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    private function page(Duel $duel, ?DuelPlayer $player, string $base, array $extra): View
     {
         $free = $this->duels->freeSlots($duel);
 
@@ -194,7 +228,10 @@ class DuelController extends Controller
             'standings' => $this->duels->standings($duel),
             'cards' => $this->duels->cardCount($duel),
             'free' => $free,
-            'code' => $free > 0 ? $this->duels->code($duel) : null,
+            // While places are free to join, and after the end to see the result.
+            'code' => $free > 0 || $duel->isFinished() ? $this->duels->code($duel) : null,
+            'resultUntil' => $this->duels->resultUntil($duel),
+            'guest' => false,
             'canManage' => false,
             'canRematch' => false,
             'guestLink' => null,

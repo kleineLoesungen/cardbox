@@ -9,7 +9,7 @@ Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
 ## 2026.10.20
 - Duell: Auf der Seite eines Stapels „Duell starten“ – Spielerzahl (2 bis 10) und Abfrage („Auswahl aus 4“ oder „Eintippen“) wählen, Code weitergeben. Alle bekommen dieselben 10 Wörter, wer mehr weiß, gewinnt, bei Gleichstand die kürzere Zeit. Jede und jeder spielt einmal, innerhalb von 24 Stunden; das Duell endet, sobald alle gespielt haben. Mitspielen unter Mehr → Duelle oder ohne Konto unter /duell (mit Name und persönlichem Link). Die Erstellerin kann Mitspieler entfernen, „Revanche“ startet ein neues Duell
-- Betrieb: /duell und die Gast-Links sind öffentlich (gebremst je IP, nur mit gültigem Code und freiem Platz); Gäste bekommen kein Konto. Duelle werden nach 30 Tagen gelöscht
+- Betrieb: /duell und die Gast-Links sind öffentlich (gebremst je IP, nur mit gültigem Code und freiem Platz); Gäste bekommen kein Konto. Das Ergebnis bleibt 24 Stunden nach dem Ende sichtbar, auch für alle mit dem Code; danach werden Duell, Code und Ergebnisse gelöscht
 - Migration: 2026_10_20_000000_create_duel_tables.php
 
 ## 2026.10.19.7

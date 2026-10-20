@@ -25,8 +25,8 @@
       <div class="field">
         <label class="label" for="guest-name">Dein Name</label>
         <input class="input input-lg" type="text" id="guest-name" name="name" value="{{ old('name') }}"
-               required minlength="2" maxlength="20" autocomplete="given-name" placeholder="z. B. Mia">
-        <p class="hint">So sehen dich die anderen im Duell.</p>
+               maxlength="20" autocomplete="given-name" placeholder="z. B. Mia">
+        <p class="hint">So sehen dich die anderen im Duell. Ist das Duell schon vorbei, zeigt der Code nur das Ergebnis – dann brauchst du keinen Namen.</p>
       </div>
       <button type="submit" class="btn btn-primary btn-lg btn-block">Mitmachen</button>
     </div>

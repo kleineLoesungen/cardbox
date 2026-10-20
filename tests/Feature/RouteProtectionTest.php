@@ -38,6 +38,8 @@ const PUBLIC_ROUTES = [
     'GET duell/{token}',
     'GET duell/{token}/play',
     'POST duell/{token}/answer',
+    // Result of a finished duel, only for the session that entered its code.
+    'GET duell/ergebnis/{duel}',
 ];
 
 /** @return array<string, Route> */

@@ -247,7 +247,8 @@
       wird je Wort, höchstens eine Minute, eine Pause kostet also nicht das
       ganze Duell. Richtige Antworten zählen fürs Tagesziel, am Karteikasten
       ändert sich nichts. Wer das Duell angelegt hat, kann Mitspieler wieder
-      entfernen.
+      entfernen. Das Ergebnis ist 24 Stunden nach dem Ende zu sehen – auch
+      für alle, die nur den Code haben. Danach wird das Duell gelöscht.
     </p>
   </section>
 

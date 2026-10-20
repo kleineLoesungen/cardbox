@@ -72,7 +72,9 @@ Route::middleware('guest')->group(function () {
 // players per duel. No account is made, approval is not touched.
 Route::middleware('private.link')->group(function () {
     Route::get('/duell', [DuelController::class, 'guestEntry']);
-    Route::post('/duell', [DuelController::class, 'guestJoin'])->middleware('throttle:10,60,duel-guest');
+    Route::post('/duell', [DuelController::class, 'guestJoin'])->middleware('throttle:30,60,duel-guest');
+    // The result after entering the code of a finished duel; only for the session that entered it.
+    Route::get('/duell/ergebnis/{duel}', [DuelController::class, 'result'])->whereUuid('duel');
     // Counted per link, not per IP: a class behind one address must not lock itself out.
     Route::middleware('throttle:duel-play')->where(['token' => '[A-Za-z0-9_-]{43}'])->group(function () {
         Route::get('/duell/{token}', [DuelController::class, 'guestShow']);

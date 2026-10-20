@@ -12,6 +12,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,7 +30,9 @@ use Illuminate\Validation\ValidationException;
  * * Time is measured here, per card from showing to answering, at most
  *   MAX_CARD_MS — a break does not cost the whole duel.
  * * There is no scheduler: a duel past its 24 hours is closed when somebody
- *   looks at it, old ones are removed when the list is opened.
+ *   looks at it. Its result stays visible for RESULT_HOURS after the end —
+ *   to players and to anybody with the code — then the duel with code,
+ *   ranking and results is deleted (prune(), on every way in).
  *
  * @phpstan-type DuelCard array{position: int, question: string, hint: string|null, answers: list<string>, choices: list<string>|null, correct_choice: int|null}
  * @phpstan-type Standing array{player: DuelPlayer, name: string, correct: int, time_ms: int, finished: bool, winner: bool}
@@ -48,7 +51,8 @@ class DuelService
 
     public const HOURS = 24;
 
-    public const KEEP_DAYS = 30;
+    /** Hours the result stays visible after the end; then the duel is deleted. */
+    public const RESULT_HOURS = 24;
 
     public const MODES = ['choice', 'typed'];
 
@@ -136,6 +140,30 @@ class DuelService
         return $this->create($user, (string) $duel->deck_id, $duel->player_count, $duel->mode);
     }
 
+    public function isPlayer(User $user, Duel $duel): bool
+    {
+        return $duel->players()->where('user_id', $user->id)->exists();
+    }
+
+    /** Until when a finished duel's result is shown; null while it runs. */
+    public function resultUntil(Duel $duel): ?Carbon
+    {
+        return $duel->finished_at?->copy()->addHours(self::RESULT_HOURS);
+    }
+
+    /**
+     * Deletes duels whose result has been shown long enough: RESULT_HOURS
+     * after the end, or after the 24 hours to play plus RESULT_HOURS for a
+     * duel nobody looked at since. Code, ranking and results go with it.
+     */
+    public function prune(): void
+    {
+        Duel::where(fn ($q) => $q
+            ->where('finished_at', '<', now()->subHours(self::RESULT_HOURS))
+            ->orWhere('expires_at', '<', now()->subHours(self::RESULT_HOURS)))
+            ->delete();
+    }
+
     /** The creator may take players out while the duel runs. */
     public function canManage(User $user, Duel $duel): bool
     {
@@ -170,22 +198,29 @@ class DuelService
     // -------------------------------------------------------------------------
 
     /**
-     * A member enters a code. Already in the duel: just leads there.
+     * A member enters a code. Already in the duel, or the duel is over: just
+     * returns it; `player` null means: not taking part, show the result.
+     *
+     * @return array{duel: Duel, player: DuelPlayer|null}
      *
      * @throws ValidationException
      */
-    public function join(User $user, mixed $input): Duel
+    public function join(User $user, mixed $input): array
     {
+        // Outside the transaction: deleting old duels must not hold locks while joining.
+        $this->prune();
+
         return DB::transaction(function () use ($user, $input) {
             $duel = $this->duelForCode($input);
-            if ($duel !== null && $duel->players()->where('user_id', $user->id)->exists()) {
-                return $duel;
+            $player = $duel?->players()->where('user_id', $user->id)->first();
+            // Taking part already, or over: just leads to the duel or its result.
+            if ($duel !== null && ($player !== null || $duel->isFinished())) {
+                return ['duel' => $duel, 'player' => $player];
             }
             $duel = $this->ensureOpen($duel);
             $this->ensureFreeSlot($duel);
-            $this->addPlayer($duel, ['user_id' => $user->id]);
 
-            return $duel;
+            return ['duel' => $duel, 'player' => $this->addPlayer($duel, ['user_id' => $user->id])];
         });
     }
 
@@ -193,18 +228,17 @@ class DuelService
      * A guest enters a code and a name; the returned token is the guest's
      * secret link (stored only as keyed hash). `$known` are links this
      * browser already holds: a second "Mitmachen" leads to the same place.
+     * A finished duel comes back without token: its result is open to
+     * anybody with the code.
      *
      * @param  list<string>  $known
-     * @return array{duel: Duel, token: string}
+     * @return array{duel: Duel, token: string|null}
      *
      * @throws ValidationException
      */
     public function joinAsGuest(mixed $input, mixed $name, array $known = []): array
     {
-        $name = is_string($name) ? trim((string) preg_replace('/\s+/u', ' ', $name)) : '';
-        if (mb_strlen($name) < 2 || mb_strlen($name) > 20 || preg_match('/\p{C}/u', $name)) {
-            throw ValidationException::withMessages(['name' => 'Bitte einen Namen mit 2 bis 20 Zeichen eingeben.']);
-        }
+        $this->prune();
 
         return DB::transaction(function () use ($input, $name, $known) {
             $duel = $this->duelForCode($input);
@@ -213,7 +247,16 @@ class DuelService
                     return ['duel' => $duel, 'token' => $token];
                 }
             }
+            // Over: the result is open to anybody with the code, no name needed.
+            if ($duel !== null && $duel->isFinished()) {
+                return ['duel' => $duel, 'token' => null];
+            }
             $duel = $this->ensureOpen($duel);
+
+            $name = is_string($name) ? trim((string) preg_replace('/\s+/u', ' ', $name)) : '';
+            if (mb_strlen($name) < 2 || mb_strlen($name) > 20 || preg_match('/\p{C}/u', $name)) {
+                throw ValidationException::withMessages(['name' => 'Bitte einen Namen mit 2 bis 20 Zeichen eingeben.']);
+            }
             $this->ensureFreeSlot($duel);
             $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
             $this->addPlayer($duel, ['guest_name' => $name, 'guest_token_hash' => ShareCode::hash($token)]);
@@ -239,6 +282,7 @@ class DuelService
         if (! Str::isUuid($duelId)) {
             throw (new ModelNotFoundException)->setModel(Duel::class, [$duelId]);
         }
+        $this->prune();
         $player = DuelPlayer::with('duel')->where('duel_id', $duelId)->where('user_id', $user->id)->first();
         if ($player === null) {
             throw (new ModelNotFoundException)->setModel(Duel::class, [$duelId]);
@@ -246,6 +290,26 @@ class DuelService
         $this->closeIfDue($player->duel);
 
         return ['duel' => $player->duel, 'player' => $player];
+    }
+
+    /**
+     * A finished duel whose result is still shown, for the result page after
+     * entering its code (the caller checks the code was entered).
+     *
+     * @throws ModelNotFoundException<Duel>
+     */
+    public function getResult(string $duelId): Duel
+    {
+        $this->prune();
+        $duel = Str::isUuid($duelId) ? Duel::find($duelId) : null;
+        if ($duel !== null) {
+            $this->closeIfDue($duel);
+        }
+        if ($duel === null || ! $duel->isFinished()) {
+            throw (new ModelNotFoundException)->setModel(Duel::class, [$duelId]);
+        }
+
+        return $duel;
     }
 
     /**
@@ -257,6 +321,7 @@ class DuelService
      */
     public function getForGuest(string $token): array
     {
+        $this->prune();
         $player = DuelPlayer::with('duel')->where('guest_token_hash', ShareCode::hash($token))->first();
         if ($player === null) {
             throw (new ModelNotFoundException)->setModel(Duel::class, ['guest']);
@@ -267,14 +332,14 @@ class DuelService
     }
 
     /**
-     * "Meine Duelle": running first, then finished ones of the last 30 days.
-     * Removes older duels on the way (there is no scheduler).
+     * "Meine Duelle": running first, then finished ones whose result is still
+     * shown.
      *
      * @return Collection<int, Duel>
      */
     public function listFor(User $user): Collection
     {
-        Duel::where('created_at', '<', now()->subDays(self::KEEP_DAYS))->delete();
+        $this->prune();
 
         $duels = Duel::whereIn('id', DuelPlayer::where('user_id', $user->id)->select('duel_id'))
             ->with('players.user')
@@ -485,9 +550,12 @@ class DuelService
      *
      * @param  array<string, string>  $who
      */
-    private function addPlayer(Duel $duel, array $who): void
+    private function addPlayer(Duel $duel, array $who): DuelPlayer
     {
-        (new DuelPlayer)->forceFill($who + ['duel_id' => $duel->id, 'joined_at' => now()])->save();
+        $player = (new DuelPlayer)->forceFill($who + ['duel_id' => $duel->id, 'joined_at' => now()]);
+        $player->save();
+
+        return $player;
     }
 
     /** @throws ValidationException */

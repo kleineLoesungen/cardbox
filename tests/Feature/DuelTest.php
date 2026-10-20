@@ -208,7 +208,8 @@ describe('Mitmachen', function () {
         $this->actingAs(User::factory()->create());
 
         $this->post('/duels/join', ['code' => 'ABCD-EFGH'])->assertSessionHasErrors('code', null, 'duel');
-        $this->travel(25)->hours();
+        // 24 hours to play, 24 hours to see the result: then the duel is gone.
+        $this->travel(49)->hours();
         $this->post('/duels/join', ['code' => $code])->assertSessionHasErrors('code', null, 'duel');
     });
 
@@ -319,9 +320,12 @@ describe('Ergebnis', function () {
         $this->flushHeaders()->get("/duels/{$duel->id}")
             ->assertSee('🏆 Ben gewinnt!')
             ->assertSeeInOrder(['Ben', '8 / 10 richtig', 'Anna', '8 / 10 richtig', 'Clara', '6 / 10 richtig'])
-            ->assertDontSee(duelCode($duel));
-        // The code no longer works.
-        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => $code])->assertSessionHasErrors('code', null, 'duel');
+            ->assertDontSee('Code zum Mitmachen')
+            ->assertSee('auch mit dem Code');
+        // The code no longer lets anybody in, it only shows the result.
+        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => $code])->assertRedirect("/duell/ergebnis/{$duel->id}");
+        $this->get("/duell/ergebnis/{$duel->id}")->assertOk()->assertSee('🏆 Ben gewinnt!');
+        expect($duel->players()->count())->toBe(3);
     });
 
     it('endet nach 24 Stunden, auch wenn nicht alle gespielt haben', function () {
@@ -446,8 +450,8 @@ describe('Gäste', function () {
         expect(DuelPlayer::whereNotNull('guest_name')->count())->toBe(0);
     })->with(['M', str_repeat('x', 21), "Mi\u{0007}a"]);
 
-    it('bremst Gäste nach 10 Versuchen je IP', function () {
-        foreach (range(1, 10) as $i) {
+    it('bremst Gäste nach 30 Versuchen je IP', function () {
+        foreach (range(1, 30) as $i) {
             $this->post('/duell', ['code' => 'ABCD-EFGH', 'name' => 'Mia']);
         }
         $this->post('/duell', ['code' => 'ABCD-EFGH', 'name' => 'Mia'])->assertStatus(429);
@@ -505,13 +509,69 @@ describe('Trennung und Aufräumen', function () {
         $this->get("/decks/{$duel->deck_id}")->assertNotFound();
     });
 
-    it('löscht Duelle nach 30 Tagen beim Öffnen der Liste', function () {
+    it('zeigt das Ergebnis 24 Stunden nach dem Ende auch unter dem Code und löscht das Duell danach', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $duel = makeDuel(duelDeck($anna), 2);
+        $code = duelCode($duel);
+        $ben = User::factory()->create(['name' => 'Ben']);
+        $this->actingAs($ben)->post('/duels/join', ['code' => $code]);
+        playDuel("/duels/{$duel->id}", $duel, 7);
+        $this->actingAs($anna);
+        playDuel("/duels/{$duel->id}", $duel, 4);
+        $this->flushHeaders();
+
+        $this->travel(23)->hours();
+        // Somebody else, with the code only: the result, without joining.
+        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => $code])->assertRedirect("/duell/ergebnis/{$duel->id}");
+        $this->get("/duell/ergebnis/{$duel->id}")
+            ->assertOk()->assertSee('🏆 Ben gewinnt!')->assertSee('Das Ergebnis ist bis')
+            ->assertDontSee("Los geht's")->assertDontSee('Entfernen')->assertDontSee('Revanche');
+        expect($duel->players()->count())->toBe(2);
+        auth()->logout();
+        $this->flushSession();
+        // Without entering the code in this session: nothing.
+        $this->get("/duell/ergebnis/{$duel->id}")->assertNotFound();
+        $this->post('/duell', ['code' => $code])->assertRedirect("/duell/ergebnis/{$duel->id}");
+        $this->get("/duell/ergebnis/{$duel->id}")->assertOk()->assertSee('🏆 Ben gewinnt!')->assertDontSee('Heb dir diesen Link auf');
+        $this->actingAs($anna)->get('/duels')->assertSee('Tiere');
+
+        $this->travel(2)->hours();
+        $this->get('/duels')->assertSee('Noch keine Duelle.');
+        expect(Duel::find($duel->id))->toBeNull()
+            ->and(DuelPlayer::count())->toBe(0)
+            ->and(DB::table('duel_cards')->count())->toBe(0);
+        $this->get("/duels/{$duel->id}")->assertNotFound();
+        $this->post('/duels/join', ['code' => $code])->assertSessionHasErrors('code', null, 'duel');
+    });
+
+    it('zeigt ein abgelaufenes Duell noch bis 24 Stunden nach dem Ende', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 3);
+
+        $this->travel(47)->hours();
+        $this->get("/duels/{$duel->id}")->assertOk()->assertSee('Das Ergebnis ist bis');
+        $this->travel(2)->hours();
+        $this->get("/duels/{$duel->id}")->assertNotFound();
+    });
+
+    it('führt einen Gast mit dem Code seines beendeten Duells zu seinem Link', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 2);
+        $code = duelCode($duel);
+        auth()->logout();
+        $link = parse_url($this->post('/duell', ['code' => $code, 'name' => 'Mia'])->headers->get('Location'), PHP_URL_PATH);
+
+        $this->travel(25)->hours();
+        $this->post('/duell', ['code' => $code])->assertRedirect(url($link));
+    });
+
+    it('löscht ein abgelaufenes Duell, das niemand mehr angesehen hat, 24 Stunden später', function () {
         $anna = actingAsUser();
         $duel = makeDuel(duelDeck($anna));
 
-        $this->travel(31)->days();
+        $this->travel(49)->hours();
         $this->get('/duels')->assertOk()->assertSee('Noch keine Duelle.');
-        expect(Duel::find($duel->id))->toBeNull()->and(DuelPlayer::count())->toBe(0);
+        expect(Duel::find($duel->id))->toBeNull();
     });
 
     it('lässt das Duell bestehen, wenn der Stapel gelöscht wird', function () {

@@ -72,8 +72,9 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
   Leerzeichen und Bindestrich sind egal.
 - Wer den Code eingibt, kommt auf die Duellseite: Stapelname, Abfrageart,
   wer schon mitmacht, und **„Los geht's“**.
-- **Fehler:** Ein falscher oder abgelaufener Code ergibt „Dieser Code passt
-  nicht.“ Sind schon so viele dabei wie angegeben, kommt „Das Duell ist
+- **Fehler:** Ein falscher Code oder einer, dessen Duell schon gelöscht ist,
+  ergibt „Dieser Code passt nicht.“ Der Code eines beendeten Duells führt
+  24 Stunden lang zum Ergebnis (siehe unten). Sind schon so viele dabei wie angegeben, kommt „Das Duell ist
   schon voll.“ Ist man schon dabei, führt der Code einfach zur Duellseite.
 - Sobald alle Plätze vergeben sind, nimmt der Code niemanden mehr an. Wird
   jemand entfernt, wird sein Platz wieder frei.
@@ -124,6 +125,7 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
   - Freie Plätze: „Noch 1 Platz frei – Code: D7P2-M9QX“.
 - **Das Duell ist beendet**, sobald so viele fertig sind wie Spieler
   angegeben. Dann erscheint der Gewinner; der Code gilt nicht mehr.
+- Danach nimmt der Code niemanden mehr auf, er zeigt nur noch das Ergebnis.
 - Spätestens 24 Stunden nach dem Anlegen ist es auch beendet, wenn nicht
   alle gespielt haben. Wer dabei, aber nicht fertig ist, steht mit „nicht
   fertig“ unten; freie Plätze verfallen. Hat dann nur eine Person gespielt,
@@ -131,9 +133,24 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
 - **„Revanche“** legt ein neues Duell mit demselben Stapel und derselben
   Abfrageart an. Es hat neue Karten und einen neuen Code, den man wieder
   weitergibt.
+- **Ergebnis nach dem Ende (Entscheidung vom 20.10.2026):** Das Ergebnis
+  bleibt **24 Stunden nach dem Ende** sichtbar, für die Spieler auf ihrer
+  Duellseite und **für jeden mit dem Code**. Wer den Code eines beendeten
+  Duells eingibt, sieht nur die Rangliste und spielt nicht mit; Gäste
+  brauchen dafür keinen Namen. Nach der Code-Eingabe geht es auf die Seite
+  `/duell/ergebnis/<Duell>`, die nur in der Sitzung aufgeht, die den Code
+  eingegeben hat (Neuladen schickt nichts erneut). Die Duellseite sagt „Das
+  Ergebnis ist bis … zu sehen – auch mit dem Code … Danach wird das Duell
+  gelöscht.“ Nach dem Ende kann niemand mehr entfernt werden: Namen und
+  Leistungen bleiben diese 24 Stunden für alle mit dem Code sichtbar –
+  bewusst so, das Ergebnis soll feststehen.
+- **Danach wird alles gelöscht:** Duell, Code, Karten, Rangliste und
+  Ergebnisse, samt Gastnamen. Ein Duell, das ohne alle Spieler abläuft,
+  endet nach 24 Stunden und ist 24 Stunden später weg. Gelöscht wird bei
+  jedem Zugriff auf Duelle (Liste, Duellseite, Code eingeben), einen
+  Scheduler gibt es nicht.
 - Unter **Mehr → Duelle** stehen die eigenen Duelle: erst die laufenden,
-  dann die fertigen der letzten 30 Tage. Ältere werden beim Aufruf dieser
-  Seite gelöscht, einen Scheduler gibt es nicht.
+  dann die beendeten, deren Ergebnis noch zu sehen ist.
 
 ### Wenn sich etwas ändert
 
@@ -164,7 +181,8 @@ Alles in der Gruppe `auth`, keine neue Rolle.
 
 | Route | Zweck | Schutz |
 |---|---|---|
-| `GET /duell`, `POST /duell` | Code und Name eingeben | `throttle:10,60,duel-guest` je IP; nur mit gültigem Code und freiem Platz entsteht etwas (höchstens die angegebene Spielerzahl, maximal 10) |
+| `GET /duell`, `POST /duell` | Code und Name eingeben | `throttle:30,60,duel-guest` je IP (auch fürs Ergebnis-Ansehen, deshalb großzügiger); nur mit gültigem Code und freiem Platz entsteht etwas (höchstens die angegebene Spielerzahl, maximal 10) |
+| `GET /duell/ergebnis/{duel}` | Ergebnis eines beendeten Duells | nur für die Sitzung, die den Code eingegeben hat, sonst 404 |
 | `GET /duell/{token}`, `GET …/play`, `POST …/answer` | spielen, Ergebnis | der geheime Schlüssel (32 zufällige Bytes, gespeichert nur als HMAC); Bremse `duel-play`: 120 je Minute **je Link** |
 
 Das Duell zeigt den Mitspielern nur die 10 kopierten Wörter und den
@@ -215,7 +233,8 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
   - `getForPlayer` (404, wenn man nicht teilnimmt);
   - aktuelle Karte und Antwort werten (Auswahl oder AnswerCheckService),
     Zeit und Tagesziel (`LeitnerService::countAnswer`);
-  - Ergebnis mit Reihenfolge, Liste, Aufräumen nach 30 Tagen, Revanche.
+  - Ergebnis mit Reihenfolge, Liste, Revanche;
+  - `prune` löscht Duelle 24 Stunden nach dem Ende; Ergebnis per Code.
 
 - **Controller:** neu `DuelController`, für Mitglieder und – mit eigenen
   Methoden – für Gäste; das Spielen teilen sich beide.
@@ -286,7 +305,10 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
   - Gäste kommen nicht an Stapelseiten oder andere Duelle.
 - **Routentest:** Die neuen öffentlichen Routen stehen begründet in
   `PUBLIC_ROUTES`.
-- **Aufräumen:** Duelle älter als 30 Tage verschwinden, samt Gastnamen.
+- **Ergebnis und Löschen:** Bis 24 Stunden nach dem Ende sehen Spieler und
+  andere mit dem Code (Mitglied oder Gast, ohne Namen) die Rangliste, ohne
+  mitzuspielen. Danach sind Duell, Karten, Spieler und Code gelöscht, auch
+  ohne dass jemand das Duell noch einmal ansieht.
 
 ## Annahmen und Risiken
 
@@ -304,16 +326,18 @@ Migration `2026_10_20_000000_create_duel_tables.php`:
   nächste Schritt.
 - **Zielgruppe ab 10 Jahren und Gäste:** Mit Gästen kann ein weitergegebener
   Code Fremde ins Duell bringen. Dagegen helfen:
-  - Ein Code gilt nur 24 Stunden.
+  - Ein Code nimmt nur 24 Stunden lang Spieler auf; danach zeigt er noch
+    24 Stunden das Ergebnis.
   - Es sind nur so viele Personen dabei, wie angegeben (höchstens 10).
     Danach nimmt der Code niemanden mehr an.
   - Gäste sind sichtbar als „(Gast)“.
   - Die Erstellerin kann jeden entfernen.
 
-  Gäste sehen von Mitgliedern nur Anzeigenamen und die eigene Leistung im
-  Duell, sonst nichts aus der App.
+  Wer den Code hat, sieht im Duell Anzeigenamen und Leistungen aller
+  Spieler, sonst nichts aus der App.
 - **Gastnamen** sind frei gewählt und werden nicht geprüft. Unpassende
-  Namen kann die Erstellerin entfernen; nach 30 Tagen sind sie gelöscht.
+  Namen kann die Erstellerin entfernen; 24 Stunden nach dem Ende sind sie
+  gelöscht.
 - **Öffentliche Routen** öffnen Cardbox erstmals für Menschen ohne Konto.
   Gebremst wird je IP und je Schlüssel; mehr als 10 Gäste je Duell gibt es
   nicht. Ein Captcha ist nicht vorgesehen.

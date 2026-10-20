@@ -4,17 +4,19 @@
   guests (with $guestLink) in the plain one.
 
   @param \App\Models\Duel $duel
-  @param \App\Models\DuelPlayer $me
+  @param \App\Models\DuelPlayer|null $me  null: only the result, seen by the code
   @param string $base  /duels/{id} or /duell/{token}
   @param list<array> $standings  DuelService::standings
   @param int $cards  number of words
   @param int $free  free places
-  @param string|null $code  shown while places are free
+  @param string|null $code  shown while places are free and while the result is shown
+  @param \Illuminate\Support\Carbon|null $resultUntil  until when the result is shown (then deleted)
+  @param bool $guest  plain layout for people without account
   @param bool $canManage  creator: may remove players
   @param bool $canRematch
   @param string|null $guestLink  the guest's secret link
 --}}
-@extends($guestLink ? 'layouts.guest' : 'layouts.app')
+@extends($guest ? 'layouts.guest' : 'layouts.app')
 @section('title', 'Duell')
 
 @section('main')
@@ -22,13 +24,13 @@
     $time = fn (int $ms) => sprintf('%d:%02d min', intdiv((int) round($ms / 1000), 60), (int) round($ms / 1000) % 60);
     $winners = array_values(array_filter($standings, fn (array $r) => $r['winner']));
     // Others still playing; the own turn is the button above.
-    $waiting = array_values(array_filter($standings, fn (array $r) => ! $r['finished'] && ! $r['player']->is($me)));
+    $waiting = array_values(array_filter($standings, fn (array $r) => ! $r['finished'] && ($me === null || ! $r['player']->is($me))));
 @endphp
 <div class="mx-auto max-w-md">
-  @unless ($guestLink)
+  @unless ($guest)
     <a href="/duels" class="text-sm text-muted hover:text-content">← Duelle</a>
   @endunless
-  <h1 @class(['text-2xl font-semibold tracking-tight break-words', 'mt-1' => ! $guestLink])>Duell: {{ $duel->deck_name }}</h1>
+  <h1 @class(['text-2xl font-semibold tracking-tight break-words', 'mt-1' => ! $guest])>Duell: {{ $duel->deck_name }}</h1>
   <p class="mt-1 text-sm text-muted">
     {{ $duel->mode === 'choice' ? 'Auswahl aus 4' : 'Eintippen' }} · {{ $cards }} Wörter · {{ $duel->player_count }} Spieler
   </p>
@@ -45,7 +47,7 @@
       @elseif ($duel->isFinished())
         <p class="text-lg font-semibold">Niemand hat mitgespielt.</p>
       @else
-        @if ($me->finished_at === null)
+        @if ($me !== null && $me->finished_at === null)
           <a href="{{ $base }}/play" class="btn btn-primary btn-lg btn-block">
             {{ $me->position === 0 ? "Los geht's" : 'Weiterspielen ('.$me->position.' / '.$cards.')' }}
           </a>
@@ -60,14 +62,20 @@
     </div>
   </div>
 
-  {{-- The code while places are free: pass it on. --}}
-  @if ($code)
+  {{-- The code: to join while places are free, to see the result after the end. --}}
+  @if ($code && ! $duel->isFinished())
     <div class="mt-4 rounded-ui border border-border bg-surface-sunken p-4 text-center" role="status">
       <p class="text-sm text-muted">Code zum Mitmachen</p>
       <p class="mt-1 font-mono text-3xl font-semibold tracking-widest select-all">{{ $code }}</p>
       <p class="mt-1 text-sm text-muted">Gilt bis <x-datetime :value="$duel->expires_at" /></p>
       <p class="text-sm text-muted">Mitmachen unter {{ url('/duell') }} – auch ohne Konto</p>
     </div>
+  @elseif ($resultUntil)
+    <p class="mt-4 text-center text-sm text-muted">
+      Das Ergebnis ist bis <x-datetime :value="$resultUntil" /> zu sehen
+      @if ($code) – auch mit dem Code <span class="font-mono font-semibold text-content">{{ $code }}</span>@endif.
+      Danach wird das Duell gelöscht.
+    </p>
   @endif
 
   {{-- A guest's only way back to this duel. --}}
@@ -87,7 +95,7 @@
       <li class="list-row">
         <span class="w-6 shrink-0 text-center font-semibold tabular-nums">{{ $row['winner'] ? '🏆' : ($row['finished'] ? $i + 1 : '–') }}</span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate font-medium">{{ $row['name'] }}@if ($row['player']->is($me)) <span class="font-normal text-muted">(du)</span>@endif</span>
+          <span class="block truncate font-medium">{{ $row['name'] }}@if ($me !== null && $row['player']->is($me)) <span class="font-normal text-muted">(du)</span>@endif</span>
           <span class="block text-sm text-muted tabular-nums">
             @if ($row['finished'])
               {{ $row['correct'] }} / {{ $cards }} richtig · {{ $time($row['time_ms']) }}
@@ -98,7 +106,7 @@
             @endif
           </span>
         </span>
-        @if ($canManage && ! $row['player']->is($me) && ! $duel->isFinished())
+        @if ($canManage && $me !== null && ! $row['player']->is($me) && ! $duel->isFinished())
           <form method="post" action="{{ $base }}/players/{{ $row['player']->id }}/delete" class="shrink-0"
                 data-confirm-action="Entfernen" data-confirm="{{ $row['name'] }} aus dem Duell entfernen?">
             @csrf
