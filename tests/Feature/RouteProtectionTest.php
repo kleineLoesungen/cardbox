@@ -30,6 +30,14 @@ const PUBLIC_ROUTES = [
     // Guarded by REMINDER_TOKEN (middleware reminder.token), called by an outside
     // scheduler (Cronicle, cron-job.org) — no person behind it. Answers numbers only.
     'POST api/v1/reminders/run',
+    // Duels with guests without an account (docs/specs/duell.md): entering a
+    // code and a name needs a valid code with a free place (throttled per IP);
+    // everything after that needs the guest's secret link.
+    'GET duell',
+    'POST duell',
+    'GET duell/{token}',
+    'GET duell/{token}/play',
+    'POST duell/{token}/answer',
 ];
 
 /** @return array<string, Route> */

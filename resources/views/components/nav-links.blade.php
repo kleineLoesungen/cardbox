@@ -13,6 +13,7 @@
 <a href="/learn" class="{{ $linkClass }} {{ $section === 'learn' ? 'nav-link-active' : '' }}">Heute</a>
 <a href="/decks" class="{{ $linkClass }} {{ $section === 'decks' ? 'nav-link-active' : '' }}">Stapel</a>
 <a href="/dictionary" class="{{ $linkClass }} {{ $section === 'dictionary' ? 'nav-link-active' : '' }}">Wörterbuch</a>
+<a href="/duels" class="{{ $linkClass }} {{ $section === 'duels' ? 'nav-link-active' : '' }}">Duelle</a>
 <a href="/help" class="{{ $linkClass }} {{ $section === 'help' ? 'nav-link-active' : '' }}">Hilfe</a>
 
 @if ($children)

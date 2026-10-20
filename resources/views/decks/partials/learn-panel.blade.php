@@ -17,6 +17,7 @@
   @param list<string> $hardIds  cards often answered wrong ("Knifflige Wörter üben")
 --}}
 @php($n = $boxes['box_count'])
+@php($canDuel = $learningState !== null && ($activeIds === null ? $cards->count() : count($activeIds)) >= \App\Services\DuelService::MIN_CARDS)
 @php($runParam = $run ? '&run='.$run->id : '')
 <section class="mb-4 stack" aria-label="Lernen">
   @if ($runs->count() > 1)
@@ -105,6 +106,44 @@
       <button type="submit" class="btn btn-ghost btn-block">Knifflige Wörter üben ({{ count($hardIds) }})</button>
     </form>
   @endif
+  @if ($canDuel)
+    {{-- Duels (docs/specs/duell.md): the same words for everybody with the code. --}}
+    <button type="button" class="btn btn-ghost btn-block" data-open-sheet="duel-sheet">Duell starten</button>
+  @endif
 </section>
 
 <x-sheet id="box-sheet" title="Karten im Fach"></x-sheet>
+
+@if ($canDuel)
+  <x-sheet id="duel-sheet" title="Duell starten" :data-open-on-load="$errors->hasAny(['players', 'mode', 'deck']) ? 'true' : null">
+    <form method="post" action="/decks/{{ $deck->id }}/duels" class="stack">
+      @csrf
+      @if ($errors->hasAny(['players', 'mode', 'deck']))
+        <div class="alert alert-danger" role="alert">{{ $errors->first('players') ?: $errors->first('mode') ?: $errors->first('deck') }}</div>
+      @endif
+      <p class="text-sm text-muted">Alle bekommen dieselben {{ \App\Services\DuelService::CARDS }} Wörter aus diesem Stapel. Wer mehr weiß, gewinnt – bei Gleichstand die schnellere Zeit.</p>
+      <div class="field">
+        <label class="label" for="duel-players">Wie viele spielen mit? (du eingerechnet)</label>
+        <select class="select" id="duel-players" name="players">
+          @for ($players = \App\Services\DuelService::MIN_PLAYERS; $players <= \App\Services\DuelService::MAX_PLAYERS; $players++)
+            <option value="{{ $players }}" @selected((int) old('players', 2) === $players)>{{ $players }} Spieler</option>
+          @endfor
+        </select>
+      </div>
+      <fieldset class="field">
+        <legend class="label">Wie wird gefragt?</legend>
+        <div class="grid gap-2">
+          <label class="choice-card">
+            <input type="radio" name="mode" value="choice" @checked(old('mode', 'choice') === 'choice')>
+            <span><span class="font-semibold">Auswahl aus 4</span><span class="block text-sm text-muted">Schnell, ohne Tippfehler</span></span>
+          </label>
+          <label class="choice-card">
+            <input type="radio" name="mode" value="typed" @checked(old('mode') === 'typed')>
+            <span><span class="font-semibold">Eintippen</span><span class="block text-sm text-muted">Schwerer – kleine Tippfehler zählen trotzdem</span></span>
+          </label>
+        </div>
+      </fieldset>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Code erzeugen</button>
+    </form>
+  </x-sheet>
+@endif

@@ -49,6 +49,9 @@ einzelnen Abläufen weiter unten gelten sie zuerst.
 6. **Freundlich, nicht kindisch.** Die Oberfläche gibt Rückmeldung und lobt
    in Maßen („10 von 12 gewusst"), ohne Comicfiguren und ohne Punkte,
    Abzeichen oder Ranglisten. Erwachsene sollen sich nicht veralbert fühlen.
+   Bewusste, eng begrenzte Ausnahme: das Duell unter Freunden
+   ([duell.md](duell.md)) – ein Gewinner nur für dieses eine Duell, keine
+   dauerhafte Rangliste.
 7. **Leere Zustände führen weiter.** Jede leere Liste sagt, was als Nächstes
    zu tun ist, und bietet genau den passenden Knopf an.
 8. **Folgen vor dem Löschen klar benennen.** Rückfragen als Blatt mit

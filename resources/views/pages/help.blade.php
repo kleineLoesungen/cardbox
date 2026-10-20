@@ -231,6 +231,26 @@
     </p>
   </section>
 
+  <section class="stack gap-2 scroll-mt-20" id="duell">
+    <h2 class="text-lg font-semibold">Duell</h2>
+    <p class="text-muted">
+      Fordere Freunde heraus: Auf der Seite eines Stapels tippst du auf
+      <strong>Duell starten</strong>, wählst, wie viele mitspielen und ob aus
+      vier Antworten gewählt oder eingetippt wird. Den Code gibst du weiter.
+      Mitspielen geht unter <strong>Mehr → Duelle</strong> oder ohne Konto
+      unter <strong>{{ url('/duell') }}</strong>. Alle bekommen dieselben
+      {{ \App\Services\DuelService::CARDS }} Wörter, jede und jeder spielt
+      einmal, wann es passt – innerhalb von 24 Stunden.
+    </p>
+    <p class="text-muted">
+      Wer mehr weiß, gewinnt; bei Gleichstand die schnellere Zeit. Gemessen
+      wird je Wort, höchstens eine Minute, eine Pause kostet also nicht das
+      ganze Duell. Richtige Antworten zählen fürs Tagesziel, am Karteikasten
+      ändert sich nichts. Wer das Duell angelegt hat, kann Mitspieler wieder
+      entfernen.
+    </p>
+  </section>
+
   <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Welche Stapel lerne ich?</h2>
     <p class="text-muted">

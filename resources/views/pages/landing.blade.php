@@ -130,7 +130,7 @@
         <div class="mt-5 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
           <div class="feature-card">
             <p class="feature-card-title">Tagesziel</p>
-            <p class="feature-card-text">Ein Ring zeigt, wie viele Karten du heute gewusst hast – und dein Wortschatz wächst sichtbar. Ohne Punktesammeln und Ranglisten.</p>
+            <p class="feature-card-text">Ein Ring zeigt, wie viele Karten du heute gewusst hast – und dein Wortschatz wächst sichtbar. Ohne Punktesammeln und dauerhafte Ranglisten.</p>
           </div>
           <div class="feature-card">
             <p class="feature-card-title">Antworten eintippen</p>
@@ -139,6 +139,10 @@
           <div class="feature-card">
             <p class="feature-card-title">Knifflige Wörter</p>
             <p class="feature-card-text">Wörter, die oft falsch sind, fallen auf und lassen sich gezielt üben.</p>
+          </div>
+          <div class="feature-card">
+            <p class="feature-card-title">Duell</p>
+            <p class="feature-card-text">Freunde mit einem Code herausfordern – alle bekommen dieselben Wörter. Mitspielen geht auch ohne Konto.</p>
           </div>
           <div class="feature-card">
             <p class="feature-card-title">Eltern schauen zu</p>

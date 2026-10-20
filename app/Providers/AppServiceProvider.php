@@ -10,7 +10,10 @@ use App\Services\WebPushSender;
 use App\Support\Branding;
 use App\Support\Changelog;
 use App\Support\Navigation;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -28,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // A guest's duel link (docs/specs/duell.md): counted per link, so a
+        // class behind one school address does not lock itself out.
+        RateLimiter::for('duel-play', fn (Request $request) => Limit::perMinute(120)->by('duel-play:'.($request->route('token') ?? $request->ip())));
+
         // Passwoerter: nur eine Mindestlaenge, keine Zeichenklassen-Regeln.
         Password::defaults(fn () => Password::min(UserService::MIN_PASSWORD_LENGTH));
 

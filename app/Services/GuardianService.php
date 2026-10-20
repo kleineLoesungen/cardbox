@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Deck;
 use App\Models\User;
+use App\Support\ShareCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -21,17 +22,12 @@ use Illuminate\Validation\ValidationException;
  * only place where one account reads another account's learning data, so
  * every read goes through getChild() first.
  *
- * Codes are stored as a keyed hash only (HMAC with the app key). Wrong,
+ * Codes (App\Support\ShareCode) are stored as a keyed hash only. Wrong,
  * expired and used codes give the same message, so nothing tells whether a
  * code ever existed.
  */
 class GuardianService
 {
-    /** Without 0/O, 1/I/L: easy to read aloud and to type. */
-    private const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-
-    private const CODE_LENGTH = 8;
-
     public const MAX_GUARDIANS = 4;
 
     public const MAX_CHILDREN = 10;
@@ -53,20 +49,17 @@ class GuardianService
         $this->deleteExpiredCodes();
 
         for ($attempt = 1; ; $attempt++) {
-            $code = '';
-            for ($i = 0; $i < self::CODE_LENGTH; $i++) {
-                $code .= self::ALPHABET[random_int(0, strlen(self::ALPHABET) - 1)];
-            }
+            $code = ShareCode::generate();
 
             try {
                 DB::table('guardian_codes')->upsert([
                     'child_id' => $child->id,
-                    'code_hash' => $this->hashCode($code),
+                    'code_hash' => ShareCode::hash($code),
                     'expires_at' => now()->addHours(self::CODE_HOURS),
                     'created_at' => now(),
                 ], ['child_id'], ['code_hash', 'expires_at', 'created_at']);
 
-                return substr($code, 0, 4).'-'.substr($code, 4);
+                return ShareCode::format($code);
             } catch (UniqueConstraintViolationException $e) {
                 // Another child holds the same code (about 1 in 10¹²); draw again.
                 if ($attempt >= 3) {
@@ -95,11 +88,11 @@ class GuardianService
      */
     public function redeem(User $guardian, mixed $input): User
     {
-        $code = is_string($input) ? strtoupper((string) preg_replace('/[\s-]+/u', '', $input)) : '';
+        $code = ShareCode::normalize($input);
         if ($code === '') {
             throw ValidationException::withMessages(['code' => 'Bitte den Code vom Kind eingeben.']);
         }
-        if (strlen($code) !== self::CODE_LENGTH || strspn($code, self::ALPHABET) !== self::CODE_LENGTH) {
+        if ($code === null) {
             throw ValidationException::withMessages(['code' => self::WRONG_CODE]);
         }
 
@@ -107,7 +100,7 @@ class GuardianService
 
         return DB::transaction(function () use ($guardian, $code) {
             $row = DB::table('guardian_codes')
-                ->where('code_hash', $this->hashCode($code))
+                ->where('code_hash', ShareCode::hash($code))
                 ->where('expires_at', '>', now())
                 ->lockForUpdate()
                 ->first();
@@ -309,15 +302,6 @@ class GuardianService
         if (! Str::isUuid($id)) {
             throw (new ModelNotFoundException)->setModel(User::class, [$id]);
         }
-    }
-
-    /**
-     * Keyed with the app key: 31⁸ codes are few enough to try all against a
-     * plain sha256 from a leaked backup.
-     */
-    private function hashCode(string $code): string
-    {
-        return hash_hmac('sha256', $code, (string) config('app.key'));
     }
 
     private function deleteExpiredCodes(): void

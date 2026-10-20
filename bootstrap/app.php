@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\LogoutInactiveUsers;
+use App\Http\Middleware\PrivateLinkHeaders;
 use App\Http\Middleware\RememberSection;
 use App\Http\Middleware\RequireDeployToken;
 use App\Http\Middleware\RequireReminderToken;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'deploy.token' => RequireDeployToken::class,
             'deploy.throttle' => ThrottleDeployHook::class,
             'reminder.token' => RequireReminderToken::class,
+            'private.link' => PrivateLinkHeaders::class,
         ]);
 
         // Gesperrte Konten bei der naechsten Anfrage abmelden — an ALLEN Web-Routen.

@@ -16,6 +16,7 @@ use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\DeckRunController;
 use App\Http\Controllers\DeckSelectionController;
 use App\Http\Controllers\DictionaryController;
+use App\Http\Controllers\DuelController;
 use App\Http\Controllers\LearnController;
 use App\Http\Controllers\LearningSettingsController;
 use App\Http\Controllers\Moderation\CardController as ModerationCardController;
@@ -63,6 +64,21 @@ Route::middleware('guest')->group(function () {
     // waits for approval (UserService::register). Rate-limited per IP.
     Route::get('/register', [AuthController::class, 'showRegister']);
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,60');
+});
+
+// Duels for guests without an account (docs/specs/duell.md): code and name,
+// then a secret link (43 random characters, stored as keyed hash) that is the
+// only key to that one duel. Throttled per IP; at most the set number of
+// players per duel. No account is made, approval is not touched.
+Route::middleware('private.link')->group(function () {
+    Route::get('/duell', [DuelController::class, 'guestEntry']);
+    Route::post('/duell', [DuelController::class, 'guestJoin'])->middleware('throttle:10,60,duel-guest');
+    // Counted per link, not per IP: a class behind one address must not lock itself out.
+    Route::middleware('throttle:duel-play')->where(['token' => '[A-Za-z0-9_-]{43}'])->group(function () {
+        Route::get('/duell/{token}', [DuelController::class, 'guestShow']);
+        Route::get('/duell/{token}/play', [DuelController::class, 'guestPlay']);
+        Route::post('/duell/{token}/answer', [DuelController::class, 'guestAnswer']);
+    });
 });
 
 // Random memorable password for registration and the admin forms. Returns no
@@ -179,6 +195,19 @@ Route::middleware('auth')->group(function () {
         // Throttled: each request parses up to 1 MB of text.
         Route::post('/import/preview', [DeckImportController::class, 'preview'])->middleware('throttle:20,1');
         Route::post('/import', [DeckImportController::class, 'store'])->middleware('throttle:20,1');
+    });
+
+    // Duels (docs/specs/duell.md): only players see a duel; others get 404.
+    Route::get('/duels', [DuelController::class, 'index']);
+    Route::post('/duels/join', [DuelController::class, 'join'])->middleware('throttle:10,60,duel-code');
+    // Throttled: every duel copies ten cards into the database.
+    Route::post('/decks/{deck}/duels', [DuelController::class, 'store'])->whereUuid('deck')->middleware('throttle:20,60,duel-create');
+    Route::whereUuid('duel')->prefix('/duels/{duel}')->group(function () {
+        Route::get('/', [DuelController::class, 'show']);
+        Route::get('/play', [DuelController::class, 'play']);
+        Route::post('/answer', [DuelController::class, 'answer']);
+        Route::post('/rematch', [DuelController::class, 'rematch'])->middleware('throttle:20,60,duel-create');
+        Route::post('/players/{player}/delete', [DuelController::class, 'removePlayer'])->whereUuid('player');
     });
 
     Route::get('/notes', [NoteController::class, 'index']);

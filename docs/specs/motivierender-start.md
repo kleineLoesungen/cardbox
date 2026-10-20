@@ -21,6 +21,8 @@ Entscheidungen (Rückfragen vom 16.10.2026):
   füllte. Es sollen Erfolge nötig sein.)
 
 Leitlinie 6 bleibt: keine Punkte, keine Abzeichen, keine Ranglisten.
+(Seit 20.10.2026 mit einer bewussten Ausnahme: das Duell unter Freunden,
+siehe [duell.md](duell.md) – ein Gewinner nur für das eine Duell.)
 
 ## Ziel
 

@@ -31,6 +31,7 @@ htmx statt Nuxt.
 | Karten je Runde, knifflige Wörter | ✅ fertig | [runden-und-knifflige-woerter.md](docs/specs/runden-und-knifflige-woerter.md) |
 | Eltern sehen den Fortschritt | ✅ fertig | [eltern-ansicht.md](docs/specs/eltern-ansicht.md) |
 | „Lerne ich“ und pausiert, Karten „Vorderseite → Rückseite“ | ✅ fertig | [aktive-stapel-und-freie-karten.md](docs/specs/aktive-stapel-und-freie-karten.md) |
+| Duell, auch mit Gästen ohne Konto | ✅ fertig | [duell.md](docs/specs/duell.md) |
 
 Alle drei Stufen der Spezifikation sind umgesetzt. Offen ist ein Test auf
 echten Telefonen.
@@ -57,6 +58,10 @@ Stapel einer anderen Person gibt es zwei Wege:
 Nur „lerne ich“ kommt auf **Heute**, in die Erinnerung und zu den Eltern.
 Umgeschaltet wird oben auf der Stapelseite; neue Stapel und geteilte nach
 „Lernen“ sind gleich „lerne ich“.
+
+**Duell.** Auf der Stapelseite „Duell starten“: Spielerzahl und Abfrage wählen,
+Code weitergeben. Alle bekommen dieselben 10 Wörter, wer mehr weiß, gewinnt.
+Mitspielen geht auch ohne Konto unter `/duell`.
 
 **Lernen.** Der Karteikasten hat fünf Fächer, die Abstände sind 1, 2, 4 und 7 Tage.
 - Gewusst: Die Karte rückt ein Fach weiter.

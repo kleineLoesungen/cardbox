@@ -30,6 +30,7 @@ final class Navigation
         'admin/tokens/' => 'admin/tokens',
         'moderation/' => 'moderation',
         'children/' => 'children',
+        'duels/' => 'duels',
     ];
 
     /** Section key => [path, label]. The key is also the path without the slash. */
@@ -37,6 +38,7 @@ final class Navigation
         'learn' => ['/learn', 'Heute'],
         'decks' => ['/decks', 'Stapel'],
         'dictionary' => ['/dictionary', 'Wörterbuch'],
+        'duels' => ['/duels', 'Duelle'],
         'help' => ['/help', 'Hilfe'],
         'account' => ['/account', 'Mein Konto'],
         'children' => ['/children', 'Meine Kinder'],

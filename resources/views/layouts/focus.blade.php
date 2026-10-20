@@ -40,10 +40,13 @@
     const bottom = field.getBoundingClientRect().bottom + window.scrollY;
     if (bottom + 8 <= window.visualViewport.height) window.scrollTo(0, 0);
   });
-  // An answer that is no round (session expired → login page): go there instead of swapping it in.
+  // An answer that left the screen it was asked for (session expired → login
+  // page): go there instead of swapping it in. Same for a duel (docs/specs/duell.md).
   document.body.addEventListener("htmx:beforeSwap", (e) => {
     const url = e.detail.xhr.responseURL;
-    if (url && !new URL(url).pathname.startsWith("/learn/round")) {
+    const asked = new URL(e.detail.requestConfig?.path ?? location.href, location.origin).pathname;
+    const screen = asked.startsWith("/learn/round") ? "/learn/round" : asked.replace(/\/(play|answer)$/, "");
+    if (url && !new URL(url).pathname.startsWith(screen)) {
       e.detail.shouldSwap = false;
       window.location.href = url;
     }
