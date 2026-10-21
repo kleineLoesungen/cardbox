@@ -10,6 +10,7 @@ use App\Http\Middleware\RequireScope;
 use App\Http\Middleware\ThrottleDeployHook;
 use App\Http\Middleware\TrustProxies;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -99,5 +100,25 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()
                 ->view('partials.toast-oob', ['toast' => ['kind' => 'danger', 'message' => $e->validator->errors()->first()]], 422)
                 ->header('HX-Reswap', 'none');
+        });
+
+        // htmx after the session ran out (e.g. the duel page asking for its
+        // state): to the login page as a whole, not the login page into the
+        // part that was asked for.
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (! $request->headers->has('HX-Request') || $request->is('api/*')) {
+                return null;
+            }
+
+            // Back to the page that was open after signing in. Only its path
+            // and query are taken, on our own host: never another site.
+            $page = (string) $request->header('HX-Current-URL');
+            $path = (string) parse_url($page, PHP_URL_PATH);
+            if (preg_match('#^/(?![/\\\\])[^\\\\]*$#', $path) === 1 && $request->hasSession()) {
+                $query = parse_url($page, PHP_URL_QUERY);
+                $request->session()->put('url.intended', url($path.(is_string($query) ? '?'.$query : '')));
+            }
+
+            return response('', 200)->header('HX-Redirect', '/login');
         });
     })->create();

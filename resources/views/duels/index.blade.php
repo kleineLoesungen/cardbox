@@ -58,4 +58,5 @@
     </ul>
   @endif
 </div>
+@include('duels.partials.code-from-link', ['field' => 'duel-code', 'keep' => false])
 @endsection

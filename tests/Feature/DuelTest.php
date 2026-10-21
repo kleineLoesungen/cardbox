@@ -107,6 +107,21 @@ describe('Anlegen', function () {
         $this->post("/decks/{$klein->id}/duels", ['players' => '2', 'mode' => 'choice'])->assertSessionHasErrors('deck');
     });
 
+    it('nimmt nur Karten aus der Auswahl der Erstellerin und sagt das (Issue #21)', function () {
+        $anna = actingAsUser();
+        $deck = duelDeck($anna, 20);
+        $chosen = $deck->cards()->orderBy('created_at')->limit(6)->pluck('id')->all();
+        $this->post("/decks/{$deck->id}/selection", ['cards' => $chosen]);
+
+        $this->get("/decks/{$deck->id}")->assertSee('aus deiner Auswahl (6 von 20 Karten)');
+        $duel = makeDuel($deck, 2, 'choice', 2);
+        $drawn = DB::table('duel_cards')->where('duel_id', $duel->id)->pluck('card_id')->all();
+
+        expect($drawn)->toHaveCount(12)
+            ->and(array_diff($drawn, $chosen))->toBe([])
+            ->and($duel->repeat_from_round)->toBe(2);
+    });
+
     it('prüft Spielerzahl und Abfrageart', function (string $players, string $mode, string $field) {
         $ich = actingAsUser();
         $deck = duelDeck($ich);
@@ -200,6 +215,25 @@ describe('Mitmachen', function () {
         $this->actingAs($anna)->post("/duels/{$duel->id}/players/{$player->id}/delete")->assertRedirect("/duels/{$duel->id}");
         $this->actingAs($clara)->post('/duels/join', ['code' => $code])->assertRedirect("/duels/{$duel->id}");
         $this->actingAs($ben)->get("/duels/{$duel->id}")->assertNotFound();
+    });
+
+    it('bietet eine Einladung zum Teilen an, mit dem Code hinter #', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 2);
+        $code = duelCode($duel);
+
+        $this->get("/duels/{$duel->id}")
+            ->assertSee('Einladung teilen')
+            ->assertSee('data-share-url="'.url('/duell').'#'.$code.'"', false)
+            ->assertSee('Code: '.$code);
+        // The invitation link fills the code field, also after signing in.
+        $this->get('/duels')->assertSee("getElementById('duel-code')", false);
+        auth()->logout();
+        $this->get('/duell')->assertSee("getElementById('guest-code')", false)->assertSee('href="/duels"', false);
+
+        // Full: nothing to share any more.
+        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => $code]);
+        $this->actingAs($anna)->get("/duels/{$duel->id}")->assertDontSee('data-share-url', false);
     });
 
     it('weist falsche und abgelaufene Codes ab', function () {
@@ -582,6 +616,103 @@ describe('Runden', function () {
             ->assertSessionHasErrors(['round' => 'Die Zeit für Runde 2 ist abgelaufen – das Duell ist beendet.']);
         $this->followingRedirects()->post("{$base}/next-round")
             ->assertSee('Die Zeit für Runde 2 ist abgelaufen')->assertDontSee('Runde 2 starten');
+    });
+});
+
+describe('Aktualisieren', function () {
+    it('fragt die Duellseite alle 3 Sekunden neu ab, solange das Duell läuft', function () {
+        $anna = actingAsUser(['name' => 'Anna']);
+        $duel = makeDuel(duelDeck($anna, 30), 2, 'choice', 2);
+        $ben = User::factory()->create(['name' => 'Ben']);
+        $this->actingAs($ben)->post('/duels/join', ['code' => duelCode($duel)]);
+        $base = "/duels/{$duel->id}";
+        $this->actingAs($anna);
+        playDuel($base, $duel, 6);
+
+        $this->flushHeaders()->get($base)->assertSee('hx-get="'.$base.'/live?state=', false)->assertSee('every 3s');
+        $this->withHeaders(['HX-Request' => 'true'])->get("{$base}/live")
+            ->assertOk()->assertSee('id="duel-live"', false)->assertDontSee('<html', false)
+            ->assertSee('Warten auf: Ben');
+
+        // Ben finishes: the waiting page learns it with the next request.
+        $this->actingAs($ben);
+        playDuel($base, $duel, 4);
+        $this->actingAs($anna)->withHeaders(['HX-Request' => 'true'])->get("{$base}/live")
+            ->assertSee('Runde 1 ist fertig!')->assertSee('Runde 2 starten')->assertSee('hx-get', false);
+        $this->actingAs($ben)->withHeaders(['HX-Request' => 'true'])->get("{$base}/live")->assertSee('Anna startet gleich Runde 2.');
+        $this->actingAs($anna)->flushHeaders()->post("{$base}/next-round");
+        $this->actingAs($ben)->withHeaders(['HX-Request' => 'true'])->get("{$base}/live")->assertSee("Los geht's – Runde 2");
+
+        // After the end the result stands: no more asking.
+        $this->travel(25)->hours();
+        $this->get("{$base}/live")->assertSee('gewinnt!')->assertDontSee('hx-get', false);
+    });
+
+    it('fragt auch für Gäste über ihren Link neu ab', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 2);
+        $code = duelCode($duel);
+        auth()->logout();
+        $link = parse_url($this->post('/duell', ['code' => $code, 'name' => 'Mia'])->headers->get('Location'), PHP_URL_PATH);
+
+        $this->get($link)->assertSee('hx-get="'.$link.'/live?state=', false);
+        $this->withHeaders(['HX-Request' => 'true'])->get("{$link}/live")
+            ->assertOk()->assertSee('id="duel-live"', false)->assertSee('Heb dir diesen Link auf');
+    });
+
+    it('zeigt den Stand nur Teilnehmenden und schickt nach Ablauf der Sitzung zur Anmeldung', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 2);
+
+        $this->actingAs(User::factory()->create())->get("/duels/{$duel->id}/live")->assertNotFound();
+        $this->get('/duell/'.str_repeat('a', 43).'/live')->assertNotFound();
+        auth()->logout();
+        $this->withHeaders(['HX-Request' => 'true', 'HX-Current-URL' => url("/duels/{$duel->id}")])->get("/duels/{$duel->id}/live")
+            ->assertOk()->assertHeader('HX-Redirect', '/login');
+        // After signing in, back to the duel; only its path counts, never another site.
+        expect(session('url.intended'))->toBe(url("/duels/{$duel->id}"));
+        $this->withHeaders(['HX-Current-URL' => 'https://evil.example\\@localhost/learn?x=1'])->get("/duels/{$duel->id}/live");
+        expect(session('url.intended'))->toBe(url('/learn?x=1'));
+        $this->withHeaders(['HX-Current-URL' => 'https://example.org//evil.example/'])->get("/duels/{$duel->id}/live");
+        expect(session('url.intended'))->toBe(url('/learn?x=1'));
+    });
+
+    it('antwortet ohne Änderung mit 204, damit nichts ausgetauscht wird', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 2);
+        $base = "/duels/{$duel->id}";
+        $state = app(DuelService::class)->state($duel);
+
+        $this->get($base)->assertSee("/live?state={$state}", false)->assertSee('data-poll', false);
+        $this->withHeaders(['HX-Request' => 'true'])->get("{$base}/live?state={$state}")->assertNoContent();
+
+        // Somebody joins: the state changes, the part comes new.
+        $this->actingAs(User::factory()->create())->post('/duels/join', ['code' => duelCode($duel)]);
+        $this->actingAs($anna)->get("{$base}/live?state={$state}")->assertOk()->assertSee('id="duel-live"', false);
+    });
+
+    it('schickt Entfernte beim nächsten Abfragen zur Liste, statt immer wieder zu fragen', function () {
+        $anna = actingAsUser();
+        $duel = makeDuel(duelDeck($anna), 3);
+        $ben = User::factory()->create();
+        $this->actingAs($ben)->post('/duels/join', ['code' => duelCode($duel)]);
+        $player = $duel->players()->where('user_id', $ben->id)->sole();
+        $this->actingAs($anna)->post("/duels/{$duel->id}/players/{$player->id}/delete");
+
+        $this->actingAs($ben)->withHeaders(['HX-Request' => 'true'])->get("/duels/{$duel->id}/live")
+            ->assertOk()->assertHeader('HX-Redirect', '/duels');
+        $this->flushHeaders()->get("/duels/{$duel->id}/live")->assertNotFound();
+
+        auth()->logout();
+        $this->withHeaders(['HX-Request' => 'true'])->get('/duell/'.str_repeat('a', 43).'/live')->assertHeader('HX-Redirect', '/duell');
+    });
+
+    it('bremst das Abfragen getrennt vom Spielen', function () {
+        $route = collect(app('router')->getRoutes()->getRoutes())->first(fn ($r) => $r->uri() === 'duell/{token}/live');
+        $play = collect(app('router')->getRoutes()->getRoutes())->first(fn ($r) => $r->uri() === 'duell/{token}/answer');
+
+        expect($route->gatherMiddleware())->toContain('throttle:duel-live')->not->toContain('throttle:duel-play')
+            ->and($play->gatherMiddleware())->toContain('throttle:duel-play');
     });
 });
 

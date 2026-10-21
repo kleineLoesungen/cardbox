@@ -47,6 +47,8 @@
     </ul>
   @endif
 
-  <p class="mt-6 text-center text-sm text-muted">Du hast ein Konto? <a href="/login" class="text-brand hover:underline">Anmelden</a></p>
+  {{-- Through /duels: after signing in, Laravel leads there, and the code of an invitation is filled in. --}}
+  <p class="mt-6 text-center text-sm text-muted">Du hast ein Konto? <a href="/duels" class="text-brand hover:underline">Anmelden</a></p>
 </div>
+@include('duels.partials.code-from-link', ['field' => 'guest-code', 'keep' => true])
 @endsection

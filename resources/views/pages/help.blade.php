@@ -236,7 +236,8 @@
     <p class="text-muted">
       Fordere Freunde heraus: Auf der Seite eines Stapels tippst du auf
       <strong>Duell starten</strong>, wählst, wie viele mitspielen und ob aus
-      vier Antworten gewählt oder eingetippt wird. Den Code gibst du weiter.
+      vier Antworten gewählt oder eingetippt wird. Den Code gibst du weiter –
+      am einfachsten mit <strong>Einladung teilen</strong> im Chat.
       Mitspielen geht unter <strong>Mehr → Duelle</strong> oder ohne Konto
       unter <strong>{{ url('/duell') }}</strong>. Alle bekommen dieselben
       {{ \App\Services\DuelService::CARDS }} Wörter, jede und jeder spielt
@@ -253,7 +254,8 @@
       Ein Duell kann bis zu fünf <strong>Runden</strong> mit je
       {{ \App\Services\DuelService::CARDS }} Wörtern haben – Wörter wiederholen
       sich erst, wenn der Stapel durch ist. Nach jeder Runde gibt es die
-      Rangliste, dann startet, wer das Duell angelegt hat, die nächste.
+      Rangliste, dann startet, wer das Duell angelegt hat, die nächste. Die
+      Duellseite zeigt den Stand von selbst, Neuladen ist nicht nötig.
       Gewonnen hat, wer über alle Runden die meisten Wörter weiß. Das
       Ergebnis ist 24 Stunden nach dem Ende zu sehen – auch für alle, die nur
       den Code haben. Danach wird das Duell gelöscht.

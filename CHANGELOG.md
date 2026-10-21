@@ -7,6 +7,15 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.21
+- Zeiten stimmen wieder, wenn der Datenbankserver nicht auf UTC läuft (z. B. deutsche Zeit): Vorher lagen gespeicherte Zeitpunkte zwei Stunden daneben – im Duell zählte dadurch jede Karte die volle Minute, Fristen liefen zwei Stunden zu früh ab. Die Verbindung spricht jetzt immer UTC; die Migration rückt vorhandene Zeitpunkte zurecht und tut auf einem UTC-Server nichts. Schon gespielte Duell-Runden behalten ihre Zeit von 10 Minuten
+- Stapelseite: „Für den Test üben“, „Knifflige Wörter üben“ und „Duell starten“ sind jetzt Knöpfe mit Symbol; „Nur diesen Stapel lernen“ ist hervorgehoben und größer
+- Duell: Wer nur einen Teil eines Stapels lernt, bekommt im Duell nur diese Karten – das Duell-Fenster sagt das jetzt auch
+- Duell: Die Duellseite zeigt den Stand von selbst (alle 3 Sekunden, solange das Duell läuft, ausgetauscht wird nur bei Änderungen) – wer wartet, sieht ohne Neuladen, wann eine Runde vorbei ist, die nächste läuft oder wer gewonnen hat
+- Duell: „Einladung teilen“ unter dem Code schickt Text und Link per Chat (am Handy über das Teilen-Menü, sonst kopiert). Der Link füllt das Code-Feld aus
+- Betrieb: Neue öffentliche Route GET /duell/{Link}/live für Gäste, mit eigener Bremse je Link (120 Abfragen pro Minute), damit offene Tabs nie das Antworten blockieren
+- Migration: 2026_10_21_000000_repair_times_written_in_server_zone.php
+
 ## 2026.10.20.2
 - Duell mit Runden: Beim Anlegen 1 bis 5 Runden wählen, je 10 Wörter. Wörter wiederholen sich erst, wenn der Stapel durch ist. Nach jeder Runde (alle haben gespielt, spätestens nach 24 Stunden) erscheint die Rangliste, dann startet die Erstellerin innerhalb von 24 Stunden die nächste Runde. Wer über alle fertig gespielten Runden die meisten Wörter weiß, gewinnt, bei Gleichstand die kürzere Zeit; eine abgebrochene Runde zählt nicht. Einsteigen nur in Runde 1. „Revanche“ entfällt – stattdessen Runden
 - Migration: 2026_10_20_100000_add_rounds_to_duels.php

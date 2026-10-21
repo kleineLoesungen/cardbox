@@ -6,6 +6,7 @@ use App\Models\Duel;
 use App\Models\DuelPlayer;
 use App\Services\DuelService;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,10 +70,19 @@ class DuelController extends Controller
     {
         ['duel' => $model, 'player' => $player] = $this->duels->getForMember($request->user(), $duel);
 
-        return $this->page($model, $player, "/duels/{$model->id}", [
-            'canManage' => $this->duels->canManage($request->user(), $model),
-            'canStartNextRound' => $this->duels->canStartNextRound($request->user(), $model),
-        ]);
+        return view('duels.show', $this->memberPage($request, $model, $player));
+    }
+
+    /** The changing part of the duel page, asked for every few seconds while it runs. */
+    public function live(Request $request, string $duel): View|Response
+    {
+        try {
+            ['duel' => $model, 'player' => $player] = $this->duels->getForMember($request->user(), $duel);
+        } catch (ModelNotFoundException $e) {
+            return $this->gone($request, $e, '/duels');
+        }
+
+        return $this->livePart($request, $model, fn (string $state) => $this->memberPage($request, $model, $player, $state));
     }
 
     public function play(Request $request, string $duel): View|Response|RedirectResponse
@@ -152,7 +162,18 @@ class DuelController extends Controller
     {
         ['duel' => $model, 'player' => $player] = $this->duels->getForGuest($token);
 
-        return $this->page($model, $player, "/duell/{$token}", ['guest' => true, 'guestLink' => url("/duell/{$token}")]);
+        return view('duels.show', $this->guestPage($token, $model, $player));
+    }
+
+    public function guestLive(Request $request, string $token): View|Response
+    {
+        try {
+            ['duel' => $model, 'player' => $player] = $this->duels->getForGuest($token);
+        } catch (ModelNotFoundException $e) {
+            return $this->gone($request, $e, '/duell');
+        }
+
+        return $this->livePart($request, $model, fn (string $state) => $this->guestPage($token, $model, $player, $state));
     }
 
     public function guestPlay(Request $request, string $token): View|Response|RedirectResponse
@@ -180,10 +201,41 @@ class DuelController extends Controller
             abort(404);
         }
 
-        return $this->page($this->duels->getResult($duel), null, '', ['guest' => $request->user() === null]);
+        return view('duels.show', $this->page($this->duels->getResult($duel), null, '', ['guest' => $request->user() === null]));
     }
 
     // --- Shared ---------------------------------------------------------------
+
+    /**
+     * The changing part of the duel page; 204 (htmx keeps what it has) when
+     * nothing changed since the state the page sent along.
+     *
+     * @param  \Closure(string): array<string, mixed>  $data  page data without the state
+     */
+    private function livePart(Request $request, Duel $duel, \Closure $data): View|Response
+    {
+        $state = $this->duels->state($duel);
+        if ($request->query('state') === $state) {
+            return response()->noContent();
+        }
+
+        return view('duels.partials.live', $data($state));
+    }
+
+    /**
+     * The duel page asks for its state, but the duel is gone or the player
+     * was removed: off to the duel list instead of asking on and on.
+     *
+     * @param  ModelNotFoundException<Model>  $e
+     */
+    private function gone(Request $request, ModelNotFoundException $e, string $to): Response
+    {
+        if (! $request->headers->has('HX-Request')) {
+            throw $e;
+        }
+
+        return response('', 200)->header('HX-Redirect', $to);
+    }
 
     private function toResult(Request $request, Duel $duel): RedirectResponse
     {
@@ -211,17 +263,34 @@ class DuelController extends Controller
         return $tokens;
     }
 
+    /** @return array<string, mixed> */
+    private function memberPage(Request $request, Duel $model, DuelPlayer $player, ?string $state = null): array
+    {
+        return $this->page($model, $player, "/duels/{$model->id}", [
+            'canManage' => $this->duels->canManage($request->user(), $model),
+            'canStartNextRound' => $this->duels->canStartNextRound($request->user(), $model),
+        ], $state);
+    }
+
+    /** @return array<string, mixed> */
+    private function guestPage(string $token, Duel $model, DuelPlayer $player, ?string $state = null): array
+    {
+        return $this->page($model, $player, "/duell/{$token}", ['guest' => true, 'guestLink' => url("/duell/{$token}")], $state);
+    }
+
     /**
-     * The duel page; without `$player` only the result (a finished duel seen
-     * by the code).
+     * The data of the duel page; without `$player` only the result (a
+     * finished duel seen by the code).
      *
      * @param  array<string, mixed>  $extra
+     * @param  string|null  $state  DuelService::state, when already known
+     * @return array<string, mixed>
      */
-    private function page(Duel $duel, ?DuelPlayer $player, string $base, array $extra): View
+    private function page(Duel $duel, ?DuelPlayer $player, string $base, array $extra, ?string $state = null): array
     {
         $free = $this->duels->freeSlots($duel);
 
-        return view('duels.show', $extra + [
+        return $extra + [
             'duel' => $duel,
             'me' => $player,
             'base' => $base,
@@ -240,7 +309,8 @@ class DuelController extends Controller
             'canManage' => false,
             'canStartNextRound' => false,
             'guestLink' => null,
-        ]);
+            'state' => $state ?? $this->duels->state($duel),
+        ];
     }
 
     /** The card that is up in full screen; for htmx ("Weiter") only the card, or off to the result. */

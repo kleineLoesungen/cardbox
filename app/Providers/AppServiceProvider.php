@@ -34,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         // A guest's duel link (docs/specs/duell.md): counted per link, so a
         // class behind one school address does not lock itself out.
         RateLimiter::for('duel-play', fn (Request $request) => Limit::perMinute(120)->by('duel-play:'.($request->route('token') ?? $request->ip())));
+        // Its page asks every 3 seconds (20 a minute): room for a few open tabs.
+        RateLimiter::for('duel-live', fn (Request $request) => Limit::perMinute(120)->by('duel-live:'.($request->route('token') ?? $request->ip())));
 
         // Passwoerter: nur eine Mindestlaenge, keine Zeichenklassen-Regeln.
         Password::defaults(fn () => Password::min(UserService::MIN_PASSWORD_LENGTH));

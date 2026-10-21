@@ -155,9 +155,12 @@
 
     // Fehler einer htmx-Anfrage sichtbar machen, statt still nichts zu tun.
     // 422 bringt seine Meldung selbst mit (siehe bootstrap/app.php).
+    // Regular polling ([data-poll]) stays quiet: the next try comes in seconds,
+    // a toast every few seconds would help nobody.
+    const polling = (e) => e.detail.elt?.closest?.("[data-poll]");
     document.body.addEventListener("htmx:responseError", (e) => {
       const status = e.detail.xhr.status;
-      if (status === 422) return;
+      if (status === 422 || polling(e)) return;
       const messages = {
         403: "Dafür fehlt die Berechtigung.",
         404: "Das gibt es nicht (mehr).",
@@ -165,7 +168,8 @@
       };
       showToast(messages[status] || `Das hat nicht geklappt (Fehler ${status}).`);
     });
-    document.body.addEventListener("htmx:sendError", () => {
+    document.body.addEventListener("htmx:sendError", (e) => {
+      if (polling(e)) return;
       showToast("Keine Verbindung zum Server.");
     });
   </script>

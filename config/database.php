@@ -98,6 +98,10 @@ return [
             // PostgreSQL schema for all Cardbox tables. Hosters often hand out
             // one database with several schemas; DB_SCHEMA picks ours.
             'search_path' => env('DB_SCHEMA', 'public'),
+            // The app writes times without offset ("Y-m-d H:i:s") and means UTC.
+            // A server set to Europe/Berlin would read them two hours off, so
+            // every connection talks UTC, whatever the server's default.
+            'timezone' => 'UTC',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 

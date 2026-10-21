@@ -78,7 +78,9 @@
       @if ($run)
         <input type="hidden" name="run" value="{{ $run->id }}">
       @endif
-      <button type="submit" class="btn btn-secondary btn-lg btn-block" @disabled($learnable === 0)>
+      {{-- The main action of the deck page (issue #20): bigger and in the brand colour. --}}
+      <button type="submit" class="btn btn-primary btn-lg btn-block" @disabled($learnable === 0)>
+        <x-icon name="learn" />
         Nur diesen Stapel lernen
         @if ($learnable > 0)
           <span class="font-normal opacity-80">({{ $learnable }})</span>
@@ -93,7 +95,7 @@
     @csrf
     <input type="hidden" name="mode" value="test">
     <input type="hidden" name="deck" value="{{ $deck->id }}">
-    <button type="submit" class="btn btn-ghost btn-block">Für den Test üben</button>
+    <button type="submit" class="btn btn-secondary btn-block"><x-icon name="test" />Für den Test üben</button>
     <p class="hint text-center">Alle Karten, bis du jede einmal gewusst hast. Zählt nicht für den Karteikasten.</p>
   </form>
   @if ($hardIds !== [])
@@ -103,12 +105,12 @@
       <input type="hidden" name="mode" value="test">
       <input type="hidden" name="only" value="hard">
       <input type="hidden" name="deck" value="{{ $deck->id }}">
-      <button type="submit" class="btn btn-ghost btn-block">Knifflige Wörter üben ({{ count($hardIds) }})</button>
+      <button type="submit" class="btn btn-secondary btn-block"><x-icon name="hard" />Knifflige Wörter üben ({{ count($hardIds) }})</button>
     </form>
   @endif
   @if ($canDuel)
     {{-- Duels (docs/specs/duell.md): the same words for everybody with the code. --}}
-    <button type="button" class="btn btn-ghost btn-block" data-open-sheet="duel-sheet">Duell starten</button>
+    <button type="button" class="btn btn-secondary btn-block" data-open-sheet="duel-sheet"><x-icon name="duel" />Duell starten</button>
   @endif
 </section>
 
@@ -121,7 +123,16 @@
       @if ($errors->hasAny(['players', 'rounds', 'mode', 'deck']))
         <div class="alert alert-danger" role="alert">{{ $errors->first('players') ?: $errors->first('rounds') ?: $errors->first('mode') ?: $errors->first('deck') }}</div>
       @endif
-      <p class="text-sm text-muted">Alle bekommen je Runde dieselben {{ \App\Services\DuelService::CARDS }} Wörter aus diesem Stapel. Wer mehr weiß, gewinnt – bei Gleichstand die schnellere Zeit.</p>
+      <p class="text-sm text-muted">
+        Alle bekommen je Runde dieselben {{ \App\Services\DuelService::CARDS }} Wörter
+        {{-- Issue #21: only the creator's selection (issue #10) comes up. --}}
+        @if ($activeIds !== null)
+          aus deiner Auswahl ({{ count($activeIds) }} von {{ $cards->count() }} Karten).
+        @else
+          aus diesem Stapel.
+        @endif
+        Wer mehr weiß, gewinnt – bei Gleichstand die schnellere Zeit.
+      </p>
       <div class="field">
         <label class="label" for="duel-players">Wie viele spielen mit? (du eingerechnet)</label>
         <select class="select" id="duel-players" name="players">

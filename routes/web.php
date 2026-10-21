@@ -81,6 +81,9 @@ Route::middleware('private.link')->group(function () {
         Route::get('/duell/{token}/play', [DuelController::class, 'guestPlay']);
         Route::post('/duell/{token}/answer', [DuelController::class, 'guestAnswer']);
     });
+    // The page asking for its state every 3 seconds: own budget, so open tabs never block answering.
+    Route::get('/duell/{token}/live', [DuelController::class, 'guestLive'])
+        ->where('token', '[A-Za-z0-9_-]{43}')->middleware('throttle:duel-live');
 });
 
 // Random memorable password for registration and the admin forms. Returns no
@@ -206,6 +209,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/decks/{deck}/duels', [DuelController::class, 'store'])->whereUuid('deck')->middleware('throttle:20,60,duel-create');
     Route::whereUuid('duel')->prefix('/duels/{duel}')->group(function () {
         Route::get('/', [DuelController::class, 'show']);
+        Route::get('/live', [DuelController::class, 'live']);
         Route::get('/play', [DuelController::class, 'play']);
         Route::post('/answer', [DuelController::class, 'answer']);
         Route::post('/next-round', [DuelController::class, 'nextRound']);

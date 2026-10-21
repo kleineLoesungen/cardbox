@@ -36,6 +36,7 @@ const PUBLIC_ROUTES = [
     'GET duell',
     'POST duell',
     'GET duell/{token}',
+    'GET duell/{token}/live',
     'GET duell/{token}/play',
     'POST duell/{token}/answer',
     // Result of a finished duel, only for the session that entered its code.

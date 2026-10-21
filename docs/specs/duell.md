@@ -79,6 +79,18 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
 - Sobald alle Plätze vergeben sind, nimmt der Code niemanden mehr an. Wird
   jemand entfernt, wird sein Platz wieder frei.
 - Codes eingeben ist gebremst: 10 Versuche pro Stunde je Konto.
+- **Einladung teilen (Entscheidung vom 20.10.2026):** Solange Plätze frei
+  sind, steht unter dem Code **„Einladung teilen“**. Am Handy öffnet das
+  das Teilen-Menü (Chat), sonst wird der Text kopiert („Einladung kopiert –
+  jetzt im Chat einfügen.“). Der Text: „Machst du mit beim Duell „Tiere“?
+  Code: D7P2-M9QX“ und der Link `…/duell#D7P2-M9QX`.
+  - Der Code steht hinter `#`: Er füllt das Code-Feld aus, erreicht aber nie
+    den Server und landet in keinem Protokoll. Eintippen und „Mitmachen“
+    bleiben – ein Link allein tritt nirgends bei.
+  - Angemeldete landen von `/duell` unter **Mehr → Duelle**, das Feld ist
+    auch dort ausgefüllt. „Anmelden“ auf der Gastseite führt über die
+    Anmeldung zu **Duelle**; der Code bleibt dafür im Tab gemerkt
+    (`sessionStorage`).
 
 ### Als Gast (ohne Konto)
 
@@ -181,6 +193,27 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
   endet nach 24 Stunden und ist 24 Stunden später weg. Gelöscht wird bei
   jedem Zugriff auf Duelle (Liste, Duellseite, Code eingeben), einen
   Scheduler gibt es nicht.
+- **Die Duellseite aktualisiert sich selbst (Entscheidung vom
+  20.10.2026):** Solange das Duell läuft, fragt sie alle **3 Sekunden** den
+  Stand ab – wer fertig ist, ob eine Runde vorbei ist, ob die nächste
+  läuft, wer gewonnen hat. Ohne Neuladen erscheint so „Runde N starten“
+  bzw. „Los geht's – Runde N“. Nicht in einem verborgenen Tab (beim
+  Zurückkehren sofort) und nicht, solange eine Rückfrage offen ist. Nach
+  dem Ende hört sie auf.
+  - Die Seite schickt ihren Stand mit (ein Fingerabdruck aus Runde, Fristen
+    und dem Fortschritt aller Spieler). Hat sich nichts geändert, antwortet
+    der Server mit 204 und nichts wird ausgetauscht – kein Fokusverlust,
+    kein Springen beim Lesen. Beim Austausch steht der Gast-Link weiter vor
+    der Rangliste.
+  - Fehler beim Abfragen (kein Netz, Server kurz weg) bleiben still; der
+    nächste Versuch kommt ohnehin gleich. Wer entfernt wurde oder dessen
+    Duell gelöscht ist, landet bei **Duelle** bzw. `/duell`.
+  - Ist die Sitzung abgelaufen, geht es zur Anmeldung und danach zurück zum
+    Duell.
+  - Gelöscht wird beim Abfragen höchstens einmal pro Minute (`prune()`),
+    damit viele offene Seiten die Datenbank nicht belasten.
+  - Bewusst so: Solange eine Duellseite offen ist, läuft die Sitzung nicht
+    ab – jede Abfrage zählt als Aktivität.
 - Unter **Mehr → Duelle** stehen die eigenen Duelle: erst die laufenden,
   dann die beendeten, deren Ergebnis noch zu sehen ist.
 
@@ -203,6 +236,7 @@ Alles in der Gruppe `auth`, keine neue Rolle.
 | `POST /decks/{deck}/duels` | anlegen | Stapel sichtbar und gelernt (eigener oder gefolgter), sonst 404; mindestens 4 Karten; `throttle:20,60,duel-create` |
 | `POST /duels/join` | Code eingeben | `throttle:10,60,duel-code` |
 | `GET /duels/{duel}` | Duellseite und Ergebnis | nur Teilnehmende, sonst **404** |
+| `GET /duels/{duel}/live` | der veränderliche Teil der Duellseite (htmx, alle 3 Sekunden) | nur Teilnehmende |
 | `GET /duels/{duel}/play` | spielen (die Uhr der Karte startet beim Anzeigen) | nur Teilnehmende |
 | `POST /duels/{duel}/answer` | Antwort (htmx) | nur Teilnehmende, nur die aktuelle Karte |
 | `POST /duels/{duel}/next-round` | nächste Runde starten | nur die Erstellerin, nur zwischen den Runden und vor der letzten, sonst 404 |
@@ -216,6 +250,7 @@ Alles in der Gruppe `auth`, keine neue Rolle.
 | `GET /duell`, `POST /duell` | Code und Name eingeben | `throttle:30,60,duel-guest` je IP (auch fürs Ergebnis-Ansehen, deshalb großzügiger); nur mit gültigem Code und freiem Platz entsteht etwas (höchstens die angegebene Spielerzahl, maximal 10) |
 | `GET /duell/ergebnis/{duel}` | Ergebnis eines beendeten Duells | nur für die Sitzung, die den Code eingegeben hat, sonst 404 |
 | `GET /duell/{token}`, `GET …/play`, `POST …/answer` | spielen, Ergebnis | der geheime Schlüssel (32 zufällige Bytes, gespeichert nur als HMAC); Bremse `duel-play`: 120 je Minute **je Link** |
+| `GET /duell/{token}/live` | Stand der Duellseite (alle 3 Sekunden) | derselbe Schlüssel; eigene Bremse `duel-live`, 120 je Minute je Link – offene Tabs bremsen nie das Antworten |
 
 Das Duell zeigt den Mitspielern nur die 10 kopierten Wörter und den
 Stapelnamen, nie den Stapel selbst. Ein privater Stapel bleibt also privat,
@@ -335,6 +370,9 @@ Migration `2026_10_20_100000_add_rounds_to_duels.php` (Runden):
   - Beendet, sobald so viele fertig sind wie angegeben; danach gilt der
     Code nicht mehr.
   - Bei nur einem Spieler nach 24 Stunden gibt es keinen Sieger.
+- **Auswahl (Issue #21):** Lernt die Erstellerin nur einen Teil des Stapels
+  („Karten auswählen“), kommen nur diese Karten dran; das Duell-Fenster sagt
+  „aus deiner Auswahl (6 von 20 Karten)“.
   - Nach 24 Stunden steht es fest, mit „nicht fertig“.
   - Eine abgebrochene Runde zählt nicht; wer abbricht, gewinnt nicht.
 - **Runden:** mehrere Runden ohne Wiederholung, Rangliste je Runde,

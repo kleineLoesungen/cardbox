@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -209,10 +210,14 @@ class DuelService
      * Deletes duels whose result has been shown long enough: RESULT_HOURS
      * after the end — or, for a duel nobody looked at since, after the round
      * deadline plus the creator's time for the next round plus RESULT_HOURS.
-     * Code, ranking and results go with it.
+     * Code, ranking and results go with it. At most once a minute: duel
+     * pages ask for their state every few seconds.
      */
     public function prune(): void
     {
+        if (! Cache::add('duel-prune', true, 60)) {
+            return;
+        }
         $result = now()->subHours(self::RESULT_HOURS);
         $waited = now()->subHours(self::HOURS + self::RESULT_HOURS);
         Duel::where(fn ($q) => $q
@@ -224,6 +229,20 @@ class DuelService
                 ->orWhere(fn ($q) => $q->whereColumn('round', '<', 'rounds')->whereNull('round_finished_at')->where('expires_at', '<', $waited))
                 ->orWhere('round_finished_at', '<', $waited))))
             ->delete();
+    }
+
+    /**
+     * Fingerprint of everything the duel page shows: unchanged, the page
+     * asking for its state needs nothing new (DuelController::live).
+     */
+    public function state(Duel $duel): string
+    {
+        $players = $duel->players()->orderBy('id')->get(['id', 'position', 'correct', 'time_ms', 'answered', 'finished_at']);
+
+        return sha1((string) json_encode([
+            $duel->round, $duel->expires_at, $duel->round_finished_at, $duel->finished_at,
+            $players->map(fn (DuelPlayer $p) => [$p->id, $p->position, $p->correct, $p->time_ms, $p->answered, $p->finished_at])->all(),
+        ]));
     }
 
     /** The creator may take players out while the duel runs. */
