@@ -13,7 +13,7 @@
 @php($frontTag = \App\Enums\Language::tryFrom($deck->front_language)?->tag())
 @php($backTag = \App\Enums\Language::tryFrom($deck->back_language)?->tag())
 <div class="mx-auto max-w-md">
-  <a href="/decks/{{ $deck->id }}" class="text-sm text-muted hover:text-content">← {{ $deck->name }}</a>
+  <a href="/decks/{{ $deck->id }}" class="back-link">← {{ $deck->name }}</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Vorschläge</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Hinweise von Leuten, die mit „{{ $deck->name }}“ lernen. Übernimmst du einen, ändert sich die Karte für alle.

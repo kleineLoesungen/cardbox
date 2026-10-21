@@ -35,7 +35,7 @@
         <p class="mt-2 text-sm break-words">{{ $deck->description }}</p>
       @endif
     </div>
-    <button type="button" class="btn btn-ghost btn-icon mt-6 shrink-0" data-open-sheet="deck-menu" aria-label="Weitere Aktionen">
+    <button type="button" class="btn btn-ghost btn-icon mt-11 shrink-0" data-open-sheet="deck-menu" aria-label="Weitere Aktionen">
       <span aria-hidden="true" class="text-xl leading-none">⋯</span>
     </button>
   </div>

@@ -11,7 +11,7 @@
 
 @section('main')
 <div class="mx-auto max-w-md">
-  <a href="/decks" class="text-sm text-muted hover:text-content">← Stapel</a>
+  <a href="/decks" class="back-link">← Stapel</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Stapel exportieren</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Die gewählten Stapel kommen als eine ZIP-Datei: je Stapel eine Tabelle und eine Übersicht.
@@ -27,7 +27,7 @@
   @else
     <form method="post" action="/decks/export" class="stack" data-export-form>
       @csrf
-      <label class="flex items-center gap-3 px-1 text-sm font-medium">
+      <label class="flex min-h-12 items-center gap-3 px-1 text-sm font-medium">
         <input type="checkbox" class="checkbox" data-check-all="decks[]"> Alle auswählen
       </label>
       <ul class="list">

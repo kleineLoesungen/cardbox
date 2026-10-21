@@ -123,7 +123,7 @@
 
     <div class="mt-6 mb-2 flex items-center justify-between">
       <h2 class="text-base font-semibold">Lerne ich</h2>
-      <a href="/decks" class="text-sm text-brand hover:underline">Alle</a>
+      <a href="/decks" class="link-action -mr-3 px-3 text-sm">Alle</a>
     </div>
     <ul class="list">
       @foreach ($decks as $deck)

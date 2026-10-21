@@ -23,7 +23,7 @@ it('führt von der Stapelseite dorthin zurück, woher man kam, und markiert dies
 
     $this->get($from)->assertOk();
     $html = $this->get("/decks/{$deck->id}")
-        ->assertSee('href="'.$from.'" class="text-sm text-muted hover:text-content">← '.$label.'</a>', false)
+        ->assertSee('href="'.$from.'" class="back-link">← '.$label.'</a>', false)
         ->getContent();
 
     // The tab bar marks the section one came from, not "Stapel" by path.
@@ -38,7 +38,7 @@ it('führt von der Stapelseite dorthin zurück, woher man kam, und markiert dies
 it('führt ohne gemerkten Bereich zu „Stapel“', function () {
     $deck = navDeck(actingAsUser());
 
-    $this->get("/decks/{$deck->id}")->assertSee('href="/decks" class="text-sm text-muted hover:text-content">← Stapel</a>', false);
+    $this->get("/decks/{$deck->id}")->assertSee('href="/decks" class="back-link">← Stapel</a>', false);
 });
 
 it('merkt sich keine Fragmente und keine Unterseiten', function () {

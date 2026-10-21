@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.21.2
+- Am Handy leichter zu treffen: Knöpfe, Eingabefelder und Auswahllisten sind mindestens 48 Pixel hoch, große Knöpfe 56. Dazu größer: der Zurück-Link über Unterseiten, kleine Knöpfe wie „Pausieren“, „Alle/Keine“, „bis hier“, Links wie „Alle“ auf Heute oder „Liste einfügen“, die Häkchen bei „Karten auswählen“ und der Knopf zur Dateiauswahl beim Import
+
 ## 2026.10.21
 - Zeiten stimmen wieder, wenn der Datenbankserver nicht auf UTC läuft (z. B. deutsche Zeit): Vorher lagen gespeicherte Zeitpunkte zwei Stunden daneben – im Duell zählte dadurch jede Karte die volle Minute, Fristen liefen zwei Stunden zu früh ab. Die Verbindung spricht jetzt immer UTC; die Migration rückt vorhandene Zeitpunkte zurecht und tut auf einem UTC-Server nichts. Schon gespielte Duell-Runden behalten ihre Zeit von 10 Minuten
 - Stapelseite: „Für den Test üben“, „Knifflige Wörter üben“ und „Duell starten“ sind jetzt Knöpfe mit Symbol; „Nur diesen Stapel lernen“ ist hervorgehoben und größer

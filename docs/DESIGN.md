@@ -168,8 +168,9 @@ Blade-Komponenten (`resources/views/components/`) gibt es nur dort, wo Markup
 
 | Gruppe | Klassen |
 |---|---|
-| Knöpfe | `btn` + `btn-primary` / `btn-secondary` / `btn-ghost` / `btn-danger`; Größen `btn-sm` / `btn-lg` / `btn-icon` / `btn-block` |
-| Formulare | `field`, `label`, `input`, `textarea`, `select`, `checkbox`, `hint`, `error`, `input-error` |
+| Knöpfe | `btn` + `btn-primary` / `btn-secondary` / `btn-ghost` / `btn-danger`; Größen `btn-sm` / `btn-lg` / `btn-icon` / `btn-block` – alle mindestens 48 px hoch, `btn-sm` ist nur schmaler und kleiner beschriftet, `btn-lg` 56 px |
+| Links | `back-link` („← Stapel“ über einer Unterseite, über `<x-back-link>`), `link-action` (ein Link für sich, nicht im Fließtext) – beide 48 px hoch |
+| Formulare | `field`, `label`, `input`, `textarea`, `select`, `checkbox`, `file-input`, `hint`, `error`, `input-error` |
 | Karten | `card`, `card-header`, `card-title`, `card-body`, `card-footer` |
 | Abzeichen | `badge` + `badge-neutral` / `-brand` / `-success` / `-warning` / `-danger` |
 | Hinweise | `alert` + `alert-info` / `-success` / `-warning` / `-danger` |
@@ -220,12 +221,15 @@ Layouts (Grid-Anordnung einer bestimmten Seite) bleiben im Markup.
 ```css
 --ui-font-sans: ui-sans-serif, system-ui, …;   /* Systemschrift, lädt nichts nach */
 --ui-font-mono: ui-monospace, …;
---ui-control-height: 2.5rem;                   /* Höhe von Knöpfen und Feldern */
+--ui-control-height: 3rem;                     /* Höhe von Knöpfen und Feldern: 48 px */
 --ui-content-width: 72rem;                     /* Breite von .container-app */
 ```
 
-`--ui-control-height` ist die schnellste Stellschraube für die gefühlte Dichte:
-`2.25rem` wirkt kompakt und werkzeugartig, `2.75rem` großzügig.
+`--ui-control-height` ist die schnellste Stellschraube für die gefühlte Dichte.
+Cardbox bleibt bei `3rem`: Die Leitlinien ([vokabelkarten.md](specs/vokabelkarten.md))
+verlangen fingergerechte Flächen von mindestens 48 px. Darunter nur Links
+mitten im Fließtext; ein Link, der für sich steht, bekommt `link-action`,
+ein Kontrollkästchen steckt in einem Label über die ganze Zeile.
 
 **Eine Webfont einbinden:** In `resources/views/layouts/base.blade.php` das `<link>` ergänzen
 und in `theme.css` `--ui-font-sans` davorsetzen. Immer eine echte Systemschrift

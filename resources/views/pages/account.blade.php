@@ -149,7 +149,7 @@
           <ul class="list">
             @foreach ($children as $child)
               <li class="list-row">
-                <a href="/children/{{ $child->id }}" class="min-w-0 flex-1 truncate font-medium text-brand hover:underline">{{ $child->name }}</a>
+                <a href="/children/{{ $child->id }}" class="min-w-0 flex-1 truncate py-3.5 font-medium text-brand hover:underline">{{ $child->name }}</a>
                 <form method="post" action="/account/children/{{ $child->id }}/delete" class="shrink-0"
                       data-confirm-action="Entfernen"
                       data-confirm="{{ $child->name }} aus deiner Liste entfernen? Du siehst den Fortschritt dann nicht mehr.">

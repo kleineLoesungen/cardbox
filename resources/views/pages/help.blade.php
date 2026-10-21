@@ -386,7 +386,7 @@
       dazu. So kannst du ein ganzes Set sichern oder weitergeben.
     </p>
     <details>
-      <summary class="cursor-pointer text-sm text-brand">Alle Sprachkürzel</summary>
+      <summary class="cursor-pointer py-3.5 text-sm text-brand">Alle Sprachkürzel</summary>
       <table class="mt-2 text-sm">
         @foreach (\App\Enums\Language::cases() as $lang)
           <tr><td class="pr-4"><code class="code">{{ $lang->value }}</code></td><td class="text-muted">{{ $lang->label() }}</td></tr>

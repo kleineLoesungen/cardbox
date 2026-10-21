@@ -28,7 +28,7 @@
 @section('main')
 <div class="mx-auto max-w-md">
   @unless ($guest)
-    <a href="/duels" class="text-sm text-muted hover:text-content">← Duelle</a>
+    <a href="/duels" class="back-link">← Duelle</a>
   @endunless
   <h1 @class(['text-2xl font-semibold tracking-tight break-words', 'mt-1' => ! $guest])>Duell: {{ $duel->deck_name }}</h1>
   @include('duels.partials.live')

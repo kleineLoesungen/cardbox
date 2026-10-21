@@ -39,7 +39,7 @@
     {{-- Learning only part of the deck (issue #10). --}}
     <p class="text-sm text-muted">
       Du lernst <span class="font-medium text-content">{{ count($activeIds) }} von {{ $cards->count() }}</span> Karten ·
-      <a href="/decks/{{ $deck->id }}/selection" class="text-brand hover:underline">Auswahl ändern</a>
+      <a href="/decks/{{ $deck->id }}/selection" class="link-action">Auswahl ändern</a>
     </p>
   @endif
 

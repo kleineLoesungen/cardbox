@@ -23,7 +23,7 @@
   <header class="sticky top-0 z-30 border-b border-border bg-surface-raised/85 backdrop-blur" style="padding-top: env(safe-area-inset-top, 0px)">
     <div class="container-app flex h-14 items-center gap-2">
 
-      <a href="/learn" class="row mr-2 shrink-0 font-semibold tracking-tight">
+      <a href="/learn" class="row mr-2 min-h-12 shrink-0 font-semibold tracking-tight">
         {{-- The app icon (resources/icons/icon.svg, copied by scripts/icons.sh). --}}
         <img src="/favicon.svg" alt="" class="size-7">
         <span>{{ $branding->name }}</span>

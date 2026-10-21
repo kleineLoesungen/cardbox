@@ -7,4 +7,4 @@
 --}}
 @props(['default'])
 @php($back = \App\Support\Navigation::back(request(), $default))
-<a href="{{ $back['url'] }}" class="text-sm text-muted hover:text-content">← {{ $back['label'] }}</a>
+<a href="{{ $back['url'] }}" class="back-link">← {{ $back['label'] }}</a>

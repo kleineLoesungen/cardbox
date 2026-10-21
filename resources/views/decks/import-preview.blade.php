@@ -8,7 +8,7 @@
 @section('main')
 @php($count = count($result['rows']))
 <div class="mx-auto max-w-md">
-  <a href="{{ $base }}?back=1" class="text-sm text-muted hover:text-content">← Zurück zur Liste</a>
+  <a href="{{ $base }}?back=1" class="back-link">← Zurück zur Liste</a>
   <h1 class="mt-1 mb-4 text-2xl font-semibold tracking-tight">Vorschau</h1>
 
   @if ($result['swapped'])

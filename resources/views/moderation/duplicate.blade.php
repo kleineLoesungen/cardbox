@@ -20,7 +20,7 @@
 @php($langs = collect([$first->deck->front_language, $first->deck->back_language])->sort()->values())
 @php($sides = fn (\App\Models\Card $c) => $c->deck->front_language === $langs[0] ? ['a' => $c->front, 'b' => $c->back] : ['a' => $c->back, 'b' => $c->front])
 <div class="mx-auto max-w-md">
-  <a href="/moderation/duplicates" class="text-sm text-muted hover:text-content">← Doppelte Karten</a>
+  <a href="/moderation/duplicates" class="back-link">← Doppelte Karten</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight break-words">{{ $first->frontText() }} – {{ $first->backText() }}</h1>
   <p class="mt-1 mb-4 text-sm text-muted">{{ $group->count() }} Karten in {{ $group->pluck('deck_id')->unique()->count() === 1 ? '1 Stapel' : $group->pluck('deck_id')->unique()->count().' Stapeln' }}</p>
 

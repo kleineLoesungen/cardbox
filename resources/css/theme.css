@@ -33,8 +33,9 @@
   --ui-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ui-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 
-  /* Dichte der Oberflaeche: Hoehe von Knoepfen und Eingabefeldern. */
-  --ui-control-height: 2.5rem;
+  /* Dichte der Oberflaeche: Hoehe von Knoepfen und Eingabefeldern.
+     48 px: finger-sized, as the UI guidelines ask (docs/specs/vokabelkarten.md). */
+  --ui-control-height: 3rem;
 
   /* Maximale Breite des Inhaltsbereichs. */
   --ui-content-width: 72rem;

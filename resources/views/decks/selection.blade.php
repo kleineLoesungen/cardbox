@@ -13,7 +13,7 @@
 @section('main')
 @php($active = fn (string $id) => $activeIds === null || in_array($id, $activeIds, true))
 <div class="mx-auto max-w-md">
-  <a href="/decks/{{ $deck->id }}" class="text-sm text-muted hover:text-content">← {{ $deck->name }}</a>
+  <a href="/decks/{{ $deck->id }}" class="back-link">← {{ $deck->name }}</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Karten auswählen</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Lern erst einen Teil, z. B. die ersten Kapitel. Pausierte Karten kommen nicht dran und behalten ihren Lernstand.
@@ -33,7 +33,7 @@
     <ul class="list">
       @foreach ($cards as $i => $card)
         <li class="list-row gap-3">
-          <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+          <label class="-my-3 flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-3">
             <input type="checkbox" class="checkbox shrink-0" name="cards[]" value="{{ $card->id }}" @checked($active($card->id))>
             <span class="card-row-sides">
               <span>{{ $card->frontText() }}@if ($card->hint) <span class="text-xs text-subtle">{{ $card->hint }}</span>@endif</span>

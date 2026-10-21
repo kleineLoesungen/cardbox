@@ -23,7 +23,7 @@
         </li>
       @endforeach
     </ul>
-    <p class="mt-4 text-center text-sm"><a href="/account#kinder" class="text-brand hover:underline">Kind hinzufügen oder entfernen</a></p>
+    <p class="mt-4 text-center text-sm"><a href="/account#kinder" class="link-action">Kind hinzufügen oder entfernen</a></p>
   @endif
 </div>
 @endsection

@@ -34,10 +34,10 @@
   <p class="text-center text-sm text-muted">
     @if ($firstSetup)
       Noch kein Konto vorhanden.
-      <a href="/register" class="font-medium text-brand hover:underline">Ersteinrichtung starten</a>
+      <a href="/register" class="link-action">Ersteinrichtung starten</a>
     @else
       Noch kein Konto?
-      <a href="/register" class="font-medium text-brand hover:underline">Konto anlegen</a>
+      <a href="/register" class="link-action">Konto anlegen</a>
     @endif
   </p>
   <p class="text-center text-sm text-subtle">

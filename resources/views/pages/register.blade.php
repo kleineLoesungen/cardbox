@@ -47,7 +47,7 @@
   </div>
 
   <p class="text-center text-sm text-muted">
-    Schon ein Konto? <a href="/login" class="font-medium text-brand hover:underline">Anmelden</a>
+    Schon ein Konto? <a href="/login" class="link-action">Anmelden</a>
   </p>
 </main>
 @endsection

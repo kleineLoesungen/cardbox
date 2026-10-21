@@ -10,7 +10,7 @@
 
 @section('main')
 <div class="mx-auto max-w-md">
-  <a href="/moderation" class="text-sm text-muted hover:text-content">← Moderation</a>
+  <a href="/moderation" class="back-link">← Moderation</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Doppelte Karten</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Gleiches Wortpaar in geteilten Stapeln. Du entscheidest, welche Karte bleibt.

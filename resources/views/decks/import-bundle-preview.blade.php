@@ -10,7 +10,7 @@
 @section('main')
 @php($todo = collect($plan)->where('action', '!=', 'skip'))
 <div class="mx-auto max-w-md">
-  <a href="/decks/import" class="text-sm text-muted hover:text-content">← Andere Datei wählen</a>
+  <a href="/decks/import" class="back-link">← Andere Datei wählen</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Vorschau</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     {{ $todo->where('action', 'update')->count() }} aktualisieren · {{ $todo->where('action', 'new')->count() }} neu

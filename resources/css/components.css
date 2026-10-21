@@ -75,9 +75,26 @@
   .btn-ghost     { @apply text-muted hover:bg-surface-sunken hover:text-content; }
   .btn-danger    { @apply bg-danger text-danger-content hover:opacity-90; }
 
-  .btn-sm   { @apply h-8 px-3 text-xs; }
-  .btn-lg   { @apply h-12 px-6 text-base; }
-  .btn-icon { @apply w-10 px-0; }
+  /* Smaller look, same 48 px height: the app is used with fingers. */
+  .btn-sm   { @apply h-12 px-3 text-sm; }
+  .btn-lg   { @apply h-14 px-6 text-base; }
+  .btn-icon { @apply w-12 px-0; }
+
+  /* "← Stapel" above a page below a section (x-back-link). */
+  .back-link {
+    @apply -ml-2 inline-flex min-h-12 items-center gap-1 rounded-ui px-2 text-base
+           text-muted hover:text-content;
+  }
+
+  /* A link on its own, not inside running text: finger-sized. */
+  .link-action { @apply inline-flex min-h-12 items-center font-medium text-brand hover:underline; }
+
+  /* File field: the "choose" button as big as the other buttons. */
+  .file-input {
+    @apply block w-full text-sm text-muted
+           file:mr-3 file:h-12 file:cursor-pointer file:rounded-ui file:border file:border-border
+           file:bg-surface-raised file:px-4 file:text-sm file:font-medium file:text-content;
+  }
   .btn-block { @apply w-full; }
 
   /* --- Formulare -------------------------------------------------------- */
@@ -108,7 +125,7 @@
   .input-error { @apply border-danger focus:border-danger; }
 
   .checkbox {
-    @apply size-4 rounded border-border-strong accent-[var(--ui-brand)];
+    @apply size-5 rounded border-border-strong accent-[var(--ui-brand)];
   }
 
   /* --- Karte ------------------------------------------------------------ */
@@ -371,7 +388,7 @@
     @apply grid grid-flow-col auto-cols-fr gap-1 rounded-ui bg-surface-sunken p-1;
   }
   .segmented > * {
-    @apply flex min-h-11 items-center justify-center rounded-ui px-3 text-center text-sm
+    @apply flex min-h-12 items-center justify-center rounded-ui px-3 text-center text-sm
            font-medium text-muted transition-colors;
   }
   .segmented > .is-active { @apply bg-surface-raised text-content shadow-sm; }

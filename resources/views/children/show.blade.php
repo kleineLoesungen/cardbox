@@ -8,7 +8,7 @@
 @section('main')
 <div class="mx-auto max-w-md">
   @if ($backToList)
-    <a href="/children" class="text-sm text-muted hover:text-content">← Meine Kinder</a>
+    <a href="/children" class="back-link">← Meine Kinder</a>
   @endif
   <h1 @class(['text-2xl font-semibold tracking-tight', 'mt-1' => $backToList])>{{ $child->name }}</h1>
 

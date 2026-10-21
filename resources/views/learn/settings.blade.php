@@ -25,7 +25,7 @@
 @php($boxCount = is_scalar($oldCount) && is_numeric($oldCount) ? (int) $oldCount : $current['box_count'])
 
 <div class="mx-auto max-w-md">
-  <a href="/account" class="text-sm text-muted hover:text-content">← Mein Konto</a>
+  <a href="/account" class="back-link">← Mein Konto</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Lernplan</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Wie oft Karten wiederkommen. Gilt für Stapel, die du neu startest – begonnene behalten ihren Plan.

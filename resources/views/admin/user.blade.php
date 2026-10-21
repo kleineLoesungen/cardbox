@@ -8,7 +8,7 @@
 
 @section('main')
 <div class="mb-6">
-  <a href="/admin/users" class="text-sm text-muted hover:text-content">← Alle Benutzer</a>
+  <a href="/admin/users" class="back-link">← Alle Benutzer</a>
   <h1 class="mt-2 text-2xl font-semibold tracking-tight">{{ $edited->name }}</h1>
   <p class="mt-1 text-sm text-muted">
     {{ $edited->username }} · angelegt am <x-date :value="$edited->created_at" />

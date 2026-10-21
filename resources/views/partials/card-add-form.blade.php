@@ -43,7 +43,7 @@
   <button type="submit" name="close" value="1" class="btn btn-secondary btn-block -mt-1">Speichern &amp; schließen</button>
 
   <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-    <a href="/decks/{{ $deck->id }}/import" class="text-brand hover:underline">Liste einfügen</a>
-    <button type="button" class="text-brand hover:underline" data-open-sheet="adopt-sheet">Aus anderen Stapeln übernehmen</button>
+    <a href="/decks/{{ $deck->id }}/import" class="link-action">Liste einfügen</a>
+    <button type="button" class="link-action" data-open-sheet="adopt-sheet">Aus anderen Stapeln übernehmen</button>
   </div>
 </form>

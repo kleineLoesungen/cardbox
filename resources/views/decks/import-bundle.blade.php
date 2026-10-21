@@ -8,7 +8,7 @@
 
 @section('main')
 <div class="mx-auto max-w-md">
-  <a href="/decks" class="text-sm text-muted hover:text-content">← Stapel</a>
+  <a href="/decks" class="back-link">← Stapel</a>
   <h1 class="mt-1 text-2xl font-semibold tracking-tight">Stapel importieren</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     Eine ZIP-Datei aus „Stapel exportieren“. Deine Stapel werden aktualisiert, alle anderen kommen
@@ -25,7 +25,7 @@
       @csrf
       <div class="field">
         <label class="label" for="bundle-file">ZIP-Datei</label>
-        <input class="block w-full text-sm" type="file" id="bundle-file" name="file" accept=".zip,application/zip" required>
+        <input class="file-input" type="file" id="bundle-file" name="file" accept=".zip,application/zip" required>
         <p class="hint">Höchstens {{ intdiv((int) config('learning.bundle_max_kilobytes'), 1024) }} MB und {{ config('learning.bundle_max_decks') }} Stapel.</p>
       </div>
       <button type="submit" class="btn btn-primary btn-lg btn-block">Vorschau</button>

@@ -40,7 +40,7 @@
   <x-field-error name="back_language" />
 
   <details @if ($deck?->description || old('description')) open @endif>
-    <summary class="cursor-pointer text-sm text-brand">Mehr Angaben</summary>
+    <summary class="cursor-pointer py-3.5 text-sm text-brand">Mehr Angaben</summary>
     <div class="field mt-3">
       <label class="label" for="{{ $deck ? 'edit' : 'new' }}-description">Beschreibung</label>
       <textarea class="textarea" id="{{ $deck ? 'edit' : 'new' }}-description" name="description" maxlength="500"
