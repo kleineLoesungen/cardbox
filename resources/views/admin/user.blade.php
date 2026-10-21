@@ -108,15 +108,15 @@
         <form class="card-body stack" method="post" action="/admin/users/{{ $edited->id }}/decks/transfer"
               data-confirm-action="Übertragen" data-confirm="Die gewählten Stapel an das angegebene Konto übertragen?">
           @csrf
-          <label class="row gap-2 text-sm font-medium">
+          <label class="row min-h-12 gap-2 text-sm font-medium">
             <input type="checkbox" class="checkbox" data-check-all="decks[]">
             Alle auswählen
           </label>
           <ul class="stack gap-2">
             @foreach ($decks as $deck)
               <li>
-                <label class="row min-w-0 items-start gap-2 text-sm">
-                  <input type="checkbox" class="checkbox mt-0.5" name="decks[]" value="{{ $deck->id }}"
+                <label class="row min-h-12 min-w-0 items-center gap-2 text-sm">
+                  <input type="checkbox" class="checkbox" name="decks[]" value="{{ $deck->id }}"
                          @checked(in_array($deck->id, (array) old('decks', []), true))>
                   <span class="min-w-0">
                     <span class="block break-words font-medium">{{ $deck->name }}</span>

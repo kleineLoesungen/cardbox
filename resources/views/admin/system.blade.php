@@ -140,7 +140,7 @@
       </div>
 
       <p class="mt-4 text-xs text-subtle">
-        <a href="/manifest.webmanifest" class="hover:text-content">Manifest ansehen</a>
+        <a href="/manifest.webmanifest" class="inline-flex min-h-12 items-center hover:text-content">Manifest ansehen</a>
       </p>
     </div>
   </section>

@@ -64,7 +64,7 @@
         <p class="text-sm text-muted">Im Test zählt die Rechtschreibung – das Wort kommt noch einmal.</p>
       @endif
 
-      <div class="flex min-h-11 justify-center">
+      <div class="flex min-h-12 justify-center">
         <button type="button" class="btn btn-ghost" data-speak hidden aria-label="{{ $checked['expected'] }} vorlesen"
                 data-speak-text="{{ $checked['expected'] }}" data-speak-lang="{{ $aLang?->tag() }}">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -119,7 +119,7 @@
               @if (count($side) > 1)
                 <p class="text-base text-muted">auch: <span lang="{{ $lang?->tag() }}">{{ implode(', ', \App\Models\Card::alternatives($side)) }}</span></p>
               @endif
-              <div class="flex min-h-11 justify-center">
+              <div class="flex min-h-12 justify-center">
                 <button type="button" class="btn btn-ghost" data-speak hidden aria-label="{{ $side[0] ?? '' }} vorlesen"
                         data-speak-text="{{ $side[0] ?? '' }}" data-speak-lang="{{ $lang?->tag() }}">
                   <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -129,7 +129,7 @@
                   Vorlesen
                 </button>
                 @if ($isQuestion)
-                  <a href="/help#vorlesen" class="self-center text-sm text-subtle hover:text-content" data-speak-missing hidden>
+                  <a href="/help#vorlesen" class="inline-flex min-h-12 items-center self-center text-sm text-subtle hover:text-content" data-speak-missing hidden>
                     Vorlesen fehlt? So geht's
                   </a>
                 @endif
@@ -228,8 +228,8 @@
       until the script finds a voice for the language; never shown for
       "Aufgabe"/"Ergebnis", which have no language tag.
     --}}
-    {{-- min-h-11 also when typing: a voice found late must not push the field under the keyboard. --}}
-    <div @class(['flex min-h-11 justify-center', 'mt-3' => ! $current['typed'], 'mt-1' => $current['typed']])>
+    {{-- min-h-12 (the button's height) also when typing: a voice found late must not push the field under the keyboard. --}}
+    <div @class(['flex min-h-12 justify-center', 'mt-3' => ! $current['typed'], 'mt-1' => $current['typed']])>
       <button type="button" class="btn btn-ghost" data-speak hidden
               data-question="{{ $question[0] ?? '' }}" data-question-lang="{{ $qLang?->tag() }}"
               @unless ($current['typed']) data-answer="{{ $answer[0] ?? '' }}" data-answer-lang="{{ $aLang?->tag() }}" @endunless>
@@ -240,7 +240,7 @@
         Vorlesen
       </button>
       {{-- Shown instead when the device could speak but has no voice for this language. --}}
-      <a href="/help#vorlesen" class="self-center text-sm text-subtle hover:text-content" data-speak-missing hidden>
+      <a href="/help#vorlesen" class="inline-flex min-h-12 items-center self-center text-sm text-subtle hover:text-content" data-speak-missing hidden>
         Vorlesen fehlt? So geht's
       </a>
     </div>

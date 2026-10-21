@@ -268,8 +268,8 @@ unterschiedlichen Klassen eingesetzt wird:
 ```
 
 `nav-link` ist die Fassung für die Kopfzeile, `nav-link-mobile` die für das
-Blatt — volle Breite und mindestens 44 px hoch, die übliche Mindestgröße für
-eine Fläche, die mit dem Finger getroffen wird.
+Blatt — volle Breite und mindestens 48 px hoch, die Mindestgröße für eine
+Fläche, die mit dem Finger getroffen wird (siehe Abschnitt 6).
 
 **Die untere Leiste ist bewusst nicht an die Komponente gekoppelt.** Sie zeigt eine
 Auswahl als Abkürzung und steht als eigenes Markup in `layouts/app.blade.php` — mit Symbol

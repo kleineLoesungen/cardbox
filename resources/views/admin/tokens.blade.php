@@ -43,7 +43,7 @@
           @foreach ($scopes as $scope)
             <label class="row items-start gap-2">
               {{-- name="scopes[]" — OHNE die Klammern kommt nur der letzte Haken an. --}}
-              <input type="checkbox" class="checkbox mt-0.5" name="scopes[]" value="{{ $scope->value }}">
+              <input type="checkbox" class="checkbox" name="scopes[]" value="{{ $scope->value }}">
               <span>
                 <span class="text-sm text-content">{{ $scope->label() }}</span>
                 <span class="block text-xs text-muted">{{ $scope->description() }}</span>
