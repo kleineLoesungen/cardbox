@@ -2,6 +2,7 @@
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Services\UserService;
 use Database\Factories\UserFactory;
 use Illuminate\Support\Facades\DB;
 
@@ -119,6 +120,48 @@ describe('Anmelden', function () {
             ->assertRedirect('/learn');
 
         $this->assertAuthenticatedAs($user);
+    });
+
+    it('bleibt angemeldet, wer die App einmal in der Woche benutzt (Issue #24)', function () {
+        $user = User::factory()->create();
+        $expires = fn ($response) => $response->getCookie(config('session.cookie'), false)?->getExpiresTime();
+
+        $login = $this->post('/login', ['username' => $user->username, 'password' => UserFactory::PASSWORD]);
+        expect($expires($login))->toBeGreaterThan(now()->addDays(29)->getTimestamp());
+
+        // Sliding: three weeks later still in, and the 30 days start again.
+        $this->travel(21)->days();
+        $later = $this->get('/learn')->assertOk();
+        expect($expires($later))->toBeGreaterThan(now()->addDays(29)->getTimestamp());
+        $this->assertAuthenticatedAs($user);
+    });
+
+    it('meldet nach einem neuen Passwort alle anderen Sitzungen ab, die eigene nicht', function () {
+        $user = User::factory()->create();
+        $this->post('/login', ['username' => $user->username, 'password' => UserFactory::PASSWORD]);
+        $this->get('/learn')->assertOk();
+
+        // Changed in this session: it stays.
+        $this->post('/account/password', ['current_password' => UserFactory::PASSWORD, 'new_password' => 'ganz-neues-passwort', 'new_password_repeat' => 'ganz-neues-passwort']);
+        $this->get('/account')->assertOk();
+
+        // Changed elsewhere (another device, or an admin resets it): out at the next request.
+        app(UserService::class)->changePassword($user->refresh(), 'noch-ein-neues-passwort');
+        auth()->forgetGuards(); // a new request reads the user afresh, as on the server
+        $this->get('/learn')->assertRedirect('/login');
+        $this->assertGuest();
+    });
+
+    it('räumt Sitzungen ohne Anmeldung nach einem Tag weg', function () {
+        config(['session.driver' => 'database']);
+        $user = User::factory()->create();
+        $row = fn (string $id, ?string $userId, int $hoursAgo) => ['id' => $id, 'user_id' => $userId, 'ip_address' => null, 'user_agent' => null, 'payload' => '', 'last_activity' => now()->subHours($hoursAgo)->getTimestamp()];
+        DB::table('sessions')->insert([$row('gast-alt', null, 25), $row('gast-neu', null, 2), $row('konto-alt', $user->id, 25 * 7)]);
+
+        expect(app(UserService::class)->pruneGuestSessions())->toBe(1)
+            ->and(DB::table('sessions')->orderBy('id')->pluck('id')->all())->toBe(['gast-neu', 'konto-alt'])
+            // At most once an hour.
+            ->and(app(UserService::class)->pruneGuestSessions())->toBe(0);
     });
 
     it('schickt nach dem Anmelden dorthin zurück, wo man hinwollte', function () {

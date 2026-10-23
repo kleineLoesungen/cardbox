@@ -7,6 +7,13 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.23
+- Angemeldet bleiben: Eine Anmeldung gilt jetzt 30 Tage und verlängert sich mit jeder Nutzung – wer die App einmal in der Woche öffnet, muss sich nicht mehr neu anmelden (vorher nach 12 Stunden)
+- Neues Passwort meldet ab: Wer sein Passwort ändert (oder es von einer Administratorin zurücksetzen lässt), ist auf allen anderen Geräten abgemeldet – das eigene bleibt angemeldet. Hilft, wenn man auf einem fremden Gerät angemeldet geblieben ist
+- Betrieb: Steht SESSION_LIFETIME=720 in der .env, auf 43200 ändern oder die Zeile löschen – sonst bleibt es bei 12 Stunden. Sitzungen ohne Anmeldung (Anmeldeseite, Gäste) werden nach einem Tag weggeräumt
+- Untere Leiste am iPhone: Solange ein Textfeld aktiv ist, verschwinden Leiste und „+“-Knopf, statt mit der Tastatur zu wandern; nach dem Schließen der Tastatur rückt die Seite wieder zurecht, in der App vom Home-Bildschirm schwingt sie nicht mehr nach
+- Duell: Über der Frage und den Antworten steht die Sprache (z. B. „Deutsch“, „Englisch“). Gefragt wird immer die Vorderseite, alle Antworten sind Rückseiten aus dem Stapel
+
 ## 2026.10.21.2
 - Am Handy leichter zu treffen: Knöpfe, Eingabefelder und Auswahllisten sind mindestens 48 Pixel hoch, große Knöpfe 56. Dazu größer: der Zurück-Link über Unterseiten, kleine Knöpfe wie „Pausieren“, „Alle/Keine“, „bis hier“, Links wie „Alle“ auf Heute oder „Liste einfügen“, die Häkchen bei „Karten auswählen“ und der Knopf zur Dateiauswahl beim Import
 

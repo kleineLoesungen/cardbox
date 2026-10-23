@@ -42,6 +42,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="SESSION_LIFETIME" value="43200"/>
         <env name="TRUST_PROXY" value="false"/>
         <env name="LOG_CHANNEL" value="null"/>
     </php>

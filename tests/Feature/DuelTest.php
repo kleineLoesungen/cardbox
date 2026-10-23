@@ -258,6 +258,26 @@ describe('Mitmachen', function () {
 });
 
 describe('Spielen', function () {
+    it('fragt immer die Vorderseite und bietet nur Rückseiten zur Auswahl, mit Sprache dazu (Issue #23)', function () {
+        $ich = actingAsUser();
+        $deck = duelDeck($ich);
+        // "Auch rückwärts lernen" does not matter in a duel.
+        DB::table('deck_preferences')->insert(['user_id' => $ich->id, 'deck_id' => $deck->id, 'with_reverse' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $duel = makeDuel($deck, 2);
+        $fronts = Card::pluck('front')->map(fn (array $f) => $f[0])->all();
+        $backs = Card::pluck('back')->map(fn (array $b) => $b[0])->all();
+
+        foreach (range(1, 10) as $p) {
+            $row = DB::table('duel_cards')->where('duel_id', $duel->id)->where('position', $p)->first();
+            expect($fronts)->toContain($row->question)
+                ->and(array_diff(duelCard($duel, $p)['choices'], $backs))->toBe([]);
+        }
+        $this->get("/duels/{$duel->id}/play")->assertSeeInOrder(['Deutsch', 'Wort', 'Englisch']);
+
+        $typed = makeDuel($deck, 2, 'typed');
+        $this->get("/duels/{$typed->id}/play")->assertSee('Deine Antwort (Englisch)');
+    });
+
     it('wertet Auswahl richtig und falsch und zeigt die richtige Antwort', function () {
         $ich = actingAsUser();
         $duel = makeDuel(duelDeck($ich));

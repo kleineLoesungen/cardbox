@@ -323,5 +323,17 @@
       if (e.matches) setOpen(false);
     });
   })();
+  // iOS 26: after the keyboard closes, the visible part of the page can stay
+  // shifted, and fixed bars drift while scrolling (issue #22). A 1 px nudge
+  // puts it back; elsewhere offsetTop is 0 and nothing happens.
+  document.addEventListener("focusout", () => {
+    setTimeout(() => {
+      const view = window.visualViewport;
+      if (!view || view.offsetTop <= 0 || document.activeElement?.matches?.("input, textarea")) return;
+      const y = window.scrollY;
+      window.scrollBy({ top: 1, behavior: "instant" });
+      window.scrollTo({ top: y, behavior: "instant" });
+    }, 150);
+  });
 </script>
 @endsection

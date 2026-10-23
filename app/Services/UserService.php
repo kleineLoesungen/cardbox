@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\PasswordWords;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -237,6 +238,25 @@ class UserService
     {
         return User::whereNull('approved_at')
             ->where('created_at', '<', now()->subDays(self::PENDING_RETENTION_DAYS))
+            ->delete();
+    }
+
+    /**
+     * Deletes sessions of nobody signed in (login page, guests, bots) after a
+     * day: sessions last 30 days (issue #24), these need not. At most once an
+     * hour; called from the login page and the user management.
+     *
+     * @return int Number of deleted sessions
+     */
+    public function pruneGuestSessions(): int
+    {
+        if (config('session.driver') !== 'database' || ! Cache::add('guest-session-prune', true, 3600)) {
+            return 0;
+        }
+
+        return DB::table(config('session.table'))
+            ->whereNull('user_id')
+            ->where('last_activity', '<', now()->subDay()->getTimestamp())
             ->delete();
     }
 

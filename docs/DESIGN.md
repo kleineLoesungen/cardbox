@@ -271,6 +271,13 @@ unterschiedlichen Klassen eingesetzt wird:
 Blatt — volle Breite und mindestens 48 px hoch, die Mindestgröße für eine
 Fläche, die mit dem Finger getroffen wird (siehe Abschnitt 6).
 
+**Solange ein Textfeld aktiv ist, treten die untere Leiste und der „+“-Knopf
+zur Seite** (`body:has(…:focus)` in `components.css`): Mit offener Tastatur
+lässt iOS feste Elemente mitwandern (Issue #22), und die Tastatur verdeckt sie
+ohnehin. Nach dem Schließen der Tastatur rückt `layouts/app.blade.php` einen
+verschobenen Ausschnitt zurecht (Safari 26); in der App vom Home-Bildschirm
+schwingt die Seite nicht nach (`overscroll-behavior-y: none`).
+
 **Die untere Leiste ist bewusst nicht an die Komponente gekoppelt.** Sie zeigt eine
 Auswahl als Abkürzung und steht als eigenes Markup in `layouts/app.blade.php` — mit Symbol
 pro Eintrag. Wer einen Punkt auch dort haben will, trägt ihn zusätzlich ein.

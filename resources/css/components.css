@@ -15,6 +15,11 @@
 
   html { scroll-behavior: smooth; }
 
+  /* As an app from the home screen: no rubber band that drags the tab bar along (issue #22). */
+  @media (display-mode: standalone) {
+    html { overscroll-behavior-y: none; }
+  }
+
   /*
     Distance to the screen edge for things at the bottom (issue #19): the
     home bar on iPhones (needs viewport-fit=cover, layouts/base), at least a
@@ -201,6 +206,18 @@
     padding-bottom: var(--safe-bottom);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /*
+    While a text field has the keyboard open, the tab bar and the "+" button
+    step aside: iOS lets fixed elements drift with the open keyboard
+    (issue #22), and the keyboard covers them anyway.
+  */
+  @media (width < 64rem) {
+    body:has(:is(input:not([readonly], [type=checkbox], [type=radio], [type=button], [type=submit], [type=reset], [type=file], [type=range], [type=color]), textarea:not([readonly])):focus)
+      :is(.tabbar, .fab) {
+      display: none;
+    }
   }
 
   .tab {

@@ -18,6 +18,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\TrustProxies as BaseTrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -41,7 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Gesperrte Konten bei der naechsten Anfrage abmelden — an ALLEN Web-Routen.
         // Vor `auth` einsortiert, sonst liesse `auth` den gesperrten Benutzer noch durch.
-        $middleware->web(append: [LogoutInactiveUsers::class, RememberSection::class]);
+        // AuthenticateSession: a new password ends all other sessions at their
+        // next request (they last 30 days, issue #24) – also a reset by an admin.
+        $middleware->web(append: [LogoutInactiveUsers::class, AuthenticateSession::class, RememberSection::class]);
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: LogoutInactiveUsers::class);
 
         // X-Forwarded-For nur mit TRUST_PROXY=true glauben.

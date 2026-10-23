@@ -114,6 +114,11 @@ Das macht Üben zu einem kurzen gemeinsamen Spiel.
 ### Spielen
 
 - Die Runde läuft im Vollbild wie eine Lernrunde, mit Fortschritt „3 / 10“.
+- **Immer Vorderseite → Rückseite (Issue #23):** Gefragt wird die
+  Vorderseite, alle Antworten – richtige wie falsche – sind Rückseiten
+  (Hauptbedeutungen) aus demselben Stapel; „Auch rückwärts lernen“ spielt im
+  Duell keine Rolle. Über der Frage und über den Antworten steht die
+  Sprache („Deutsch“, „Englisch“), beim Eintippen im Feld.
 - **Auswahl aus 4:** vier große Knöpfe. Nach dem Tippen sieht man sofort
   „Richtig!“ oder „Richtig ist: …“ und geht mit „Weiter“ zur nächsten Karte.
 - **Eintippen:** wie „Antworten eintippen“ (AnswerCheckService). Auch

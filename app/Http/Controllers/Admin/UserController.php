@@ -34,6 +34,7 @@ class UserController extends Controller
         // No scheduler in the container: stale registrations are cleaned up
         // whenever an admin looks at the list.
         $this->users->pruneUnapproved();
+        $this->users->pruneGuestSessions();
 
         return view('admin.users', [
             'users' => $this->users->list($search),

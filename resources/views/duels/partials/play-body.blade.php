@@ -13,6 +13,9 @@
 @php
     $qTag = \App\Enums\Language::tryFrom($duel->front_language)?->tag();
     $aTag = \App\Enums\Language::tryFrom($duel->back_language)?->tag();
+    // Issue #23: always front → back; the labels say which side is asked for.
+    $qLabel = \App\Enums\Language::labelFor($duel->front_language);
+    $aLabel = \App\Enums\Language::labelFor($duel->back_language);
     $step = $result['step'] ?? $card['position'];
     $shown = $step - $offset;
     $size = mb_strlen($card['question'] ?? '') <= 14 ? 'text-4xl' : 'text-2xl';
@@ -52,6 +55,7 @@
     <div @class(['flashcard flex flex-col', 'mt-3' => $duel->mode === 'typed', 'my-4 flex-1 justify-center' => $duel->mode !== 'typed'])>
       <div class="flashcard-inner flashcard-compact">
         <div class="flashcard-face">
+          <p class="text-xs font-medium uppercase tracking-wide text-subtle">{{ $qLabel }}</p>
           <p class="flashcard-text {{ $size }}" lang="{{ $qTag }}">{{ $card['question'] }}</p>
           @if ($card['hint'])
             <p class="text-sm text-muted">{{ $card['hint'] }}</p>
@@ -66,6 +70,7 @@
             hx-post="{{ $base }}/answer" hx-target="#round" hx-swap="outerHTML" hx-disabled-elt="find button" hx-sync="this:drop">
         @csrf
         <input type="hidden" name="step" value="{{ $step }}">
+        <p class="text-center text-xs font-medium uppercase tracking-wide text-subtle">{{ $aLabel }}</p>
         @foreach ($card['choices'] as $i => $choice)
           <button type="submit" name="choice" value="{{ $i }}" class="btn btn-secondary btn-lg btn-block" lang="{{ $aTag }}">{{ $choice }}</button>
         @endforeach
@@ -76,7 +81,7 @@
         @csrf
         <input type="hidden" name="step" value="{{ $step }}">
         <input class="input input-lg" type="text" name="typed" maxlength="500" lang="{{ $aTag }}"
-               placeholder="Deine Antwort" aria-label="Deine Antwort"
+               placeholder="Deine Antwort ({{ $aLabel }})" aria-label="Deine Antwort ({{ $aLabel }})"
                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" autofocus>
         <button type="submit" class="btn btn-primary btn-lg btn-block">Prüfen</button>
         <button type="submit" name="skip" value="1" class="btn btn-ghost btn-block">Weiß ich nicht</button>

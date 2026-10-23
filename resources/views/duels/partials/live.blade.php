@@ -113,7 +113,7 @@
     <div class="card mt-4">
       <div class="card-body stack">
         <p class="text-sm">Heb dir diesen Link auf – damit siehst du später, wer gewonnen hat.</p>
-        <input class="input font-mono text-sm" type="text" value="{{ $guestLink }}" readonly aria-label="Dein Link zum Duell" data-guest-link>
+        <input class="input font-mono text-base sm:text-sm" type="text" value="{{ $guestLink }}" readonly aria-label="Dein Link zum Duell" data-guest-link>
         <button type="button" class="btn btn-secondary btn-block" data-copy-link>Link kopieren</button>
       </div>
     </div>
