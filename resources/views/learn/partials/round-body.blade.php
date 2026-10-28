@@ -6,6 +6,7 @@
   @param array|null $current   ['card' => Card, 'direction' => Direction, 'repeat' => bool, 'intro' => bool, 'changed' => bool, …]
   @param int        $position  number of the card that is up
   @param int        $streak    days in a row (end screen only)
+  @param array|null $rescue    yesterday missed: twice the goal today keeps the streak (end screen only, issue #27)
   @param list<string> $mastered  words that reached "Kann ich" in this round (end screen only)
   @param array{answers: int, goal: int, goal_met: bool}|null $day  today's daily goal (end screen only)
   @param array|null $checked   result of a typed answer, shown before the next card (StudyRoundService::answerTyped)
@@ -311,6 +312,8 @@
       @endif
       @if ($practice)
         <p class="text-sm text-muted">Freies Üben zählt nicht für den Karteikasten.</p>
+      @elseif ($rescue && $day)
+        <p class="text-base text-warning"><span aria-hidden="true">🔥</span> @include('learn.partials.streak-rescue', ['rescue' => $rescue, 'goal' => $day['goal']])</p>
       @elseif ($streak > 0)
         <p class="badge badge-brand text-sm">{{ $streak === 1 ? '1 Tag' : $streak.' Tage' }} in Folge gelernt</p>
       @endif

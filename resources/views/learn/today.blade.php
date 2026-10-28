@@ -6,7 +6,12 @@
 <div class="mx-auto max-w-md">
   <h1 class="text-2xl font-semibold tracking-tight">Hallo, {{ $user->name }}</h1>
 
-  @if ($today['streak'] > 0)
+  @if ($today['rescue'])
+    <p class="mt-1 text-sm text-warning">
+      <span aria-hidden="true" class="mr-1">🔥</span>
+      @include('learn.partials.streak-rescue', ['rescue' => $today['rescue'], 'goal' => $today['goal']])
+    </p>
+  @elseif ($today['streak'] > 0)
     <p class="mt-1 text-sm text-muted">
       <span aria-hidden="true" class="mr-1">🔥</span>
       {{ $today['streak'] === 1 ? '1 Tag' : $today['streak'].' Tage' }} in Folge gelernt
@@ -125,9 +130,10 @@
       <h2 class="text-base font-semibold">Lerne ich</h2>
       <a href="/decks" class="link-action -mr-3 px-3 text-sm">Alle</a>
     </div>
+    <x-progress-legend class="mb-2" />
     <ul class="list">
       @foreach ($decks as $deck)
-        <x-deck-row :deck="$deck" :stats="$stats[$deck->id] ?? null" />
+        <x-deck-row :deck="$deck" :stats="$stats[$deck->id] ?? null" :progress="$progress[$deck->id] ?? null" />
       @endforeach
     </ul>
   @endif

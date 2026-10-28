@@ -31,6 +31,7 @@ class LearnController extends Controller
             'week' => $this->leitner->recentDays($user),
             'decks' => $decks,
             'stats' => $stats,
+            'progress' => $this->overview->deckProgress($user, $decks),
             // Decks exist, but none is "Lerne ich": a hint instead of the first-deck start.
             'hasOtherDecks' => $decks->isEmpty() && $this->decks->mineQuery($user)->exists(),
         ]);

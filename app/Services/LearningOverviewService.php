@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  *
  * Progress belongs to deck runs. "Due" counts each card and direction once,
  * even when it is due in two runs (docs/specs/lernplaene-und-karten.md, A5).
+ *
+ * @phpstan-type Progress array{new: int, learning: int, almost: int, mastered: int, total: int, mastered_percent: float, almost_percent: float, learning_percent: float}
  */
 class LearningOverviewService
 {
@@ -42,8 +44,10 @@ class LearningOverviewService
      * cards for "Noch 20 neue Karten".
      *
      * `answers`, `goal`, `goal_met`: today's daily goal (motivierender-start.md, B).
+     * `rescue`: yesterday was missed, twice the goal today keeps the streak
+     * (LeitnerService::streakStatus, issue #27).
      *
-     * @return array{due: int, tomorrow: int, streak: int, new: int, more_new: int, answers: int, goal: int, goal_met: bool, round_size: int}
+     * @return array{due: int, tomorrow: int, streak: int, rescue: array{days: int, target: int, answers: int}|null, new: int, more_new: int, answers: int, goal: int, goal_met: bool, round_size: int}
      */
     public function today(User $user): array
     {
@@ -59,11 +63,13 @@ class LearningOverviewService
         $available = $this->rounds->newCardCount($user, $this->decks->activeQuery($user)->pluck('id')->all(),
             (int) config('learning.new_per_day') + $this->leitner->roundSize($user));
         $new = min($available, $this->rounds->newAllowedToday($user));
+        $streak = $this->leitner->streakStatus($user);
 
         return [
             'due' => (int) ($row->due ?? 0),
             'tomorrow' => (int) ($row->tomorrow ?? 0),
-            'streak' => $this->leitner->streak($user),
+            'streak' => $streak['days'],
+            'rescue' => $streak['rescue'],
             'new' => $new,
             'more_new' => $available - $new,
             ...$this->leitner->dayStatus($user),
@@ -270,12 +276,13 @@ class LearningOverviewService
     }
 
     /**
-     * Per deck how many active cards are new, in the box and in "Kann ich",
-     * for the parents' view (issue #18). A card counts by its best state over
-     * the learned directions and runs, like vocabulary().
+     * Per deck how many active cards are new, in the box, in the box right
+     * before "Kann ich" (`almost`, issue #26) and in "Kann ich" — for the bar
+     * on "Heute" and in the parents' view (issue #18). A card counts by its
+     * best state over the learned directions and runs, like vocabulary().
      *
      * @param  Collection<int, Deck>  $decks
-     * @return array<string, array{new: int, learning: int, mastered: int, total: int, mastered_percent: float, learning_percent: float}>
+     * @return array<string, Progress>
      */
     public function deckProgress(User $user, Collection $decks): array
     {
@@ -285,7 +292,8 @@ class LearningOverviewService
 
         [$active, $bindings] = $this->selection->activeCondition($user);
         [$learned, $learnedBindings] = $this->preferences->directionCondition($user);
-        $rows = DB::table('card_progress')
+        // Per card its best level: 2 "Kann ich", 1 the box before, 0 in the box.
+        $levels = DB::table('card_progress')
             ->join('cards', 'cards.id', '=', 'card_progress.card_id')
             ->join('deck_runs', 'deck_runs.id', '=', 'card_progress.deck_run_id')
             ->where('card_progress.user_id', $user->id)
@@ -293,10 +301,16 @@ class LearningOverviewService
             ->whereIn('cards.deck_id', $decks->modelKeys())
             ->whereRaw($active, $bindings)
             ->whereRaw($learned, $learnedBindings)
-            ->groupBy('cards.deck_id')
+            ->groupBy('cards.deck_id', 'card_progress.card_id')
             ->select('cards.deck_id')
-            ->selectRaw('count(distinct card_progress.card_id) filter (where card_progress.box >= deck_runs.box_count) as mastered')
-            ->selectRaw('count(distinct card_progress.card_id) as touched')
+            // "Almost" needs a box before it: with two boxes, box 1 is just "in the box".
+            ->selectRaw('max(case when card_progress.box >= deck_runs.box_count then 2 when deck_runs.box_count > 2 and card_progress.box = deck_runs.box_count - 1 then 1 else 0 end) as level');
+        $rows = DB::query()->fromSub($levels, 'levels')
+            ->groupBy('deck_id')
+            ->select('deck_id')
+            ->selectRaw('count(*) filter (where level = 2) as mastered')
+            ->selectRaw('count(*) filter (where level = 1) as almost')
+            ->selectRaw('count(*) as touched')
             ->get()
             ->keyBy('deck_id');
         $activeCounts = $this->selection->activeCounts($user, $decks->modelKeys());
@@ -306,14 +320,18 @@ class LearningOverviewService
             $total = $activeCounts[$deck->id] ?? (int) ($deck->cards_count ?? 0);
             $row = $rows->get($deck->id);
             $mastered = min($total, (int) ($row->mastered ?? 0));
-            $learning = min($total - $mastered, (int) ($row->touched ?? 0) - (int) ($row->mastered ?? 0));
+            $almost = min($total - $mastered, (int) ($row->almost ?? 0));
+            $learning = max(0, min($total - $mastered - $almost, (int) ($row->touched ?? 0) - (int) ($row->mastered ?? 0) - (int) ($row->almost ?? 0)));
+            $percent = fn (int $n) => $total > 0 ? round(100 * $n / $total, 1) : 0.0;
             $result[$deck->id] = [
-                'new' => $total - $mastered - $learning,
+                'new' => $total - $mastered - $almost - $learning,
                 'learning' => $learning,
+                'almost' => $almost,
                 'mastered' => $mastered,
                 'total' => $total,
-                'mastered_percent' => $total > 0 ? round(100 * $mastered / $total, 1) : 0.0,
-                'learning_percent' => $total > 0 ? round(100 * $learning / $total, 1) : 0.0,
+                'mastered_percent' => $percent($mastered),
+                'almost_percent' => $percent($almost),
+                'learning_percent' => $percent($learning),
             ];
         }
 

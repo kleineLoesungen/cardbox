@@ -194,7 +194,10 @@
   });
   document.body.addEventListener("htmx:afterSwap", (e) => {
     const sheet = e.detail.target.closest?.("dialog.dialog-sheet");
-    if (sheet && !sheet.open) sheet.showModal();
+    // Only for content asked for from outside: a form inside the sheet that
+    // closed it ("sheet-close", e.g. saving in the dictionary, issue #25)
+    // must not open it again.
+    if (sheet && !sheet.open && !sheet.contains(e.detail.requestConfig?.elt ?? null)) sheet.showModal();
   });
   document.body.addEventListener("sheet-close", () => {
     document.querySelectorAll("dialog.dialog-sheet[open]").forEach((d) => d.close());

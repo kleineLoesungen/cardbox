@@ -143,11 +143,14 @@ class StudyRoundController extends Controller
             $this->rounds->finish($user, $round);
         }
 
+        $streak = $current === null ? $this->leitner->streakStatus($user) : ['days' => 0, 'rescue' => null];
+
         return [
             'round' => $round,
             'current' => $current,
             'position' => $this->rounds->position($round),
-            'streak' => $current === null ? $this->leitner->streak($user) : 0,
+            'streak' => $streak['days'],
+            'rescue' => $streak['rescue'],
             'mastered' => $current === null ? $this->rounds->masteredWords($user, $round) : [],
             'hard' => $current === null ? $this->rounds->hardWords($user, $round) : [],
             'day' => $current === null ? $this->leitner->dayStatus($user) : null,

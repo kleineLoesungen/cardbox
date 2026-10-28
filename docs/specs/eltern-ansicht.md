@@ -89,9 +89,10 @@ zu dessen Ansicht.
    „Heute“ des Kindes) und die **zuletzt** in „Kann ich“ gekommenen bis zu
    10 Wörter („Hund – dog“).
 4. **Stapel:** die Stapel, die das Kind lernt (eigene und gefolgte, ohne
-   pausierte), je mit Name, Sprachpaar, „3 fällig“ und einem dreiteiligen
-   Balken (Issue #18): „kann Ben“, „im Karteikasten“, „noch nicht gelernt“,
-   darunter die Anzahlen. Pausierte Stapel fehlen; ein Satz nennt nur, wie
+   pausierte), je mit Name, Sprachpaar, „3 fällig“ und einem geteilten
+   Balken (Issue #18): „kann Ben“, „fast geschafft“ (im Fach direkt vor
+   „Kann ich“, Issue #26), „im Karteikasten“, „noch nicht gelernt“,
+   darunter die Anzahlen. Denselben Balken zeigt „Heute“ bei jedem Stapel. Pausierte Stapel fehlen; ein Satz nennt nur, wie
    viele es sind ([aktive-stapel-und-freie-karten.md](aktive-stapel-und-freie-karten.md)).
    Kein Link in den Stapel: Eltern sehen keine Kartenlisten und keine fremden
    privaten Stapel-Seiten.

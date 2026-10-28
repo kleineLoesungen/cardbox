@@ -189,6 +189,32 @@ describe('Lerne ich, pausiert, ohne Kennzeichen (Issue #15)', function () {
         $this->get('/learn')->assertSee('Du kannst schon <strong>2 Wörter</strong>', false);
     });
 
+    it('zeigt auf Heute je Stapel, wie weit man ist – auch ohne „Kann ich“ (Issue #26)', function () {
+        $ich = actingAsUser();
+        $deck = adDeck($ich, 'Buch', [['eins', 'one'], ['zwei', 'two'], ['drei', 'three'], ['vier', 'four']]);
+        adLearning($deck, true);
+        [$a, $b] = $deck->cards()->orderBy('created_at')->get()->all();
+        adDue($ich, $a, 4);
+        adDue($ich, $b, 2);
+
+        $this->get('/learn')
+            ->assertSee('kann ich')->assertSee('fast geschafft')
+            ->assertSee('aria-label="0 kann ich · 1 fast geschafft · 1 im Karteikasten · 2 noch nicht gelernt"', false)
+            ->assertSee('class="progress-split-almost" style="width: 25%"', false);
+    });
+
+    it('kennt „fast geschafft“ nur bei Plänen mit mehr als zwei Fächern', function () {
+        $ich = User::factory()->create();
+        $deck = adDeck($ich, 'Buch', [['eins', 'one'], ['zwei', 'two']]);
+        [$a, $b] = $deck->cards()->orderBy('created_at')->get()->all();
+        adDue($ich, $a, 1);
+        adDue($ich, $b, 2);
+        DB::table('deck_runs')->where('user_id', $ich->id)->update(['box_count' => 2]);
+
+        expect(app(LearningOverviewService::class)->deckProgress($ich, Deck::whereKey($deck->id)->withCount('cards')->get())[$deck->id])
+            ->toMatchArray(['mastered' => 1, 'almost' => 0, 'learning' => 1, 'new' => 0]);
+    });
+
     it('zählt im Eltern-Balken nur ausgewählte Karten', function () {
         $kind = User::factory()->create();
         $deck = adDeck($kind, 'Buch', [['eins', 'one'], ['zwei', 'two'], ['drei', 'three'], ['vier', 'four']]);

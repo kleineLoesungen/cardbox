@@ -25,6 +25,8 @@ use Illuminate\Validation\ValidationException;
  * Codes (App\Support\ShareCode) are stored as a keyed hash only. Wrong,
  * expired and used codes give the same message, so nothing tells whether a
  * code ever existed.
+ *
+ * @phpstan-import-type Progress from LearningOverviewService
  */
 class GuardianService
 {
@@ -217,7 +219,7 @@ class GuardianService
      *     recent: list<string>,
      *     decks: Collection<int, Deck>,
      *     stats: array<string, array{due: int, mastered_percent: int}>,
-     *     progress: array<string, array{new: int, learning: int, mastered: int, total: int, mastered_percent: float, learning_percent: float}>,
+     *     progress: array<string, Progress>,
      *     hard: list<array{word: string, deck: string}>
      * }
      */

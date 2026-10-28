@@ -7,6 +7,11 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.10.28
+- Lernserie: Ein ausgelassener Tag beendet sie nicht mehr, wenn man am Tag danach das Tagesziel zweimal schafft – der ausgelassene Tag zählt dann mit. „Heute“, das Rundenende und die Erinnerung sagen, wie viele Karten dafür noch fehlen, auch nach dem ersten erreichten Ziel. Zwei Tage am Stück ohne Lernen beenden die Serie weiterhin
+- Heute: Jeder Stapel zeigt einen Balken mit Farben für „kann ich“, „fast geschafft“ (im Fach direkt vor „Kann ich“), „im Karteikasten“ und „noch nicht gelernt“ – vorher blieb er dunkel, solange noch nichts in „Kann ich“ war. „Fast geschafft“ gibt es jetzt auch in der Ansicht für Eltern
+- Wörterbuch: Nach dem Speichern oder Löschen einer Karte schließt sich das Fenster wieder
+
 ## 2026.10.23
 - Angemeldet bleiben: Eine Anmeldung gilt jetzt 30 Tage und verlängert sich mit jeder Nutzung – wer die App einmal in der Woche öffnet, muss sich nicht mehr neu anmelden (vorher nach 12 Stunden)
 - Neues Passwort meldet ab: Wer sein Passwort ändert (oder es von einer Administratorin zurücksetzen lässt), ist auf allen anderen Geräten abgemeldet – das eigene bleibt angemeldet. Hilft, wenn man auf einem fremden Gerät angemeldet geblieben ist

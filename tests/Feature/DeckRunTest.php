@@ -179,7 +179,8 @@ describe('Lernen mit mehreren Durchgängen', function () {
 
         $this->get('/learn')
             ->assertSee('1 fällig')
-            ->assertSee('50 %', false);
+            ->assertSee('class="progress-split-mastered" style="width: 50%"', false)
+            ->assertSee('aria-label="1 kann ich · 0 fast geschafft · 1 im Karteikasten · 0 noch nicht gelernt"', false);
     });
 
     it('überspringt Karten eines Durchgangs, der während der Runde zurückgesetzt wurde', function () {

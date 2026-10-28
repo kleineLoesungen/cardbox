@@ -1,10 +1,11 @@
 {{--
   One deck in a list: name, direction, card count; for other people's decks
   the owner's display name (never the username). With learning stats: share
-  of mastered cards and cards due today. `state`: 'paused' shows the
+  of mastered cards and cards due today; with `progress` (deckProgress)
+  the split bar instead (issue #26). `state`: 'paused' shows the
   "pausiert" badge; the list's sections tell the rest.
 --}}
-@props(['deck', 'stats' => null, 'state' => null])
+@props(['deck', 'stats' => null, 'progress' => null, 'state' => null])
 @php($own = $deck->user_id === auth()->id())
 <li>
   <a href="/decks/{{ $deck->id }}" class="list-row">
@@ -21,7 +22,9 @@
           {{ $deck->open_suggestions_count === 1 ? '1 Vorschlag' : $deck->open_suggestions_count.' Vorschläge' }}
         </span>
       @endif
-      @if ($stats !== null && ($deck->cards_count ?? 0) > 0)
+      @if ($progress !== null && $progress['total'] > 0)
+        <x-progress-split :progress="$progress" class="mt-2" />
+      @elseif ($stats !== null && ($deck->cards_count ?? 0) > 0)
         <span class="meter meter-success mt-2" title="{{ $stats['mastered_percent'] }} % kann ich">
           <span style="width: {{ $stats['mastered_percent'] }}%"></span>
         </span>

@@ -330,11 +330,20 @@ class ReminderService
     /**
      * The reminder's text, or null when there is nothing to remind of: the
      * goal is reached or no card waits. No names, no words — only numbers.
+     * Yesterday missed: twice the goal keeps the streak (issue #27), so it
+     * reminds until then — also with nothing due, practising counts too.
      */
     private function text(User $user): ?string
     {
         $today = $this->overview->today($user);
         $waiting = $today['due'] + $today['new'];
+        $rescue = $today['rescue'];
+        if ($rescue !== null && $rescue['answers'] < $rescue['target']) {
+            $left = $rescue['target'] - $rescue['answers'];
+            $cards = $left === 1 ? '1 Karte' : "{$left} Karten";
+
+            return "🔥 Gestern ausgesetzt – schaffst du heute noch {$cards}, geht deine Lernfolge weiter ({$rescue['days']} Tage).";
+        }
         if ($waiting === 0 || $today['answers'] >= $today['goal']) {
             return null;
         }

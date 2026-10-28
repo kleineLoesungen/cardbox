@@ -208,6 +208,20 @@ describe('Verschicken', function () {
         expect($push->sent)->toHaveCount(1);
     });
 
+    it('erinnert nach einem ausgelassenen Tag bis zum doppelten Tagesziel (Issue #27)', function () {
+        $push = fakePush();
+        $ich = remindable();
+        DB::table('study_days')->insert([
+            ['user_id' => $ich->id, 'day' => '2026-10-12', 'reviews' => 20, 'correct' => 20, 'answers' => 20, 'goal_met' => true],
+            // Today the goal once: no usual reminder, but the streak still needs one more.
+            ['user_id' => $ich->id, 'day' => '2026-10-14', 'reviews' => 39, 'correct' => 39, 'answers' => 39, 'goal_met' => true],
+        ]);
+
+        runReminders();
+
+        expect(json_decode($push->sent[0]['payload'], true)['body'])->toBe('🔥 Gestern ausgesetzt – schaffst du heute noch 1 Karte, geht deine Lernfolge weiter (3 Tage).');
+    });
+
     it('nennt eine laufende Lernserie', function () {
         $push = fakePush();
         $ich = remindable();

@@ -125,6 +125,24 @@ Ein Tag ist erledigt, sobald eine der beiden Bedingungen eintritt. Das
 bleibt so, auch wenn danach neue Karten dazukommen. Bisherige Tage zählen
 weiter (Migration).
 
+**Ein ausgelassener Tag (Issue #27, Entscheidung vom 28.10.2026):** Fehlt
+ein einzelner Tag, geht die Serie weiter, wenn am Tag danach mindestens das
+**doppelte Tagesziel** geschafft wird (gewusste Karten, mit dem heutigen
+Ziel gerechnet). Der ausgelassene Tag zählt dann mit. Zwei fehlende Tage am
+Stück beenden die Serie; ein Tag, an dem nur „Heute“ leer war, zählt für die
+Rettung nicht als doppeltes Ziel.
+
+- Solange die Rettung offen ist, steht auf „Heute“ statt der Serie:
+  „Gestern hast du ausgesetzt. Schaffst du heute dein Tagesziel zweimal
+  (40 Karten), geht deine Lernfolge weiter: 5 Tage.“
+- Nach dem ersten erreichten Tagesziel (auch am Rundenende): „Schaffst du
+  heute noch einmal dein Tagesziel – noch 20 Karten –, geht deine Lernfolge
+  weiter: 5 Tage.“
+- Die Erinnerung meldet sich in diesem Fall auch nach dem ersten Ziel:
+  „Gestern ausgesetzt – schaffst du heute noch 20 Karten, geht deine
+  Lernfolge weiter (5 Tage).“
+- Berechnet in `LeitnerService::streakStatus`; keine Migration.
+
 Am Rundenende steht wie bisher die Lernserie. Ist das Ziel mit dieser Runde
 erreicht, steht zusätzlich „Tagesziel geschafft!“ da (nicht bei späteren
 Runden desselben Tages). Wird das Ziel gesenkt und ist es damit schon

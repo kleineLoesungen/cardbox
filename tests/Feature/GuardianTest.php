@@ -298,7 +298,8 @@ describe('Ansicht für Eltern', function () {
 
         childProgress($kind, $hund, 5, 0, now()->subDays(10));
         childProgress($kind, $katze, 5, 0, now()->subDay());
-        childProgress($kind, $haus, 2, 4);
+        // The box right before "Kann ich" (5 boxes): "fast geschafft" (issue #26).
+        childProgress($kind, $haus, 4, 4);
         childProgress($kind, $chat, 1, 3);
         DB::table('study_days')->insert(['user_id' => $kind->id, 'day' => '2026-10-14', 'reviews' => 12, 'correct' => 8, 'answers' => 8, 'goal_met' => false]);
 
@@ -309,9 +310,9 @@ describe('Ansicht für Eltern', function () {
             ->assertSeeInOrder(['Zuletzt gelernt', 'Katze – cat', 'Hund – dog'])
             ->assertSee('Englisch Unit 3')
             ->assertSee('Französisch Tiere')
-            // Three-part bar per deck (issue #18).
-            ->assertSee('2 kann Ben · 1 im Karteikasten · 0 noch nicht gelernt')
-            ->assertSee('0 kann Ben · 1 im Karteikasten · 1 noch nicht gelernt')
+            // Split bar per deck (issues #18, #26).
+            ->assertSee('2 kann Ben · 1 fast geschafft · 0 im Karteikasten · 0 noch nicht gelernt')
+            ->assertSee('0 kann Ben · 0 fast geschafft · 1 im Karteikasten · 1 noch nicht gelernt')
             ->assertSee('1 fällig')
             ->assertSeeInOrder(['Knifflige Wörter', 'Zum Mitüben', 'Haus – house', 'Englisch Unit 3', 'Katze – le chat', 'Französisch Tiere'])
             ->assertSee('Ben hat dir das freigegeben')

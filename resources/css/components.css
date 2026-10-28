@@ -481,8 +481,11 @@
   .day-legend { @apply inline-block size-3 align-middle; }
 
   /* Deck progress in three parts: "Kann ich", in the box, the rest new. */
-  .progress-split { @apply flex h-2 w-full overflow-hidden rounded-full bg-surface-sunken; }
+  /* The track is "noch nicht gelernt": visible in both themes (issue #26). */
+  .progress-split { @apply flex h-2 w-full overflow-hidden rounded-full bg-border-strong/60; }
+  .progress-split-new      { @apply bg-border-strong/60; }
   .progress-split-mastered { @apply block h-full bg-success; }
+  .progress-split-almost   { @apply block h-full bg-success/45; }
   .progress-split-learning { @apply block h-full bg-brand/60; }
   .legend-swatch { @apply inline-block size-3 rounded-sm align-middle; }
 

@@ -94,25 +94,17 @@
     {{-- --- Decks: no links, parents do not see card lists ----------------- --}}
     @if ($overview['decks']->isNotEmpty())
       <h2 class="mt-6 mb-2 text-base font-semibold">Stapel</h2>
-      <p class="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" aria-hidden="true">
-        <span><span class="legend-swatch progress-split-mastered"></span> kann {{ $child->name }}</span>
-        <span><span class="legend-swatch progress-split-learning"></span> im Karteikasten</span>
-        <span><span class="legend-swatch bg-surface-sunken"></span> noch nicht gelernt</span>
-      </p>
+      <x-progress-legend :who="$child->name" class="mb-2" />
       <ul class="list">
         @foreach ($overview['decks'] as $deck)
           @php($stats = $overview['stats'][$deck->id] ?? ['due' => 0, 'mastered_percent' => 0])
-          @php($progress = $overview['progress'][$deck->id] ?? ['new' => 0, 'learning' => 0, 'mastered' => 0, 'total' => 0, 'mastered_percent' => 0, 'learning_percent' => 0])
+          @php($progress = $overview['progress'][$deck->id] ?? ['new' => 0, 'learning' => 0, 'almost' => 0, 'mastered' => 0, 'total' => 0, 'mastered_percent' => 0, 'almost_percent' => 0, 'learning_percent' => 0])
           <li class="list-row">
             <span class="min-w-0 flex-1">
               <span class="block truncate font-medium">{{ $deck->name }}</span>
               <span class="block truncate text-sm text-muted">{{ $deck->directionLabel() }}</span>
-              {{-- Share of the cards: "Kann ich" · in the box · not learned yet (issue #18). --}}
-              <span class="progress-split mt-2" aria-hidden="true">
-                <span class="progress-split-mastered" style="width: {{ $progress['mastered_percent'] }}%"></span>
-                <span class="progress-split-learning" style="width: {{ $progress['learning_percent'] }}%"></span>
-              </span>
-              <span class="mt-1 block text-xs text-muted">{{ $progress['mastered'] }} kann {{ $child->name }} · {{ $progress['learning'] }} im Karteikasten · {{ $progress['new'] }} noch nicht gelernt</span>
+              {{-- Share of the cards (issues #18, #26). --}}
+              <x-progress-split :progress="$progress" :who="$child->name" legend class="mt-2" />
             </span>
             @if ($stats['due'] > 0)
               <span class="badge badge-brand shrink-0">{{ $stats['due'] }} fällig</span>

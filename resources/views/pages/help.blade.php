@@ -133,7 +133,10 @@
       Jeder Tag mit erreichtem Ziel verlängert deine <strong>Lernserie</strong>.
       Gab es an einem Tag weniger zu lernen und du hast alles geschafft, zählt
       er auch. Ist gar nichts dran, üb ein paar Karten in einem Stapel – dann
-      zählt der Tag ebenfalls.
+      zählt der Tag ebenfalls. Einen Tag ausgelassen? Schaffst du am Tag
+      danach dein Tagesziel <strong>zweimal</strong>, geht die Lernserie weiter,
+      und der ausgelassene Tag zählt mit. Zwei Tage am Stück ohne Lernen
+      beenden sie.
     </p>
   </section>
 

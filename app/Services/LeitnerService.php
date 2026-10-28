@@ -253,31 +253,77 @@ class LeitnerService
      */
     public function streak(User $user): int
     {
-        $today = $this->today();
-        $days = DB::table('study_days')
-            ->where('user_id', $user->id)
-            ->where('goal_met', true)
-            ->where('day', '<=', $today->toDateString())
-            ->orderByDesc('day')
-            // Streaks are shown up to 400 days; enough for a school year and more.
-            ->limit(400)
-            ->pluck('day')
-            ->map(fn ($d) => substr((string) $d, 0, 10))
-            ->all();
+        return $this->streakStatus($user)['days'];
+    }
 
-        // Start today if learned today, otherwise yesterday; then walk back
-        // as long as the days are consecutive.
-        $expected = in_array($today->toDateString(), $days, true) ? $today : $today->subDay();
-        $streak = 0;
-        foreach ($days as $day) {
-            if ($day !== $expected->toDateString()) {
-                break;
+    /**
+     * The streak (issue #27): days in a row with the daily goal met. A single
+     * missed day does not end it when the day after reaches twice the goal;
+     * the missed day then counts as well. Two missed days in a row end it.
+     *
+     * `rescue`: yesterday was missed and today can still bridge it — `days`
+     * is the streak once today reaches `target` answers (twice the goal),
+     * `answers` what today has so far. Null otherwise.
+     *
+     * @return array{days: int, rescue: array{days: int, target: int, answers: int}|null}
+     */
+    public function streakStatus(User $user): array
+    {
+        $today = $this->today();
+        $goal = max(1, $this->dailyGoal($user));
+        $rows = DB::table('study_days')
+            ->where('user_id', $user->id)
+            ->where('day', '<=', $today->toDateString())
+            // Streaks are shown up to 400 days; enough for a school year and more.
+            ->where('day', '>=', $today->subDays(400)->toDateString())
+            ->get(['day', 'answers', 'goal_met']);
+        $met = [];
+        $answers = [];
+        foreach ($rows as $row) {
+            $day = substr((string) $row->day, 0, 10);
+            $answers[$day] = (int) $row->answers;
+            if ($row->goal_met) {
+                $met[$day] = true;
             }
-            $streak++;
-            $expected = $expected->subDay();
+        }
+        $isMet = fn (CarbonImmutable $d) => isset($met[$d->toDateString()]);
+        $doubled = fn (CarbonImmutable $d) => $isMet($d) && ($answers[$d->toDateString()] ?? 0) >= 2 * $goal;
+
+        // Walks back from $day as long as the days count, bridging single gaps.
+        $walk = function (CarbonImmutable $day) use ($isMet, $doubled): int {
+            $days = 0;
+            while ($days < 400 && $isMet($day)) {
+                $days++;
+                $before = $day->subDay();
+                if (! $isMet($before) && $isMet($before->subDay()) && $doubled($day)) {
+                    $days++;
+                    $day = $before->subDay();
+                } else {
+                    $day = $before;
+                }
+            }
+
+            return $days;
+        };
+
+        $yesterday = $today->subDay();
+        $days = $walk($isMet($today) ? $today : $yesterday);
+
+        // Yesterday missed, the day before counted, today not bridged yet.
+        $rescue = null;
+        if (! $isMet($yesterday) && $isMet($yesterday->subDay()) && ! $doubled($today)) {
+            $rescue = [
+                'days' => $walk($yesterday->subDay()) + 2,
+                'target' => 2 * $goal,
+                'answers' => $answers[$today->toDateString()] ?? 0,
+            ];
         }
 
-        return $streak;
+        if ($rescue !== null) {
+            $rescue['days'] = min(400, $rescue['days']);
+        }
+
+        return ['days' => min(400, $days), 'rescue' => $rescue];
     }
 
     /**
