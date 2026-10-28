@@ -1,7 +1,7 @@
 {{--
-  Yesterday was missed: twice the daily goal today keeps the streak
+  Yesterday was missed: three times the daily goal today keeps the streak
   (issue #27, LeitnerService::streakStatus). Before the goal: what it
-  takes; after the first goal: "noch einmal".
+  takes; once the goal is reached: how many cards are still missing.
 
   @param array{days: int, target: int, answers: int} $rescue
   @param int $goal  today's daily goal
@@ -11,7 +11,7 @@
     $streakText = $rescue['days'] === 1 ? '1 Tag' : $rescue['days'].' Tage';
 @endphp
 @if ($rescue['answers'] >= $goal)
-  Schaffst du heute noch einmal dein Tagesziel – noch {{ $left === 1 ? '1 Karte' : $left.' Karten' }} –, geht deine Lernfolge weiter: {{ $streakText }}.
+  Tagesziel geschafft! Noch {{ $left === 1 ? '1 Karte' : $left.' Karten' }} heute, dann geht deine Lernfolge weiter: {{ $streakText }}.
 @else
-  Gestern hast du ausgesetzt. Schaffst du heute dein Tagesziel zweimal ({{ $rescue['target'] }} Karten), geht deine Lernfolge weiter: {{ $streakText }}.
+  Gestern hast du ausgesetzt. Schaffst du heute dein Tagesziel dreimal ({{ $rescue['target'] }} Karten), geht deine Lernfolge weiter: {{ $streakText }}.
 @endif

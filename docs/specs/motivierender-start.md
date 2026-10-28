@@ -125,22 +125,28 @@ Ein Tag ist erledigt, sobald eine der beiden Bedingungen eintritt. Das
 bleibt so, auch wenn danach neue Karten dazukommen. Bisherige Tage zählen
 weiter (Migration).
 
-**Ein ausgelassener Tag (Issue #27, Entscheidung vom 28.10.2026):** Fehlt
+**Ein ausgelassener Tag (Issue #27, Entscheidungen vom 28.10.2026):** Fehlt
 ein einzelner Tag, geht die Serie weiter, wenn am Tag danach mindestens das
-**doppelte Tagesziel** geschafft wird (gewusste Karten, mit dem heutigen
-Ziel gerechnet). Der ausgelassene Tag zählt dann mit. Zwei fehlende Tage am
-Stück beenden die Serie; ein Tag, an dem nur „Heute“ leer war, zählt für die
-Rettung nicht als doppeltes Ziel.
+**dreifache Tagesziel** geschafft wird (gewusste Karten, mit dem heutigen
+Ziel gerechnet; `LeitnerService::RESCUE_FACTOR`). Der ausgelassene Tag wird
+nur überbrückt, er **zählt nicht** mit: 4 Tage, ausgelassen, Rettung → 5 Tage.
+Zwei fehlende Tage am Stück beenden die Serie; ein Tag, an dem nur „Heute“
+leer war, reicht für die Rettung nicht.
 
 - Solange die Rettung offen ist, steht auf „Heute“ statt der Serie:
-  „Gestern hast du ausgesetzt. Schaffst du heute dein Tagesziel zweimal
-  (40 Karten), geht deine Lernfolge weiter: 5 Tage.“
-- Nach dem ersten erreichten Tagesziel (auch am Rundenende): „Schaffst du
-  heute noch einmal dein Tagesziel – noch 20 Karten –, geht deine Lernfolge
+  „Gestern hast du ausgesetzt. Schaffst du heute dein Tagesziel dreimal
+  (60 Karten), geht deine Lernfolge weiter: 5 Tage.“
+- Nach dem ersten erreichten Tagesziel (auf „Heute“ und am Rundenende):
+  „Tagesziel geschafft! Noch 40 Karten heute, dann geht deine Lernfolge
   weiter: 5 Tage.“
-- Die Erinnerung meldet sich in diesem Fall auch nach dem ersten Ziel:
-  „Gestern ausgesetzt – schaffst du heute noch 20 Karten, geht deine
-  Lernfolge weiter (5 Tage).“
+- Die Erinnerung meldet sich in diesem Fall bis zum dreifachen Ziel, auch
+  ohne fällige Karten: „Gestern ausgesetzt – schaffst du heute noch 40
+  Karten, geht deine Lernfolge weiter (5 Tage).“
+- **Zu wenig Karten übrig:** Für das Ziel zählen gewusste Karten aus jeder
+  Runde – auch „Für den Test üben“, „Fach üben“ und Duelle –, je Runde jede
+  Karte einmal, in der nächsten Runde wieder. Das dreifache Ziel ist deshalb
+  auch erreichbar, wenn „Heute“ nichts mehr anbietet; bei einem kleinen
+  Stapel braucht es dafür mehrere Übungsrunden.
 - Berechnet in `LeitnerService::streakStatus`; keine Migration.
 
 Am Rundenende steht wie bisher die Lernserie. Ist das Ziel mit dieser Runde

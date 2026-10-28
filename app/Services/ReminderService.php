@@ -330,7 +330,7 @@ class ReminderService
     /**
      * The reminder's text, or null when there is nothing to remind of: the
      * goal is reached or no card waits. No names, no words — only numbers.
-     * Yesterday missed: twice the goal keeps the streak (issue #27), so it
+     * Yesterday missed: RESCUE_FACTOR times the goal keeps the streak (issue #27), so it
      * reminds until then — also with nothing due, practising counts too.
      */
     private function text(User $user): ?string

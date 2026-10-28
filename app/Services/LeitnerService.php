@@ -28,6 +28,9 @@ use Illuminate\Support\Str;
  */
 class LeitnerService
 {
+    /** Times the daily goal that bridges a single missed day (issue #27). */
+    public const RESCUE_FACTOR = 3;
+
     /**
      * Plans already loaded in this request. The service is bound as scoped
      * (AppServiceProvider), so this never outlives a request.
@@ -258,12 +261,13 @@ class LeitnerService
 
     /**
      * The streak (issue #27): days in a row with the daily goal met. A single
-     * missed day does not end it when the day after reaches twice the goal;
-     * the missed day then counts as well. Two missed days in a row end it.
+     * missed day does not end it when the day after reaches RESCUE_FACTOR
+     * times the goal; the missed day itself does not count. Two missed days
+     * in a row end it.
      *
      * `rescue`: yesterday was missed and today can still bridge it — `days`
-     * is the streak once today reaches `target` answers (twice the goal),
-     * `answers` what today has so far. Null otherwise.
+     * is the streak once today reaches `target` answers, `answers` what
+     * today has so far. Null otherwise.
      *
      * @return array{days: int, rescue: array{days: int, target: int, answers: int}|null}
      */
@@ -287,20 +291,16 @@ class LeitnerService
             }
         }
         $isMet = fn (CarbonImmutable $d) => isset($met[$d->toDateString()]);
-        $doubled = fn (CarbonImmutable $d) => $isMet($d) && ($answers[$d->toDateString()] ?? 0) >= 2 * $goal;
+        $bridges = fn (CarbonImmutable $d) => $isMet($d) && ($answers[$d->toDateString()] ?? 0) >= self::RESCUE_FACTOR * $goal;
 
         // Walks back from $day as long as the days count, bridging single gaps.
-        $walk = function (CarbonImmutable $day) use ($isMet, $doubled): int {
+        $walk = function (CarbonImmutable $day) use ($isMet, $bridges): int {
             $days = 0;
             while ($days < 400 && $isMet($day)) {
                 $days++;
                 $before = $day->subDay();
-                if (! $isMet($before) && $isMet($before->subDay()) && $doubled($day)) {
-                    $days++;
-                    $day = $before->subDay();
-                } else {
-                    $day = $before;
-                }
+                // A single missed day is stepped over, not counted.
+                $day = ! $isMet($before) && $isMet($before->subDay()) && $bridges($day) ? $before->subDay() : $before;
             }
 
             return $days;
@@ -311,10 +311,10 @@ class LeitnerService
 
         // Yesterday missed, the day before counted, today not bridged yet.
         $rescue = null;
-        if (! $isMet($yesterday) && $isMet($yesterday->subDay()) && ! $doubled($today)) {
+        if (! $isMet($yesterday) && $isMet($yesterday->subDay()) && ! $bridges($today)) {
             $rescue = [
-                'days' => $walk($yesterday->subDay()) + 2,
-                'target' => 2 * $goal,
+                'days' => $walk($yesterday->subDay()) + 1,
+                'target' => self::RESCUE_FACTOR * $goal,
                 'answers' => $answers[$today->toDateString()] ?? 0,
             ];
         }

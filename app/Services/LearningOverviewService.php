@@ -44,7 +44,7 @@ class LearningOverviewService
      * cards for "Noch 20 neue Karten".
      *
      * `answers`, `goal`, `goal_met`: today's daily goal (motivierender-start.md, B).
-     * `rescue`: yesterday was missed, twice the goal today keeps the streak
+     * `rescue`: yesterday was missed, RESCUE_FACTOR times the goal today keeps the streak
      * (LeitnerService::streakStatus, issue #27).
      *
      * @return array{due: int, tomorrow: int, streak: int, rescue: array{days: int, target: int, answers: int}|null, new: int, more_new: int, answers: int, goal: int, goal_met: bool, round_size: int}

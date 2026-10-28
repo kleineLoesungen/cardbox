@@ -6,7 +6,7 @@
   @param array|null $current   ['card' => Card, 'direction' => Direction, 'repeat' => bool, 'intro' => bool, 'changed' => bool, …]
   @param int        $position  number of the card that is up
   @param int        $streak    days in a row (end screen only)
-  @param array|null $rescue    yesterday missed: twice the goal today keeps the streak (end screen only, issue #27)
+  @param array|null $rescue    yesterday missed: RESCUE_FACTOR times the goal today keeps the streak (end screen only, issue #27)
   @param list<string> $mastered  words that reached "Kann ich" in this round (end screen only)
   @param array{answers: int, goal: int, goal_met: bool}|null $day  today's daily goal (end screen only)
   @param array|null $checked   result of a typed answer, shown before the next card (StudyRoundService::answerTyped)
@@ -318,7 +318,8 @@
         <p class="badge badge-brand text-sm">{{ $streak === 1 ? '1 Tag' : $streak.' Tage' }} in Folge gelernt</p>
       @endif
     @endif
-    @if ($round['answered'] > 0 && $day && $day['answers'] >= $day['goal'] && ! ($round['goal_before'] ?? false))
+    {{-- With a rescue open, its line says "Tagesziel geschafft!" itself. --}}
+    @if ($round['answered'] > 0 && $day && $day['answers'] >= $day['goal'] && ! ($round['goal_before'] ?? false) && ! $rescue)
       <p class="text-lg font-semibold text-success">Tagesziel geschafft!</p>
     @endif
   </div>
