@@ -17,7 +17,7 @@
               <span>{{ $result['front'] }}</span>
               <span class="text-muted">{{ $result['back'] }}</span>
             </span>
-            <span class="block truncate text-xs text-subtle">aus „{{ $result['deck'] }}“</span>
+            <span class="block break-words text-xs text-subtle">aus „{{ $result['deck'] }}“</span>
           </span>
           @if ($result['exists'])
             <span class="badge badge-neutral shrink-0">schon im Stapel</span>

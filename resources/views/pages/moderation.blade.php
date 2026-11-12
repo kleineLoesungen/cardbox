@@ -37,7 +37,7 @@
         <li>
           <a href="/decks/{{ $deck->id }}" class="list-row">
             <span class="min-w-0 flex-1">
-              <span class="block truncate font-medium">{{ $deck->name }}</span>
+              <span class="block break-words font-medium">{{ $deck->name }}</span>
               <span class="block truncate text-sm text-muted">
                 von {{ $deck->user->name }} · {{ $deck->cards_count }} Karten ·
                 {{ $deck->followers_count === 1 ? '1 lernt mit' : $deck->followers_count.' lernen mit' }}

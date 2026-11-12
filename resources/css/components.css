@@ -86,8 +86,9 @@
   .btn-icon { @apply w-12 px-0; }
 
   /* "← Stapel" above a page below a section (x-back-link). */
+  /* A block, not flex: a long deck name in it wraps (py-3 + 24 px line = 48 px). */
   .back-link {
-    @apply -ml-2 inline-flex min-h-12 items-center gap-1 rounded-ui px-2 text-base
+    @apply -ml-2 block w-fit max-w-full rounded-ui px-2 py-3 text-base leading-6 break-words
            text-muted hover:text-content;
   }
 
@@ -386,7 +387,7 @@
     @apply sticky top-0 z-10 flex items-center gap-2 border-b border-border
            bg-surface-raised px-4 py-3;
   }
-  .dialog-sheet-title { @apply flex-1 text-base font-semibold; }
+  .dialog-sheet-title { @apply min-w-0 flex-1 break-words text-base font-semibold; }
   .dialog-sheet-body  { @apply px-4 py-4; }
 
   /* --- Floating action button above the tab bar ------------------------ */

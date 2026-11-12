@@ -35,7 +35,7 @@
         <li>
           <a href="/duels/{{ $duel->id }}" class="list-row">
             <span class="min-w-0 flex-1">
-              <span class="block truncate font-medium">{{ $duel->deck_name }}</span>
+              <span class="block break-words font-medium">{{ $duel->deck_name }}</span>
               <span class="block truncate text-sm text-muted">
                 @if ($duel->isBetweenRounds())
                   Runde {{ $duel->round }} von {{ $duel->rounds }} fertig · nächste Runde folgt

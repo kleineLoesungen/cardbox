@@ -36,7 +36,7 @@
             <label class="list-row cursor-pointer">
               <input type="checkbox" class="checkbox shrink-0" name="decks[]" value="{{ $deck->id }}" @checked(in_array($deck->id, (array) old('decks', []), true))>
               <span class="min-w-0 flex-1">
-                <span class="block truncate font-medium">{{ $deck->name }}</span>
+                <span class="block break-words font-medium">{{ $deck->name }}</span>
                 <span class="block truncate text-sm text-muted">
                   {{ $deck->directionLabel() }} · {{ $deck->cards_count === 1 ? '1 Karte' : ($deck->cards_count ?? 0).' Karten' }}
                   @unless ($deck->user_id === auth()->id()) · von {{ $deck->user->name }} @endunless

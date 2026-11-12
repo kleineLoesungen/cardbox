@@ -48,7 +48,7 @@
               </div>
             @endforeach
 
-            <p class="text-xs text-muted">
+            <p class="break-words text-xs text-muted">
               @if (count($hit['decks']) === 1)
                 aus „{{ $deck->name }}“ {{ $deck->user_id === auth()->id() ? '(dein Stapel)' : 'von '.$deck->user->name }}
               @else
@@ -80,10 +80,11 @@
                   {{ $canEdit ? 'Bearbeiten' : 'Fehler melden' }}
                 </button>
                 @foreach ($hit['targets'] as $target)
-                  <button type="button" class="btn btn-secondary btn-block justify-start"
+                  {{-- Grows with a long deck name, which wraps instead of being cut. --}}
+                  <button type="button" class="btn btn-secondary btn-block h-auto min-h-12 justify-start py-2 text-left"
                           hx-post="/dictionary/adopt/{{ $card->id }}" hx-vals="{{ json_encode(['deck' => $target->id]) }}"
                           hx-target="this" hx-swap="outerHTML">
-                    <span class="truncate">Kopie in „{{ $target->name }}“</span>
+                    <span class="min-w-0 break-words">Kopie in „{{ $target->name }}“</span>
                   </button>
                 @endforeach
               </div>

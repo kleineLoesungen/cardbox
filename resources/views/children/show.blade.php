@@ -101,7 +101,7 @@
           @php($progress = $overview['progress'][$deck->id] ?? ['new' => 0, 'learning' => 0, 'almost' => 0, 'mastered' => 0, 'total' => 0, 'mastered_percent' => 0, 'almost_percent' => 0, 'learning_percent' => 0])
           <li class="list-row">
             <span class="min-w-0 flex-1">
-              <span class="block truncate font-medium">{{ $deck->name }}</span>
+              <span class="block break-words font-medium">{{ $deck->name }}</span>
               <span class="block truncate text-sm text-muted">{{ $deck->directionLabel() }}</span>
               {{-- Share of the cards (issues #18, #26). --}}
               <x-progress-split :progress="$progress" :who="$child->name" legend class="mt-2" />

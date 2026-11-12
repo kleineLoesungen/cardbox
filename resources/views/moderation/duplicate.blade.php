@@ -43,7 +43,7 @@
                data-front-label="{{ $card->deck->frontLabel() }}" data-back-label="{{ $card->deck->backLabel() }}">
           <input type="radio" name="keep" value="{{ $card->id }}" @checked(old('keep', $first->id) === $card->id)>
           <span class="min-w-0 flex-1 stack gap-1">
-            <span class="block text-sm text-muted">
+            <span class="block break-words text-sm text-muted">
               „{{ $card->deck->name }}“ von {{ $card->deck->user->name }}
               · {{ ($learners[$card->id] ?? 0) === 1 ? '1 Person lernt sie' : ($learners[$card->id] ?? 0).' Personen lernen sie' }}
             </span>

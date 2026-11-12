@@ -38,7 +38,7 @@
       @foreach ($links as $link)
         <li>
           <a href="/duell/{{ $link['token'] }}" class="list-row">
-            <span class="min-w-0 flex-1 truncate font-medium">{{ $link['duel']->deck_name }}</span>
+            <span class="min-w-0 flex-1 break-words font-medium">{{ $link['duel']->deck_name }}</span>
             <span class="badge {{ $link['duel']->isFinished() ? 'badge-neutral' : 'badge-brand' }} shrink-0">{{ $link['duel']->isFinished() ? 'beendet' : 'läuft' }}</span>
             <span aria-hidden="true" class="text-subtle">›</span>
           </a>

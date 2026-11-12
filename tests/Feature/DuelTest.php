@@ -32,9 +32,11 @@ function duelDeck(User $owner, int $cards = 12, array $attributes = []): Deck
 /** Creates a duel as the logged-in person and returns it. */
 function makeDuel(Deck $deck, int $players = 2, string $mode = 'choice', int $rounds = 1): Duel
 {
-    test()->post("/decks/{$deck->id}/duels", ['players' => (string) $players, 'mode' => $mode, 'rounds' => (string) $rounds])->assertRedirect();
+    $location = test()->post("/decks/{$deck->id}/duels", ['players' => (string) $players, 'mode' => $mode, 'rounds' => (string) $rounds])
+        ->assertRedirect()->headers->get('Location');
 
-    return Duel::latest('created_at')->firstOrFail();
+    // By the redirect, not by created_at: with the clock frozen, two duels share it.
+    return Duel::findOrFail(basename((string) parse_url((string) $location, PHP_URL_PATH)));
 }
 
 function duelCode(Duel $duel): string
