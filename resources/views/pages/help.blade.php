@@ -288,7 +288,8 @@
     <p class="text-muted">
       Unter <strong>Wörterbuch</strong> schlägst du ein Wort nach, ohne
       zu lernen – in deinen Stapeln und in allen geteilten. Akzente musst du
-      nicht genau treffen: „eleve“ findet auch „élève“. Du siehst die
+      nicht genau treffen: „eleve“ findet auch „élève“, „coeur“ auch „cœur“,
+      „Schueler“ auch „Schüler“. Du siehst die
       Übersetzung und kannst sie anhören. <strong>Lernen</strong> nimmt das
       Wort in deine Runde unter Heute auf – aus seinem Stapel erst einmal nur
       dieses eine. Unter <strong>Mehr …</strong> kannst du eine Kopie in einen

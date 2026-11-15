@@ -8,7 +8,7 @@ Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
 ## 2026.11.15
-- Wörterbuch: Die Suche achtet nicht mehr auf Akzente – „eleve“ findet „élève“, „garcon“ findet „garçon“, „schuler“ findet „Schüler“, und umgekehrt. Gilt auch für „Aus anderen Stapeln übernehmen“
+- Wörterbuch: Die Suche achtet nicht mehr auf Akzente – „eleve“ findet „élève“, „garcon“ findet „garçon“, „coeur“ findet „cœur“, „Strasse“ findet „Straße“, „schuler“ und „Schueler“ finden „Schüler“, und umgekehrt. Gilt auch für „Aus anderen Stapeln übernehmen“
 - Benutzerverwaltung: Die Liste zeigt die letzte Anmeldung jedes Kontos, die Seite eines Kontos dazu, wann es zuletzt aktiv war (Anmeldungen halten 30 Tage). Für Anmeldungen vor diesem Update steht „unbekannt“
 - Migration: 2026_11_15_000000_add_last_login_at_to_users.php
 

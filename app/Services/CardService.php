@@ -323,18 +323,13 @@ class CardService
             return [];
         }
 
-        // Accents do not matter: "eleve" finds "élève" and back (App\Support\Fold).
-        $pattern = '%'.addcslashes(Fold::text($term), '\\%_').'%';
-        // Match single meanings, not the JSON text: no hits across meaning
-        // boundaries or on quotes and commas.
-        $matches = 'exists (select 1 from jsonb_array_elements_text(%s) m where '.Fold::sql('m').' ilike ?)';
-
         $cards = Card::query()
             ->with('deck')
             ->whereIn('deck_id', $this->adoptableDecks($user, $target)->select('id'))
+            // Accents do not matter: "eleve" finds "élève", "coeur" finds "cœur" (App\Support\Fold).
             ->where(fn (Builder $q) => $q
-                ->whereRaw(sprintf($matches, 'front'), [$pattern])
-                ->orWhereRaw(sprintf($matches, 'back'), [$pattern]))
+                ->whereRaw(...Fold::anyMeaning('front', $term))
+                ->orWhereRaw(...Fold::anyMeaning('back', $term)))
             ->orderBy('created_at')
             ->limit((int) config('learning.search_limit'))
             ->get();

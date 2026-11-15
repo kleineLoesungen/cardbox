@@ -144,7 +144,10 @@ describe('Aus anderen Stapeln übernehmen', function () {
         $geteilt = Deck::factory()->shared()->create(['front_language' => 'de', 'back_language' => 'fr']);
         Card::factory()->for($geteilt)->create(['front' => ['Schüler'], 'back' => ['élève']]);
 
+        Card::factory()->for($geteilt)->create(['front' => ['Herz'], 'back' => ['cœur']]);
+
         $this->get("/decks/{$ziel->id}/adopt?q=eleve")->assertSee('élève');
+        $this->get("/decks/{$ziel->id}/adopt?q=coeur")->assertSee('cœur');
     });
 
     it('sucht nur in Stapeln mit denselben Sprachen und nimmt Platzhalter wörtlich', function () {

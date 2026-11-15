@@ -64,6 +64,28 @@ it('sucht ohne Rücksicht auf Akzente, in beide Richtungen', function () {
     lookUp('schuler')->assertSee('élève');
 });
 
+it('kennt Buchstaben, die man mit zweien schreibt: ss, oe, ae, Umlaute', function () {
+    $ich = actingAsUser();
+    $fr = deDeck($ich, ['back_language' => 'fr']);
+    Card::factory()->for($fr)->create(['front' => ['Herz'], 'back' => ['cœur']]);
+    Card::factory()->for($fr)->create(['front' => ['Schwester'], 'back' => ['sœur']]);
+    Card::factory()->for(deDeck($ich))->create(['front' => ['Straße'], 'back' => ['street']]);
+    Card::factory()->for(deDeck($ich))->create(['front' => ['Schüler'], 'back' => ['pupil']]);
+    Card::factory()->for(deDeck($ich))->create(['front' => ['Mueller'], 'back' => ['miller']]);
+    Card::factory()->for(deDeck($ich, ['back_language' => 'da']))->create(['front' => ['Ei'], 'back' => ['æg']]);
+
+    lookUp('coeur')->assertSee('Herz');
+    lookUp('SOEUR')->assertSee('Schwester');
+    lookUp('Strasse')->assertSee('street');
+    lookUp('straße')->assertSee('street');
+    // Umlauts both ways.
+    lookUp('Schueler')->assertSee('pupil');
+    lookUp('schuler')->assertSee('pupil');
+    lookUp('Schüler')->assertSee('pupil');
+    lookUp('Müller')->assertSee('miller');
+    lookUp('aeg')->assertSee('Ei');
+});
+
 it('findet auch Buchstaben außerhalb der Akzenttabelle wie bisher, ohne Groß/Klein', function () {
     $ich = actingAsUser();
     $deck = deDeck($ich, ['back_language' => 'ru']);

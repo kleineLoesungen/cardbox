@@ -45,11 +45,6 @@ class DictionaryService
             return ['hits' => [], 'more' => false];
         }
 
-        // Accents do not matter: "eleve" finds "élève" and back (App\Support\Fold).
-        $pattern = '%'.addcslashes(Fold::text($term), '\\%_').'%';
-        // Match single meanings, not the JSON text (as in CardService::searchToAdopt).
-        $matches = 'exists (select 1 from jsonb_array_elements_text(%s) m where '.Fold::sql('m').' ilike ?)';
-
         $visible = $this->decks->visibleTo($user)
             ->when(Language::tryFrom((string) $language), fn (Builder $q, Language $lang) => $q
                 ->where(fn (Builder $q) => $q
@@ -59,9 +54,10 @@ class DictionaryService
         $cards = Card::query()
             ->with('deck.user')
             ->whereIn('deck_id', $visible->select('id'))
+            // Accents do not matter: "eleve" finds "élève", "coeur" finds "cœur" (App\Support\Fold).
             ->where(fn (Builder $q) => $q
-                ->whereRaw(sprintf($matches, 'front'), [$pattern])
-                ->orWhereRaw(sprintf($matches, 'back'), [$pattern]))
+                ->whereRaw(...Fold::anyMeaning('front', $term))
+                ->orWhereRaw(...Fold::anyMeaning('back', $term)))
             ->orderBy('created_at')
             ->orderBy('id')
             ->limit(self::SCAN)
