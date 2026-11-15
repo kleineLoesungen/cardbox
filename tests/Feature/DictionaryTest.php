@@ -48,6 +48,33 @@ it('sucht in jeder Bedeutung beider Seiten, ohne Groß/Klein, und nimmt Platzhal
     lookUp('t, Q')->assertSee('Nichts gefunden');
 });
 
+it('sucht ohne Rücksicht auf Akzente, in beide Richtungen', function () {
+    $ich = actingAsUser();
+    $deck = deDeck($ich, ['back_language' => 'fr']);
+    Card::factory()->for($deck)->create(['front' => ['Schüler'], 'back' => ['élève']]);
+    Card::factory()->for($deck)->create(['front' => ['Junge'], 'back' => ['garçon']]);
+    Card::factory()->for($deck)->create(['front' => ['Sommer'], 'back' => ['ete']]);
+
+    foreach (['eleve', 'ÉLÈVE', 'élêve'] as $term) {
+        lookUp($term)->assertSee('Schüler');
+    }
+    lookUp('Garcon')->assertSee('Junge');
+    // Also the other way: the card without accents, the search with.
+    lookUp('été')->assertSee('Sommer');
+    lookUp('schuler')->assertSee('élève');
+});
+
+it('findet auch Buchstaben außerhalb der Akzenttabelle wie bisher, ohne Groß/Klein', function () {
+    $ich = actingAsUser();
+    $deck = deDeck($ich, ['back_language' => 'ru']);
+    Card::factory()->for($deck)->create(['front' => ['Moskau'], 'back' => ['Москва']]);
+    Card::factory()->for(deDeck($ich, ['back_language' => 'tr']))->create(['front' => ['Berg'], 'back' => ['dağ']]);
+
+    lookUp('Москва')->assertSee('Moskau');
+    lookUp('москва')->assertSee('Moskau');
+    lookUp('dag')->assertSee('Berg');
+});
+
 it('fasst gleiche Wortpaare aus mehreren Stapeln zusammen, auch bei umgekehrten Sprachen', function () {
     $ich = actingAsUser();
     $anna = User::factory()->create();

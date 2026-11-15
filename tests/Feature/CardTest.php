@@ -138,6 +138,15 @@ describe('Aus anderen Stapeln übernehmen', function () {
             ->assertDontSee('Hausgeheimnis');
     });
 
+    it('sucht beim Übernehmen ohne Rücksicht auf Akzente', function () {
+        $ich = actingAsUser();
+        $ziel = Deck::factory()->for($ich)->create(['front_language' => 'de', 'back_language' => 'fr']);
+        $geteilt = Deck::factory()->shared()->create(['front_language' => 'de', 'back_language' => 'fr']);
+        Card::factory()->for($geteilt)->create(['front' => ['Schüler'], 'back' => ['élève']]);
+
+        $this->get("/decks/{$ziel->id}/adopt?q=eleve")->assertSee('élève');
+    });
+
     it('sucht nur in Stapeln mit denselben Sprachen und nimmt Platzhalter wörtlich', function () {
         $ich = actingAsUser();
         $ziel = Deck::factory()->for($ich)->create();

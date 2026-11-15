@@ -5,6 +5,9 @@ use App\Models\ApiToken;
 use App\Models\Note;
 use App\Models\User;
 use App\Services\UserService;
+use Database\Factories\UserFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -137,6 +140,35 @@ it('löscht ein Konto samt Notizen, lässt aber ausgestellte Tokens bestehen', f
     expect(User::find($anderer->id))->toBeNull()
         ->and(Note::count())->toBe(0)
         ->and($token->refresh()->created_by)->toBeNull();
+});
+
+it('zeigt, wann sich ein Konto zuletzt angemeldet hat', function () {
+    $this->travelTo(Carbon::parse('2026-11-15 08:30:00', 'UTC'));
+    $user = User::factory()->create(['name' => 'Mia', 'username' => 'mia']);
+    $updated = $user->updated_at->toIso8601String();
+
+    $this->travel(1)->hours();
+    $this->post('/login', ['username' => 'mia', 'password' => UserFactory::PASSWORD]);
+    auth()->logout();
+    expect($user->refresh()->last_login_at?->toIso8601String())->toBe('2026-11-15T09:30:00+00:00')
+        // A sign-in is no change of the account.
+        ->and($user->updated_at->toIso8601String())->toBe($updated);
+
+    actingAsAdmin();
+    $this->get('/admin/users')->assertSee('Letzte Anmeldung')->assertSee('datetime="2026-11-15T09:30:00Z"', false)->assertSee('unbekannt');
+    $this->get("/admin/users/{$user->id}")->assertSee('Zuletzt angemeldet')->assertSee('zuletzt aktiv');
+});
+
+it('kennt die letzte Aktivität aus den Sitzungen', function () {
+    config(['session.driver' => 'database']);
+    $user = User::factory()->create();
+    $users = app(UserService::class);
+    expect($users->lastActivity($user))->toBeNull();
+
+    $row = fn (string $id, int $at) => ['id' => $id, 'user_id' => $user->id, 'ip_address' => null, 'user_agent' => null, 'payload' => '', 'last_activity' => $at];
+    DB::table('sessions')->insert([$row('alt', Carbon::parse('2026-11-01 10:00:00', 'UTC')->getTimestamp()), $row('neu', Carbon::parse('2026-11-14 18:45:00', 'UTC')->getTimestamp())]);
+
+    expect($users->lastActivity($user)?->toIso8601String())->toBe('2026-11-14T18:45:00+00:00');
 });
 
 it('setzt ein Passwort zurück', function () {

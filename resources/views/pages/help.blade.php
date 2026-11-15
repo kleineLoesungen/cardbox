@@ -287,7 +287,8 @@
     <h2 class="text-lg font-semibold">Wörterbuch</h2>
     <p class="text-muted">
       Unter <strong>Wörterbuch</strong> schlägst du ein Wort nach, ohne
-      zu lernen – in deinen Stapeln und in allen geteilten. Du siehst die
+      zu lernen – in deinen Stapeln und in allen geteilten. Akzente musst du
+      nicht genau treffen: „eleve“ findet auch „élève“. Du siehst die
       Übersetzung und kannst sie anhören. <strong>Lernen</strong> nimmt das
       Wort in deine Runde unter Heute auf – aus seinem Stapel erst einmal nur
       dieses eine. Unter <strong>Mehr …</strong> kannst du eine Kopie in einen

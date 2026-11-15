@@ -13,6 +13,13 @@
   <p class="mt-1 text-sm text-muted">
     {{ $edited->username }} · angelegt am <x-date :value="$edited->created_at" />
   </p>
+  <p class="mt-1 text-sm text-muted">
+    Zuletzt angemeldet:
+    @if ($edited->last_login_at)<x-datetime :value="$edited->last_login_at" />@else unbekannt @endif
+    {{-- Sessions last 30 days: active without a new sign-in. --}}
+    · zuletzt aktiv:
+    @if ($lastActivity)<x-datetime :value="$lastActivity" />@else – @endif
+  </p>
 </div>
 
 @if (session('saved'))

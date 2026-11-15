@@ -6,6 +6,7 @@ use App\Enums\Language;
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\User;
+use App\Support\Fold;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -44,9 +45,10 @@ class DictionaryService
             return ['hits' => [], 'more' => false];
         }
 
-        $pattern = '%'.addcslashes($term, '\\%_').'%';
+        // Accents do not matter: "eleve" finds "élève" and back (App\Support\Fold).
+        $pattern = '%'.addcslashes(Fold::text($term), '\\%_').'%';
         // Match single meanings, not the JSON text (as in CardService::searchToAdopt).
-        $matches = 'exists (select 1 from jsonb_array_elements_text(%s) m where m ilike ?)';
+        $matches = 'exists (select 1 from jsonb_array_elements_text(%s) m where '.Fold::sql('m').' ilike ?)';
 
         $visible = $this->decks->visibleTo($user)
             ->when(Language::tryFrom((string) $language), fn (Builder $q, Language $lang) => $q

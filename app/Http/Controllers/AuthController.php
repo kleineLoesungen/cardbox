@@ -68,6 +68,7 @@ class AuthController extends Controller
         $throttle->recordSuccess($keys);
 
         Auth::login($user);
+        $this->users->recordLogin($user);
         // Neue Session-ID: verhindert Session Fixation.
         $request->session()->regenerate();
 
@@ -103,6 +104,7 @@ class AuthController extends Controller
         }
 
         Auth::login($user);
+        $this->users->recordLogin($user);
         $request->session()->regenerate();
 
         Log::info('Ersteinrichtung abgeschlossen', ['user_id' => $user->id]);

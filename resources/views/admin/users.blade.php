@@ -110,7 +110,7 @@
       <div class="table-wrap">
         <table class="table">
           <thead>
-            <tr><th>Name</th><th>Benutzername</th><th>Rolle</th><th>Status</th><th>Angelegt</th><th></th></tr>
+            <tr><th>Name</th><th>Benutzername</th><th>Rolle</th><th>Status</th><th>Angelegt</th><th>Letzte Anmeldung</th><th></th></tr>
           </thead>
           <tbody>
             @foreach ($users as $u)
@@ -133,6 +133,9 @@
                   @endif
                 </td>
                 <td class="text-muted"><x-date :value="$u->created_at" /></td>
+                <td class="text-muted">
+                  @if ($u->last_login_at)<x-datetime :value="$u->last_login_at" />@else unbekannt @endif
+                </td>
                 <td class="text-right">
                   <a href="/admin/users/{{ $u->id }}" class="btn btn-ghost btn-sm">Bearbeiten</a>
                 </td>

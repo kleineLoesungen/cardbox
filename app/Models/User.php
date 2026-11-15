@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Role $role
  * @property bool $is_active
  * @property Carbon|null $approved_at
+ * @property Carbon|null $last_login_at
  * @property string|null $approved_by
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -49,6 +50,7 @@ class User extends Authenticatable
             'role' => Role::class,
             'is_active' => 'boolean',
             'approved_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
     }
 

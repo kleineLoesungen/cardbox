@@ -58,6 +58,7 @@ class UserController extends Controller
     {
         return view('admin.user', [
             'edited' => $user,
+            'lastActivity' => $this->users->lastActivity($user),
             'deckSummary' => $decks->ownerSummary($user),
             'decks' => $decks->listForAdmin($user),
             // Steuert nur, welche Bedienelemente die Seite sperrt. Die eigentliche

@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\PasswordWords;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -239,6 +240,29 @@ class UserService
         return User::whereNull('approved_at')
             ->where('created_at', '<', now()->subDays(self::PENDING_RETENTION_DAYS))
             ->delete();
+    }
+
+    /**
+     * Notes a sign-in for the user management. Not as a change of the
+     * account: updated_at stays.
+     */
+    public function recordLogin(User $user): void
+    {
+        User::withoutTimestamps(fn () => $user->forceFill(['last_login_at' => now()])->save());
+    }
+
+    /**
+     * Last request of the account in any session, for the user management;
+     * null without one (or without database sessions).
+     */
+    public function lastActivity(User $user): ?Carbon
+    {
+        if (config('session.driver') !== 'database') {
+            return null;
+        }
+        $at = DB::table(config('session.table'))->where('user_id', $user->id)->max('last_activity');
+
+        return $at === null ? null : Carbon::createFromTimestamp((int) $at);
     }
 
     /**
