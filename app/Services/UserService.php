@@ -252,6 +252,7 @@ class UserService
         return DB::transaction(function () use ($user, $by, $family) {
             User::whereKey($user->id)->lockForUpdate()->first();
             if ($family['adult']) {
+                $this->endParentAccess($user, DB::table('guardian_links')->where('child_id', $user->id)->pluck('guardian_id')->all());
                 DB::table('guardian_links')->where('child_id', $user->id)->delete();
                 $user->forceFill(['is_adult' => true])->save();
                 // Of age, the account decides about its shares itself.
@@ -339,6 +340,7 @@ class UserService
                 throw ValidationException::withMessages(['parents' => 'Das letzte Elternteil lässt sich nicht entfernen. Erst ein anderes eintragen oder das Konto auf „ab 18“ stellen.']);
             }
             DB::table('guardian_links')->where('child_id', $child->id)->where('guardian_id', $guardian->id)->delete();
+            $this->endParentAccess($child, [$guardian->id]);
 
             return $guardian;
         });
@@ -375,6 +377,22 @@ class UserService
         if (DB::table('guardian_links')->where('guardian_id', $user->id)->exists()) {
             throw ValidationException::withMessages([$field => "{$user->name} ist für andere als Elternteil eingetragen. Erst diese Zuordnung lösen."]);
         }
+    }
+
+    /**
+     * When a link ends, so does what came with it: decks of the child that a
+     * parent shared with themselves (progress stays, as after any unshare).
+     *
+     * @param  list<string>  $guardianIds
+     */
+    private function endParentAccess(User $child, array $guardianIds): void
+    {
+        if ($guardianIds === []) {
+            return;
+        }
+        $decks = DB::table('decks')->where('user_id', $child->id);
+        DB::table('deck_shares')->whereIn('user_id', $guardianIds)->whereIn('deck_id', (clone $decks)->select('id'))->delete();
+        DB::table('deck_follows')->whereIn('user_id', $guardianIds)->whereIn('deck_id', (clone $decks)->where('is_shared', false)->select('id'))->delete();
     }
 
     /** All links, also those from the time of codes. */

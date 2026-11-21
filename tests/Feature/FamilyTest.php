@@ -244,6 +244,37 @@ it('lässt Eltern die Stapel des Kindes teilen und merkt, wer geteilt hat', func
     expect($deck->fresh()->is_shared)->toBeFalse();
 });
 
+it('lässt Eltern einen Stapel des Kindes mit sich selbst teilen und mitlernen', function () {
+    [$bea, $mia] = family();
+    $deck = childDeck($mia);
+    $this->get("/decks/{$deck->id}")->assertDontSee('Nur diesen Stapel lernen');
+
+    $this->post("/decks/{$deck->id}/shares", ['username' => 'bea'])->assertSessionHasNoErrors();
+    $this->get("/decks/{$deck->id}")->assertOk()->assertSee('du bearbeitest ihn als Elternteil')->assertSee('auch selbst lernen');
+
+    $this->post("/decks/{$deck->id}/follow")->assertRedirect("/decks/{$deck->id}");
+    expect(app(DeckService::class)->active($bea)->modelKeys())->toBe([$deck->id])
+        ->and(app(DeckService::class)->active($mia)->modelKeys())->toBe([$deck->id]);
+    $this->get("/decks/{$deck->id}")->assertSee('lerne ich')->assertSee('Nur diesen Stapel lernen')->assertSee('Nicht mehr lernen');
+    $this->post("/decks/{$deck->id}", ['name' => 'Tiere neu', 'front_language' => 'de', 'back_language' => 'en'])->assertSessionHasNoErrors();
+
+    // Removing it again does not block sharing it once more.
+    $this->post("/decks/{$deck->id}/decline")->assertRedirect();
+    $this->post("/decks/{$deck->id}/shares", ['username' => 'bea'])->assertSessionHasNoErrors();
+
+    // When the link ends, so does the parent's share.
+    actingAsAdmin();
+    $this->post("/admin/users/{$mia->id}/age", ['age' => 'adult']);
+    $this->actingAs($bea)->get("/decks/{$deck->id}")->assertNotFound();
+    expect(DB::table('deck_shares')->where('user_id', $bea->id)->exists())->toBeFalse()
+        ->and(app(DeckService::class)->active($bea))->toHaveCount(0);
+
+    // The owner still cannot share with themselves.
+    $this->actingAs(User::factory()->create(['username' => 'erwachsen']));
+    $own = childDeck(auth()->user());
+    $this->post("/decks/{$own->id}/shares", ['username' => 'erwachsen'])->assertSessionHasErrors(['username' => 'Das bist du selbst.'], null, 'share');
+});
+
 it('lässt Eltern fremder Kinder und Eltern unter 18 nichts tun', function () {
     [, $mia] = family();
     $deck = childDeck($mia);

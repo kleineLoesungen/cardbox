@@ -256,9 +256,11 @@ Migration `2026_11_21_100000_add_adult_and_review_to_users_and_decks.php`:
   annehmen, Export und Kopie bleiben beim Kind.
 - **Eltern dürfen Stapel des Kindes löschen** („bearbeiten wie das Kind
   selbst“), mit Rückfrage, die das Kind nennt.
-- **Lernstand des Elternteils an Kinderstapeln:** Eltern lernen die Stapel
-  ihrer Kinder nicht über die Stapelseite; wer mitlernen will, legt eine
-  Kopie an. So vermischen sich Lernstände nicht.
+- **Lernstand des Elternteils an Kinderstapeln:** Einen privaten Stapel des
+  Kindes bearbeiten Eltern nur. Wer mitlernen will, teilt ihn mit sich
+  selbst (eigener Benutzername im Teilen-Fenster, geändert am 21.11.2026)
+  oder lernt ihn, wenn er mit allen geteilt ist – dann mit eigenem
+  Lernstand, getrennt vom Kind.
 - **Nachweis:** „ab 18“ beruht auf der Angabe gegenüber dem Admin; ob das für
   Urheberrecht und Lizenzen genügt, ist eine rechtliche Frage außerhalb der
   Software.

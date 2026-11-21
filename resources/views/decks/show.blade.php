@@ -103,10 +103,10 @@
   @endif
 
   {{-- Somebody else's deck the viewer does not learn yet: one way in ("Lernen" = follow). Copying is in "⋯". --}}
-  @if (! $canEdit && ! $isFollowing)
+  @if (! $isOwner && $canLearn && ! $isFollowing)
     <div class="card mb-4">
       <div class="card-body stack">
-        <p class="text-sm">Diesen Stapel hat {{ $deck->user->name }} geteilt.</p>
+        <p class="text-sm">{{ $asGuardian ? 'Du kannst den Stapel auch selbst lernen – mit deinem eigenen Lernstand.' : "Diesen Stapel hat {$deck->user->name} geteilt." }}</p>
         <form method="post" action="/decks/{{ $deck->id }}/follow">
           @csrf
           <button type="submit" class="btn btn-primary btn-lg btn-block">Lernen</button>
@@ -295,11 +295,11 @@
         </button>
       </form>
     @endif
-    @if ($cards->isNotEmpty() && ! $asGuardian)
+    @if ($cards->isNotEmpty() && $canLearn)
       <a href="/decks/{{ $deck->id }}/selection" class="sheet-action">Karten auswählen (nur einen Teil lernen)</a>
     @endif
     @if ($asGuardian)
-      {{-- A parent edits the child's deck; learning, copying and exporting stay with the child. --}}
+      {{-- A parent edits the child's deck; copying and exporting stay with the child. --}}
       <button type="button" class="sheet-action" data-open-sheet="deck-edit">Umbenennen oder Sprachen ändern</button>
       <button type="button" class="sheet-action flex items-center justify-between gap-3" data-open-sheet="share-sheet">
         <span>Teilen</span>
@@ -308,6 +308,11 @@
         </span>
       </button>
       <a href="/decks/{{ $deck->id }}/import" class="sheet-action">Liste einfügen</a>
+      @if ($canLearn)
+        {{-- Shared with the parent too: learning it with their own progress. --}}
+        @include('decks.partials.learner-actions')
+        @include('decks.partials.reset-action')
+      @endif
       <form method="post" action="/decks/{{ $deck->id }}/delete"
             data-confirm-action="Stapel löschen"
             data-confirm="Stapel „{{ $deck->name }}“ von {{ $deck->user->name }} mit {{ $cards->count() === 1 ? '1 Karte' : $cards->count().' Karten' }} löschen? {{ $deck->user->name }}s Lernstand dazu geht verloren.">
@@ -342,28 +347,7 @@
         <button type="submit" class="sheet-action sheet-action-danger">Stapel löschen</button>
       </form>
     @else
-      @if ($sharedWithMe && ! $deck->is_shared)
-        {{-- Shared by name: out of the own decks; progress stays should it come again. --}}
-        <form method="post" action="/decks/{{ $deck->id }}/decline"
-              data-confirm-action="Stapel entfernen"
-              data-confirm="„{{ $deck->name }}“ aus deinen Stapeln entfernen? Teilt {{ $deck->user->name }} ihn wieder mit dir, ist dein Lernstand noch da.">
-          @csrf
-          <button type="submit" class="sheet-action">Stapel entfernen</button>
-        </form>
-      @endif
-      @if ($isFollowing)
-        <form method="post" action="/decks/{{ $deck->id }}/unfollow"
-              data-confirm-action="Nicht mehr lernen"
-              data-confirm="Nicht mehr lernen? Dein Lernstand bleibt, falls du ihn wieder lernst.">
-          @csrf
-          <button type="submit" class="sheet-action">Nicht mehr lernen</button>
-        </form>
-      @else
-        <form method="post" action="/decks/{{ $deck->id }}/follow">
-          @csrf
-          <button type="submit" class="sheet-action">Lernen</button>
-        </form>
-      @endif
+      @include('decks.partials.learner-actions')
       <form method="post" action="/decks/{{ $deck->id }}/copy">
         @csrf
         <button type="submit" class="sheet-action">

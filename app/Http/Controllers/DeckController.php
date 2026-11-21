@@ -74,11 +74,15 @@ class DeckController extends Controller
     public function show(Request $request, string $deck): View
     {
         $user = $request->user();
+        // Visible: own, shared with everybody or with the viewer — then the
+        // viewer may learn it, with their own progress.
+        $canLearn = true;
         try {
             $model = $this->decks->getVisible($user, $deck);
         } catch (ModelNotFoundException $e) {
             // A parent opens a child's private deck to edit it (eltern-konten.md).
             $model = $this->decks->getManaged($user, $deck);
+            $canLearn = false;
         }
         $isOwner = $model->isOwnedBy($user);
         $asGuardian = $this->decks->managesAsGuardian($user, $model);
@@ -87,17 +91,17 @@ class DeckController extends Controller
         // Direction only switches the box tiles, and only when back → front is learned.
         $direction = $withReverse ? (Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward) : Direction::Forward;
         $cards = $this->cards->listForDeck($model);
-        // Parents edit, they do not learn the child's deck: no runs, no boxes.
-        $runs = $asGuardian ? collect() : $this->runs->listOwned($user, $model);
+        // A parent only edits a child's private deck: no runs, no boxes.
+        $runs = $canLearn ? $this->runs->listOwned($user, $model) : collect();
         // Learning only part of the deck (issue #10): null = every card.
         $activeIds = $this->selection->activeIds($user, $model);
         $run = $runs->firstWhere('id', $this->queryText($request, 'run')) ?? $runs->first();
-        $isFollowing = ! $isOwner && ! $asGuardian && $this->decks->isFollowing($user, $model);
+        $isFollowing = ! $isOwner && $canLearn && $this->decks->isFollowing($user, $model);
 
         // Box tiles for one direction; "Nur diesen Stapel lernen" counts every learned one.
         $boxes = null;
         $learnable = 0;
-        if ($cards->isNotEmpty() && ! $asGuardian) {
+        if ($cards->isNotEmpty() && $canLearn) {
             $count = $activeIds === null ? $cards->count() : count($activeIds);
             // Other directions only matter for "Nur diesen Stapel lernen", shown to learners.
             $directions = $withReverse && ($isOwner || $isFollowing) ? Direction::cases() : [$direction];
@@ -128,6 +132,7 @@ class DeckController extends Controller
             // Parents of the owner edit like the owner (eltern-konten.md); only adults share.
             'asGuardian' => $asGuardian,
             'canEdit' => $canEdit,
+            'canLearn' => $canLearn,
             'canShare' => $this->decks->canShare($user, $model),
             'followerCount' => $this->decks->followerCount($model),
             // Sharing with single persons (stapel-mit-einzelnen-teilen.md).

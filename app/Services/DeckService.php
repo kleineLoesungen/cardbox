@@ -501,9 +501,10 @@ class DeckService
         if ($person === null || ! $person->isApproved() || ! $person->is_active) {
             throw ValidationException::withMessages(['username' => 'Diesen Benutzernamen gibt es nicht.']);
         }
-        if ($person->is($user)) {
+        if ($person->is($user) && $deck->user_id === $user->id) {
             throw ValidationException::withMessages(['username' => 'Das bist du selbst.']);
         }
+        // A parent may share a child's deck with themselves to learn it too.
         if ($person->id === $deck->user_id) {
             throw ValidationException::withMessages(['username' => "Der Stapel gehört {$person->name} schon."]);
         }
@@ -614,8 +615,12 @@ class DeckService
             throw (new ModelNotFoundException)->setModel(Deck::class, [$id]);
         }
 
-        DB::transaction(function () use ($user, $deck) {
-            DB::table('deck_shares')->where('deck_id', $deck->id)->where('user_id', $user->id)->update(['declined_at' => now()]);
+        // A parent who shared a child's deck with themselves only takes it
+        // back; declining would block them from sharing it again.
+        $asGuardian = $this->managesAsGuardian($user, $deck);
+        DB::transaction(function () use ($user, $deck, $asGuardian) {
+            $row = DB::table('deck_shares')->where('deck_id', $deck->id)->where('user_id', $user->id);
+            $asGuardian ? $row->delete() : $row->update(['declined_at' => now()]);
             $user->followedDecks()->detach($deck->id);
         });
 

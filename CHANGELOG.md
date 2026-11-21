@@ -7,6 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.11.21.3
+- Eltern können einen Stapel ihres Kindes mit sich selbst teilen (eigenen Benutzernamen im Teilen-Fenster eingeben) und ihn dann selbst lernen – mit eigenem Lernstand, getrennt vom Kind. Bearbeiten geht weiter wie bisher
+
 ## 2026.11.21.2
 - Eltern-Konten: Beim Anlegen und Freigeben eines Kontos legt die Verwaltung fest, ob es „unter 18“ oder „ab 18“ ist. Ein Konto unter 18 braucht mindestens ein Elternteil ab 18; die Zuordnung macht nur die Verwaltung, das Kind kann sie nicht lösen. Der Code vom Kind für Eltern entfällt
 - Eltern bearbeiten die Stapel ihrer Kinder wie die Kinder selbst (Karten, Liste einfügen, umbenennen, löschen, neuer Stapel für das Kind) und können Stapel, die andere mit dem Kind geteilt haben, ablehnen oder entfernen. Lernen und Lernstand bleiben beim Kind
