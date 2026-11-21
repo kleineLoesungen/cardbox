@@ -30,6 +30,8 @@ use Illuminate\Support\Facades\DB;
  *   cards, Schnell), main meanings and hints, a streak; follows
  *   "Einmaleins"; a copy of "Reisen" whose original changed since.
  * * moritz (moderator): follows "Reisen" and has an open suggestion there.
+ * * mia (under 18): Bea's child (docs/specs/eltern-konten.md) with an own
+ *   deck; Bea edits and shares it.
  * * neu.nutzer: waits for approval.
  *
  * Stops if the accounts exist already; reset the database first.
@@ -48,6 +50,14 @@ class DatabaseSeeder extends Seeder
         $moritz = User::factory()->moderator()->create(['name' => 'Moritz Moderator', 'username' => 'moritz']);
         $bea = User::factory()->create(['name' => 'Bea Benutzer', 'username' => 'bea']);
         User::factory()->pending()->create(['name' => 'Neu Nutzer', 'username' => 'neu.nutzer']);
+        $mia = User::factory()->minor()->create(['name' => 'Mia Kind', 'username' => 'mia']);
+        DB::table('guardian_links')->insert(['guardian_id' => $bea->id, 'child_id' => $mia->id, 'linked_by' => $anna->id, 'created_at' => now(), 'confirmed_at' => now()]);
+        $this->deck($mia, 'Tiere (Mia)', 'de', 'en', shared: false, cards: [
+            [['Katze'], ['cat']],
+            [['Hund'], ['dog']],
+            [['Pferd'], ['horse']],
+            [['Vogel'], ['bird']],
+        ]);
 
         // --- anna: two shared decks -----------------------------------------
         $reisen = $this->deck($anna, 'Reisen', 'de', 'en', shared: true, cards: [

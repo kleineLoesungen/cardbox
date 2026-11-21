@@ -8,6 +8,10 @@ Konten per Benutzername frei – etwa der eigenen Klasse oder den eigenen
 Kindern –, ohne ihn für alle sichtbar zu machen. Wer so einen Stapel
 bekommt, kann ihn lernen oder ablehnen.
 
+Geändert durch [eltern-konten.md](eltern-konten.md): Teilen dürfen nur
+Konten ab 18 – ihre eigenen Stapel und, als Eltern, die Stapel ihrer Kinder.
+Wo unten „die Besitzerin“ steht, gilt das auch für ein Elternteil.
+
 Entscheidungen vom 21.11.2026:
 
 - Personen werden **per Benutzername** hinzugefügt.

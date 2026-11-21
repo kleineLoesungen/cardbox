@@ -208,7 +208,7 @@ class CardSuggestionService
         return DB::transaction(function () use ($user, $deckId, $suggestion) {
             if ($suggestion->proposesText()) {
                 $card = $suggestion->card;
-                $this->cards->updateOwned($user, $deckId, $card->id, [
+                $this->cards->updateManaged($user, $deckId, $card->id, [
                     'front' => $suggestion->proposed_front ?? $card->front,
                     'back' => $suggestion->proposed_back ?? $card->back,
                     'hint' => $card->hint,

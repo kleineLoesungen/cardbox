@@ -91,93 +91,43 @@
     </div>
   @endif
 
-  {{-- --- Parents see the progress: the child's side (docs/specs/eltern-ansicht.md, A) --}}
-  <div class="card h-fit scroll-mt-20" id="eltern">
-    <div class="card-header"><h2 class="card-title">Eltern</h2></div>
-    <div class="card-body stack">
-      <p class="text-sm text-muted">
-        Deine Eltern können sehen, an welchen Tagen du lernst, wie viele Wörter
-        du kannst, welche Stapel du lernst und welche Wörter knifflig sind.
-        Deine einzelnen Antworten sehen sie nicht.
-      </p>
+  {{-- --- Parents and children, assigned by an admin (docs/specs/eltern-konten.md) --}}
+  @if ($guardians->isNotEmpty() || ! auth()->user()->is_adult)
+    <div class="card h-fit scroll-mt-20" id="eltern">
+      <div class="card-header"><h2 class="card-title">Eltern</h2></div>
+      <div class="card-body stack">
+        @if ($guardians->isNotEmpty())
+          <p>Deine Eltern: <strong>{{ $guardians->pluck('name')->implode(', ') }}</strong></p>
+        @else
+          <p>Für dein Konto ist noch kein Elternteil eingetragen. Das macht die Verwaltung.</p>
+        @endif
+        <p class="text-sm text-muted">
+          Deine Eltern sehen, an welchen Tagen du lernst, wie viele Wörter du kannst
+          und welche knifflig sind. Sie können deine Stapel ansehen, bearbeiten und
+          teilen. Deine einzelnen Antworten und deinen Lernstand ändern sie nicht.
+        </p>
+      </div>
+    </div>
+  @endif
 
-      @if ($guardianCode)
-        <div class="rounded-ui border border-border bg-surface-sunken p-4 text-center" role="status">
-          <p class="text-sm text-muted">Code für deine Eltern</p>
-          <p class="mt-1 font-mono text-3xl font-semibold tracking-widest select-all">{{ $guardianCode }}</p>
-          <p class="mt-1 text-sm text-muted">Gilt 24 Stunden und nur einmal.</p>
-        </div>
-      @elseif ($codeExpiry)
-        <p class="hint">Ein Code ist noch gültig bis <x-datetime :value="$codeExpiry" />. Ein neuer ersetzt ihn.</p>
-      @endif
-
-      @if ($guardians->count() < \App\Services\GuardianService::MAX_GUARDIANS)
-        <form method="post" action="/account/guardian-code">
-          @csrf
-          @php($hasCode = $guardianCode || $codeExpiry)
-          <button type="submit" @class(['btn btn-block', 'btn-secondary' => $hasCode || $guardians->isNotEmpty(), 'btn-primary' => ! $hasCode && $guardians->isEmpty()])>
-            {{ $hasCode ? 'Neuen Code erzeugen' : 'Code für Eltern erzeugen' }}
-          </button>
-        </form>
-      @endif
-
-      @if ($guardians->isNotEmpty())
+  @if ($children->isNotEmpty())
+    <div class="card h-fit scroll-mt-20" id="kinder">
+      <div class="card-header"><h2 class="card-title">Meine Kinder</h2></div>
+      <div class="card-body stack">
         <ul class="list">
-          @foreach ($guardians as $guardian)
-            <li class="list-row">
-              <span class="min-w-0 flex-1"><strong>{{ $guardian->name }}</strong> sieht deinen Fortschritt</span>
-              <form method="post" action="/account/guardians/{{ $guardian->id }}/delete" class="shrink-0"
-                    data-confirm-action="Nicht mehr zeigen"
-                    data-confirm="{{ $guardian->name }} soll deinen Fortschritt nicht mehr sehen?">
-                @csrf
-                <button type="submit" class="btn btn-ghost btn-sm">Nicht mehr zeigen</button>
-              </form>
+          @foreach ($children as $child)
+            <li>
+              <a href="/children/{{ $child->id }}" class="list-row">
+                <span class="min-w-0 flex-1 break-words font-medium">{{ $child->name }}</span>
+                <span aria-hidden="true" class="text-subtle">›</span>
+              </a>
             </li>
           @endforeach
         </ul>
-      @endif
+        <p class="hint">Kinder ordnet die Verwaltung zu.</p>
+      </div>
     </div>
-  </div>
-
-  {{-- --- Parents see the progress: the guardian's side ------------------- --}}
-  <div class="card h-fit scroll-mt-20" id="kinder">
-    <div class="card-header"><h2 class="card-title">Kind hinzufügen</h2></div>
-    <div class="card-body stack">
-      @if ($children->isNotEmpty())
-        <div>
-          <h3 class="mb-2 text-sm font-semibold">Meine Kinder</h3>
-          <ul class="list">
-            @foreach ($children as $child)
-              <li class="list-row">
-                <a href="/children/{{ $child->id }}" class="min-w-0 flex-1 truncate py-3.5 font-medium text-brand hover:underline">{{ $child->name }}</a>
-                <form method="post" action="/account/children/{{ $child->id }}/delete" class="shrink-0"
-                      data-confirm-action="Entfernen"
-                      data-confirm="{{ $child->name }} aus deiner Liste entfernen? Du siehst den Fortschritt dann nicht mehr.">
-                  @csrf
-                  <button type="submit" class="btn btn-ghost btn-sm">Entfernen</button>
-                </form>
-              </li>
-            @endforeach
-          </ul>
-        </div>
-      @endif
-
-      @if ($children->count() < \App\Services\GuardianService::MAX_CHILDREN)
-        <form method="post" action="/account/children" class="stack">
-          @csrf
-          <x-form-error bag="children" />
-          <div class="field">
-            <label class="label" for="guardian_code">Code vom Kind</label>
-            <input class="input font-mono uppercase tracking-widest" type="text" id="guardian_code" name="code"
-                   value="{{ old('code') }}" required maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false"
-                   placeholder="XXXX-XXXX">
-            <p class="hint">Das Kind erzeugt den Code in seinem Konto unter „Eltern“.</p>
-          </div>
-          <button type="submit" class="btn btn-secondary">Hinzufügen</button>
-        </form>
-      @endif
-    </div>
-  </div>
+  @endif
 
   {{-- --- Profil ----------------------------------------------------------- --}}
   <div class="card h-fit">

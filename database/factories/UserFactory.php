@@ -30,7 +30,15 @@ class UserFactory extends Factory
             // Not fillable on purpose (only UserService sets it); factories
             // create models unguarded, so this works here.
             'approved_at' => now(),
+            // Adults by default: most tests are about adults; minor() for children.
+            'is_adult' => true,
         ];
+    }
+
+    /** Under 18 (docs/specs/eltern-konten.md): shares nothing, may have parents. */
+    public function minor(): static
+    {
+        return $this->state(['is_adult' => false]);
     }
 
     public function admin(): static
@@ -51,6 +59,6 @@ class UserFactory extends Factory
     /** Self-registered account still waiting for approval. */
     public function pending(): static
     {
-        return $this->state(['approved_at' => null]);
+        return $this->state(['approved_at' => null, 'is_adult' => false]);
     }
 }

@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property string $front_language
  * @property string $back_language
  * @property bool $is_shared
+ * @property bool $share_review_pending shared by an account under 18 before parents existed; a parent looks once
  * @property string|null $copied_from_name
  * @property string|null $source_deck_id deck this one was copied or imported from (no foreign key)
  * @property Carbon $created_at
@@ -44,7 +45,7 @@ class Deck extends Model
 
     protected function casts(): array
     {
-        return ['is_shared' => 'boolean'];
+        return ['is_shared' => 'boolean', 'share_review_pending' => 'boolean'];
     }
 
     /** @return BelongsTo<User, $this> */

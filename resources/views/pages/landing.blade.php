@@ -145,8 +145,8 @@
             <p class="feature-card-text">Freunde mit einem Code herausfordern – alle bekommen dieselben Wörter. Mitspielen geht auch ohne Konto.</p>
           </div>
           <div class="feature-card">
-            <p class="feature-card-title">Eltern schauen zu</p>
-            <p class="feature-card-text">Mit einem Code vom Kind sehen Eltern Lerntage, Wortschatz und knifflige Wörter – zum Loben und Mitüben.</p>
+            <p class="feature-card-title">Eltern helfen mit</p>
+            <p class="feature-card-text">Eltern sehen Lerntage, Wortschatz und knifflige Wörter, pflegen die Stapel ihrer Kinder und entscheiden, was geteilt wird.</p>
           </div>
           <div class="feature-card">
             <p class="feature-card-title">Stapel teilen</p>

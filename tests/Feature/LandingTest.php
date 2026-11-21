@@ -43,7 +43,7 @@ it('nennt die Funktionen fürs Lernen und für Eltern, die Erinnerung nur wenn e
         ->assertSee('Tagesziel')
         ->assertSee('Antworten eintippen')
         ->assertSee('Knifflige Wörter')
-        ->assertSee('Eltern schauen zu')
+        ->assertSee('Eltern helfen mit')
         ->assertDontSee('täglicher Erinnerung');
 
     config(['push.vapid.public_key' => 'public', 'push.vapid.private_key' => 'private']);

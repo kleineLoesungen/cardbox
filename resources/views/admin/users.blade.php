@@ -9,6 +9,14 @@
   </p>
 </div>
 
+@if ($minorsWithoutGuardian > 0)
+  {{-- After the switch to parent accounts (docs/specs/eltern-konten.md). --}}
+  <div class="alert alert-warning mb-6" role="status">
+    {{ $minorsWithoutGuardian === 1 ? '1 Konto unter 18 hat' : $minorsWithoutGuardian.' Konten unter 18 haben' }} kein Elternteil.
+    Erwachsene auf „ab 18“ stellen, für Kinder Eltern eintragen – bis dahin teilen sie nichts.
+  </div>
+@endif
+
 {{-- Waiting registrations first: on a phone they would otherwise sit below the create form. --}}
 @if ($pending->isNotEmpty())
   <section class="card mb-6" aria-labelledby="pending-title">
@@ -23,8 +31,16 @@
             <p class="text-sm text-muted break-all">{{ $p->username }}</p>
             <p class="text-xs text-subtle">registriert am <x-date :value="$p->created_at" /></p>
           </div>
-          <form method="post" action="/admin/users/{{ $p->id }}/approve">
+          {{-- Age and, under 18, parents are part of the approval (eltern-konten.md, A). --}}
+          <form method="post" action="/admin/users/{{ $p->id }}/approve" class="stack w-full gap-2">
             @csrf
+            <x-form-error :bag="'approve-'.$p->id" />
+            <div class="grid grid-cols-2 gap-2">
+              <label class="choice-card min-h-12 items-center"><input type="radio" name="age" value="minor" class="mt-0" required> unter 18</label>
+              <label class="choice-card min-h-12 items-center"><input type="radio" name="age" value="adult" class="mt-0" required> ab 18</label>
+            </div>
+            <input class="input" type="text" name="parents" placeholder="Eltern (Benutzernamen), nur bei unter 18"
+                   aria-label="Eltern für {{ $p->name }}" autocomplete="off" autocapitalize="none" spellcheck="false">
             <button type="submit" class="btn btn-primary btn-sm">Freigeben</button>
           </form>
           <form method="post" action="/admin/users/{{ $p->id }}/reject"
@@ -64,6 +80,23 @@
       @include('partials.username-field', ['value' => old('username', '')])
 
       @include('partials.password-fields')
+
+      <fieldset class="field">
+        <legend class="label">Alter</legend>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="choice-card min-h-12 items-center"><input type="radio" name="age" value="minor" class="mt-0" @checked(old('age') === 'minor') required> unter 18</label>
+          <label class="choice-card min-h-12 items-center"><input type="radio" name="age" value="adult" class="mt-0" @checked(old('age') === 'adult') required> ab 18</label>
+        </div>
+        <x-field-error name="age" />
+      </fieldset>
+
+      <div class="field">
+        <label class="label" for="parents">Eltern</label>
+        <input class="input @error('parents') input-error @enderror" type="text" id="parents" name="parents" value="{{ old('parents') }}"
+               autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="z. B. anna, ben">
+        <p class="hint">Nur bei unter 18: Benutzernamen von Konten ab 18, durch Komma getrennt, höchstens {{ \App\Services\GuardianService::MAX_GUARDIANS }}. Eltern können die Stapel des Kindes bearbeiten und teilen.</p>
+        <x-field-error name="parents" />
+      </div>
 
       <div class="field">
         <label class="label" for="role">Rolle</label>
@@ -119,6 +152,12 @@
                   {{ $u->name }}
                   @if ($u->is(auth()->user()))
                     <span class="badge badge-neutral ml-1">du</span>
+                  @endif
+                  @if (! $u->is_adult)
+                    <span class="badge badge-neutral ml-1">unter 18</span>
+                    @if ($u->guardians_count === 0)
+                      <span class="badge badge-warning ml-1">Elternteil fehlt</span>
+                    @endif
                   @endif
                 </td>
                 <td class="text-muted">{{ $u->username }}</td>

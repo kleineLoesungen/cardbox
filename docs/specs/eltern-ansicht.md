@@ -1,6 +1,10 @@
 # Eltern sehen den Fortschritt
 
-Status: **umgesetzt** (18.10.2026)
+Status: **umgesetzt** (18.10.2026), **geändert** am 21.11.2026 durch
+[eltern-konten.md](eltern-konten.md): Die Verknüpfung per Code entfällt, die
+Verwaltung ordnet Eltern fest zu; Eltern ab 18 bearbeiten und teilen zudem
+die Stapel ihrer Kinder. Die Abschnitte zum Code unten sind überholt, die
+Übersicht für Eltern gilt weiter.
 
 Aus der Vorschlagsliste vom 16.10.2026, Punkt 10.
 

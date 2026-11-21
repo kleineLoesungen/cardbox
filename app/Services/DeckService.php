@@ -241,6 +241,69 @@ class DeckService
     }
 
     /**
+     * A deck the user may change: own, or — for a parent of 18 or older — a
+     * deck of their child (docs/specs/eltern-konten.md). For editing cards,
+     * names and sharing; learning stays with getOwned/getVisible.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function getManaged(User $user, string $id): Deck
+    {
+        $this->ensureUuid($id);
+
+        return Deck::query()->with('user')->where(fn (Builder $q) => $q
+            ->where('user_id', $user->id)
+            ->orWhereIn('user_id', $this->childIds($user)))
+            ->findOrFail($id);
+    }
+
+    /** Whether `$user` looks after this deck as a parent (not as owner). */
+    public function managesAsGuardian(User $user, Deck $deck): bool
+    {
+        return $deck->user_id !== $user->id
+            && GuardianService::managedChildIds($user)->where('child_id', $deck->user_id)->exists();
+    }
+
+    /**
+     * Sharing is for adults only (eltern-konten.md): the owner when 18 or
+     * older, or a parent of the owner.
+     */
+    public function canShare(User $user, Deck $deck): bool
+    {
+        return $user->is_adult && ($deck->user_id === $user->id || $this->managesAsGuardian($user, $deck));
+    }
+
+    /** @throws ValidationException */
+    private function ensureCanShare(User $user, Deck $deck): void
+    {
+        if (! $this->canShare($user, $deck)) {
+            throw ValidationException::withMessages(['share' => 'Teilen dürfen nur Erwachsene – bei Kindern ihre Eltern.']);
+        }
+    }
+
+    /** Ids of the children a parent may act for. */
+    private function childIds(User $user): QueryBuilder
+    {
+        return GuardianService::managedChildIds($user);
+    }
+
+    /**
+     * A child of the user who may act for them (18 or older); everything
+     * else is "not found".
+     *
+     * @throws ModelNotFoundException<User>
+     */
+    private function managedChild(User $user, string $childId): User
+    {
+        $child = Str::isUuid($childId) ? User::whereKey($childId)->whereIn('id', $this->childIds($user))->first() : null;
+        if ($child === null) {
+            throw (new ModelNotFoundException)->setModel(User::class, [$childId]);
+        }
+
+        return $child;
+    }
+
+    /**
      * Decks whose cards the user may see: own decks and shared ones.
      *
      * @return Builder<Deck>
@@ -353,9 +416,9 @@ class DeckService
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck>
      */
-    public function updateOwned(User $user, string $id, array $input): Deck
+    public function updateManaged(User $user, string $id, array $input): Deck
     {
-        $deck = $this->getOwned($user, $id);
+        $deck = $this->getManaged($user, $id);
         $deck->update($this->validate($input));
 
         return $deck;
@@ -371,13 +434,22 @@ class DeckService
      */
     public function setVisibility(User $user, string $id, mixed $visibility): Deck
     {
-        $deck = $this->getOwned($user, $id);
+        $deck = $this->getManaged($user, $id);
         if (! in_array($visibility, ['private', 'people', 'all'], true)) {
             throw ValidationException::withMessages(['visibility' => 'Bitte „Privat“, „Mit bestimmten Personen“ oder „Mit allen“ wählen.']);
         }
+        $canShare = $this->canShare($user, $deck);
+        // Sharing less is always the owner's call, also under 18.
+        $narrows = $visibility === 'private' || ($visibility === 'people' && $deck->is_shared);
+        if (! $canShare && ! ($narrows && $deck->user_id === $user->id)) {
+            $this->ensureCanShare($user, $deck);
+        }
 
-        DB::transaction(function () use ($deck, $visibility) {
-            $deck->forceFill(['is_shared' => $visibility === 'all'])->save();
+        DB::transaction(function () use ($deck, $visibility, $canShare) {
+            // Deciding on sharing is the review a parent owed (eltern-konten.md, F);
+            // a child making the deck private settles it as well.
+            $settled = $canShare || $visibility === 'private';
+            $deck->forceFill(['is_shared' => $visibility === 'all', 'share_review_pending' => $settled ? false : $deck->share_review_pending])->save();
             if ($visibility === 'private') {
                 $this->endShares($deck);
             }
@@ -396,7 +468,7 @@ class DeckService
      */
     public function sharesOwned(User $user, string $id): Collection
     {
-        $deck = $this->getOwned($user, $id);
+        $deck = $this->getManaged($user, $id);
 
         return User::query()
             ->join('deck_shares', 'deck_shares.user_id', '=', 'users.id')
@@ -419,7 +491,8 @@ class DeckService
      */
     public function shareWith(User $user, string $id, mixed $username): User
     {
-        $deck = $this->getOwned($user, $id);
+        $deck = $this->getManaged($user, $id);
+        $this->ensureCanShare($user, $deck);
         $name = UserService::normalizeUsername(is_string($username) ? $username : '');
         if ($name === '') {
             throw ValidationException::withMessages(['username' => 'Bitte einen Benutzernamen eingeben.']);
@@ -431,8 +504,11 @@ class DeckService
         if ($person->is($user)) {
             throw ValidationException::withMessages(['username' => 'Das bist du selbst.']);
         }
+        if ($person->id === $deck->user_id) {
+            throw ValidationException::withMessages(['username' => "Der Stapel gehört {$person->name} schon."]);
+        }
 
-        return DB::transaction(function () use ($deck, $person) {
+        return DB::transaction(function () use ($deck, $person, $user) {
             // Locked: two quick taps must not pass the limit together.
             Deck::whereKey($deck->id)->lockForUpdate()->first();
             $existing = DB::table('deck_shares')->where('deck_id', $deck->id)->where('user_id', $person->id)->first();
@@ -446,7 +522,7 @@ class DeckService
             if ($this->activeShares($deck)->count() >= self::MAX_SHARES) {
                 throw ValidationException::withMessages(['username' => 'Mehr als '.self::MAX_SHARES.' Personen geht nicht – teil den Stapel lieber mit allen.']);
             }
-            DB::table('deck_shares')->insert(['deck_id' => $deck->id, 'user_id' => $person->id, 'created_at' => now()]);
+            DB::table('deck_shares')->insert(['deck_id' => $deck->id, 'user_id' => $person->id, 'shared_by' => $user->id, 'created_at' => now()]);
 
             return $person;
         });
@@ -460,7 +536,11 @@ class DeckService
      */
     public function unshareWith(User $user, string $id, string $personId): User
     {
-        $deck = $this->getOwned($user, $id);
+        $deck = $this->getManaged($user, $id);
+        // Taking a person out is always the owner's call, also under 18.
+        if ($deck->user_id !== $user->id) {
+            $this->ensureCanShare($user, $deck);
+        }
         $person = Str::isUuid($personId)
             ? User::whereKey($personId)->whereIn('id', $this->activeShares($deck)->select('user_id'))->first()
             : null;
@@ -544,12 +624,146 @@ class DeckService
 
     /**
      * Deletes the deck with all its cards, follows and everybody's progress.
+     * Parents may delete their child's decks too.
      *
      * @throws ModelNotFoundException<Deck>
      */
-    public function deleteOwned(User $user, string $id): void
+    public function deleteManaged(User $user, string $id): Deck
     {
-        $this->getOwned($user, $id)->delete();
+        $deck = $this->getManaged($user, $id);
+        $deck->delete();
+
+        return $deck;
+    }
+
+    // -------------------------------------------------------------------------
+    // Parents (docs/specs/eltern-konten.md)
+    // -------------------------------------------------------------------------
+
+    /**
+     * "Neuer Stapel für Mia": a deck in the child's account.
+     *
+     * @param  array<string, mixed>  $input
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<User>
+     */
+    public function createForChild(User $user, string $childId, array $input): Deck
+    {
+        return $this->create($this->managedChild($user, $childId), $input);
+    }
+
+    /**
+     * The child's own decks, by name.
+     *
+     * @return Collection<int, Deck>
+     *
+     * @throws ModelNotFoundException<User>
+     */
+    public function childDecks(User $user, string $childId): Collection
+    {
+        $child = $this->managedChild($user, $childId);
+
+        return $child->decks()->withCount(['cards', 'sharedWith as shares_count' => fn (Builder $q) => $q->whereNull('deck_shares.declined_at')])
+            ->orderBy('name')->get();
+    }
+
+    /**
+     * Decks of others the child has: shared by name (waiting or learned) and
+     * public ones the child learns. `by_name`: shared with the child by name.
+     *
+     * @return Collection<int, Deck>
+     *
+     * @throws ModelNotFoundException<User>
+     */
+    public function sharedWithChild(User $user, string $childId): Collection
+    {
+        $child = $this->managedChild($user, $childId);
+
+        return Deck::query()->with('user')
+            ->where('user_id', '!=', $child->id)
+            ->where(fn (Builder $q) => $q
+                ->whereIn('id', $this->sharedWithIds($child))
+                ->orWhere(fn (Builder $q) => $q->where('is_shared', true)->whereHas('followers', fn (Builder $f) => $f->whereKey($child->id))))
+            ->select('decks.*')
+            ->selectRaw('exists (select 1 from deck_shares s where s.deck_id = decks.id and s.user_id = ? and s.declined_at is null) as by_name', [$child->id])
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * "Ablehnen" / "Entfernen" by a parent: like the child declining a deck
+     * shared by name (blocks it), or stopping to learn a public one.
+     *
+     * @throws ModelNotFoundException<Deck>
+     * @throws ModelNotFoundException<User>
+     */
+    public function declineForChild(User $user, string $childId, string $id): Deck
+    {
+        $child = $this->managedChild($user, $childId);
+        if (Str::isUuid($id) && DB::table('deck_shares')->where('deck_id', $id)->where('user_id', $child->id)->whereNull('declined_at')->exists()) {
+            return $this->decline($child, $id);
+        }
+        $deck = Str::isUuid($id) ? Deck::whereKey($id)->whereHas('followers', fn (Builder $f) => $f->whereKey($child->id))->first() : null;
+        if ($deck === null) {
+            throw (new ModelNotFoundException)->setModel(Deck::class, [$id]);
+        }
+        $child->followedDecks()->detach($deck->id);
+
+        return $deck;
+    }
+
+    /**
+     * "Bitte durchsehen" (eltern-konten.md, F): decks the child shared before
+     * parents decided, waiting for "So lassen" or "Privat machen".
+     *
+     * @return Collection<int, Deck>
+     */
+    public function reviewPending(User $owner): Collection
+    {
+        return $owner->decks()->where('share_review_pending', true)
+            ->withCount(['sharedWith as shares_count' => fn (Builder $q) => $q->whereNull('deck_shares.declined_at')])
+            ->orderBy('name')->get();
+    }
+
+    /**
+     * "So lassen" or "Privat machen" by a parent (or the owner when adult).
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function review(User $user, string $childId, string $id, bool $keep): Deck
+    {
+        $child = $this->managedChild($user, $childId);
+        $this->ensureUuid($id);
+
+        return $this->settleReview($child->decks()->where('share_review_pending', true)->findOrFail($id), $keep);
+    }
+
+    /**
+     * The same by an admin, for children without parents (route group
+     * role:admin).
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function reviewAsAdmin(User $owner, string $id, bool $keep): Deck
+    {
+        $this->ensureUuid($id);
+
+        return $this->settleReview($owner->decks()->where('share_review_pending', true)->findOrFail($id), $keep);
+    }
+
+    private function settleReview(Deck $deck, bool $keep): Deck
+    {
+        DB::transaction(function () use ($deck, $keep) {
+            if (! $keep) {
+                $deck->forceFill(['is_shared' => false])->save();
+                $this->endShares($deck);
+            }
+            $deck->forceFill(['share_review_pending' => false])->save();
+        });
+
+        return $deck;
     }
 
     // -------------------------------------------------------------------------

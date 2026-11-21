@@ -154,19 +154,19 @@
   </section>
 
   <section class="stack gap-2 scroll-mt-20" id="eltern">
-    <h2 class="text-lg font-semibold">Eltern schauen zu</h2>
+    <h2 class="text-lg font-semibold">Eltern helfen mit</h2>
     <p class="text-muted">
-      Unter <strong>Mein Konto → Eltern</strong> erzeugst du einen Code und gibst
-      ihn deinen Eltern. Sie tippen ihn in ihrem eigenen Konto unter
-      <strong>Kind hinzufügen</strong> ein. Danach sehen sie, an welchen Tagen du
-      lernst, ob du dein Tagesziel schaffst, wie viele Wörter du kannst, welche
-      Stapel du lernst und welche Wörter knifflig sind. Deine einzelnen Antworten
-      sehen sie nicht, und ändern können sie nichts.
+      Bist du unter 18, trägt die Verwaltung deine Eltern bei deinem Konto ein.
+      Wer das ist, steht unter <strong>Mein Konto → Eltern</strong>. Deine Eltern
+      sehen in ihrem Konto unter <strong>Meine Kinder</strong>, an welchen Tagen du
+      lernst, ob du dein Tagesziel schaffst, wie viele Wörter du kannst und welche
+      Wörter knifflig sind. Deine einzelnen Antworten sehen sie nicht.
     </p>
     <p class="text-muted">
-      Der Code gilt 24 Stunden und nur einmal. Wer zuschaut, steht unter
-      <strong>Mein Konto → Eltern</strong>. Mit <strong>Nicht mehr zeigen</strong>
-      beendest du das sofort.
+      Deine Eltern können deine Stapel bearbeiten wie du: Karten ändern, Listen
+      einfügen, neue Stapel für dich anlegen und Stapel teilen. Stapel, die
+      andere mit dir geteilt haben, können sie ablehnen. Für dich lernen oder
+      deinen Lernstand ändern können sie nicht.
     </p>
   </section>
 
@@ -208,7 +208,10 @@
     <p class="text-muted">
       Einen eigenen Stapel teilst du unter <strong>⋯ → Teilen</strong> mit allen
       oder nur mit bestimmten Personen – dafür gibst du ihren Benutzernamen
-      ein. Wer so einen Stapel bekommt, findet ihn unter <strong>Stapel → Mit
+      ein. Teilen dürfen nur Erwachsene; bist du unter 18, teilen deine Eltern
+      deine Stapel für dich. Teile nur, was du weitergeben darfst – Vokabeln
+      aus Schulbüchern oder Arbeitsblättern sind oft urheberrechtlich
+      geschützt. Wer so einen Stapel bekommt, findet ihn unter <strong>Stapel → Mit
       dir geteilt</strong> und kann ihn lernen oder ablehnen. Nimmst du jemanden
       wieder heraus, verschwindet der Stapel bei ihm; teilst du ihn später
       wieder, ist sein Lernstand noch da.

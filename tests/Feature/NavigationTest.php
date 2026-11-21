@@ -3,7 +3,7 @@
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\User;
-use App\Services\GuardianService;
+use Illuminate\Support\Facades\DB;
 
 /*
  * One rule for "Zurück" (docs/specs/navigation.md) and room at the bottom
@@ -63,14 +63,14 @@ it('beendet eine Runde dort, wo sie gestartet wurde', function () {
 
 it('zeigt bei mehreren Kindern den Weg zurück zur Liste, bei einem nicht', function () {
     $mama = actingAsUser();
-    $ben = User::factory()->create();
-    $guardians = app(GuardianService::class);
-    $code = fn (User $child) => str_replace('-', '', $guardians->createCode($child));
-    $guardians->redeem($mama, $code($ben));
+    $ben = User::factory()->minor()->create();
+    // Assigned as an admin does (eltern-konten.md).
+    $link = fn (User $child) => DB::table('guardian_links')->insert(['guardian_id' => $mama->id, 'child_id' => $child->id, 'created_at' => now()]);
+    $link($ben);
 
     $this->get("/children/{$ben->id}")->assertDontSee('← Meine Kinder');
 
-    $guardians->redeem($mama, $code(User::factory()->create()));
+    $link(User::factory()->minor()->create());
     $this->get("/children/{$ben->id}")->assertSee('← Meine Kinder');
 });
 

@@ -174,7 +174,8 @@ describe('Lerne ich, pausiert, ohne Kennzeichen (Issue #15)', function () {
         $mama = User::factory()->create();
         DB::table('guardian_links')->insert(['guardian_id' => $mama->id, 'child_id' => $kind->id, 'created_at' => now()]);
         DB::table('study_days')->insert(['user_id' => $kind->id, 'day' => '2026-10-14', 'reviews' => 2, 'correct' => 1, 'answers' => 1, 'goal_met' => false]);
-        $this->actingAs($mama)->get("/children/{$kind->id}")->assertDontSee('Pause')->assertDontSee('pausiert');
+        // The overview shows "Lerne ich" decks only; editing (eltern-konten.md) lists all own decks without a state.
+        $this->actingAs($mama)->get("/children/{$kind->id}")->assertDontSee('pausiert');
     });
 
     it('zeigt zuletzt gelernte Wörter nur aus „Lerne ich“-Stapeln, zählt den Wortschatz aber über alle', function () {

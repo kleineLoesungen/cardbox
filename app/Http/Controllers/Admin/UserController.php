@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\DeckService;
+use App\Services\GuardianService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,6 +41,8 @@ class UserController extends Controller
             'users' => $this->users->list($search),
             'pending' => $this->users->pending(),
             'total' => $this->users->countApproved(),
+            // After the switch to parent accounts: who still needs a parent (eltern-konten.md).
+            'minorsWithoutGuardian' => $this->users->minorsWithoutGuardian(),
             'search' => $search,
         ]);
     }
@@ -47,17 +50,21 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $role = $this->roleFrom($request);
-        $created = $this->users->create($request->only('name', 'username', 'password'), $role, $request->user());
+        $created = $this->users->create($request->only('name', 'username', 'password', 'age', 'parents'), $role, $request->user());
 
         Log::info('Benutzer angelegt', ['by' => $request->user()->id, 'user_id' => $created->id, 'role' => $role->value]);
 
         return redirect("/admin/users/{$created->id}")->with('saved', true);
     }
 
-    public function show(User $user, DeckService $decks): View
+    public function show(User $user, DeckService $decks, GuardianService $guardians): View
     {
         return view('admin.user', [
             'edited' => $user,
+            // Age and parents (eltern-konten.md).
+            'guardians' => $guardians->guardiansOf($user),
+            'children' => $guardians->childrenOf($user),
+            'reviewPending' => $decks->reviewPending($user),
             'lastActivity' => $this->users->lastActivity($user),
             'deckSummary' => $decks->ownerSummary($user),
             'decks' => $decks->listForAdmin($user),
@@ -140,11 +147,70 @@ class UserController extends Controller
 
     public function approve(Request $request, User $user): RedirectResponse
     {
-        $this->users->approve($user, $request->user());
+        try {
+            $this->users->approve($user, $request->user(), $request->only('age', 'parents'));
+        } catch (ValidationException $e) {
+            throw $e->errorBag('approve-'.$user->id)->redirectTo('/admin/users');
+        }
 
         Log::info('Konto freigegeben', ['by' => $request->user()->id, 'user_id' => $user->id]);
 
         return redirect('/admin/users')->with('toast', ['kind' => 'success', 'message' => "{$user->username} ist freigegeben."]);
+    }
+
+    /** "unter 18" / "ab 18" (eltern-konten.md, B). */
+    public function setAge(Request $request, User $user): RedirectResponse
+    {
+        try {
+            $this->users->setAge($user, $request->only('age', 'parents'), $request->user());
+        } catch (ValidationException $e) {
+            throw $e->errorBag('family')->redirectTo("/admin/users/{$user->id}");
+        }
+        Log::info('Alter geändert', ['by' => $request->user()->id, 'user_id' => $user->id, 'adult' => $user->is_adult]);
+
+        return redirect("/admin/users/{$user->id}")->with('toast', ['kind' => 'success', 'message' => $user->is_adult ? "{$user->name} gilt jetzt als ab 18." : "{$user->name} gilt jetzt als unter 18."]);
+    }
+
+    public function addGuardian(Request $request, User $user): RedirectResponse
+    {
+        try {
+            $guardian = $this->users->addGuardian($user, $request->input('username'), $request->user());
+        } catch (ValidationException $e) {
+            throw $e->errorBag('family')->redirectTo("/admin/users/{$user->id}");
+        }
+
+        return redirect("/admin/users/{$user->id}")->with('toast', ['kind' => 'success', 'message' => "{$guardian->name} ist jetzt Elternteil von {$user->name}."]);
+    }
+
+    /** "Bestätigen" for a link from the time of codes (eltern-konten.md). */
+    public function confirmGuardian(Request $request, User $user, string $guardian): RedirectResponse
+    {
+        try {
+            $confirmed = $this->users->confirmGuardian($user, $guardian, $request->user());
+        } catch (ValidationException $e) {
+            throw $e->errorBag('family')->redirectTo("/admin/users/{$user->id}");
+        }
+
+        return redirect("/admin/users/{$user->id}")->with('toast', ['kind' => 'success', 'message' => "{$confirmed->name} ist jetzt Elternteil von {$user->name}."]);
+    }
+
+    public function removeGuardian(Request $request, User $user, string $guardian): RedirectResponse
+    {
+        try {
+            $removed = $this->users->removeGuardian($user, $guardian);
+        } catch (ValidationException $e) {
+            throw $e->errorBag('family')->redirectTo("/admin/users/{$user->id}");
+        }
+
+        return redirect("/admin/users/{$user->id}")->with('toast', ['kind' => 'success', 'message' => "{$removed->name} ist nicht mehr Elternteil von {$user->name}."]);
+    }
+
+    /** "So lassen" / "Privat machen" for a child without parents (eltern-konten.md, F). */
+    public function reviewDeck(Request $request, User $user, string $deck, DeckService $decks): RedirectResponse
+    {
+        $model = $decks->reviewAsAdmin($user, $deck, $request->boolean('keep'));
+
+        return redirect("/admin/users/{$user->id}")->with('toast', ['kind' => 'success', 'message' => $request->boolean('keep') ? "„{$model->name}“ bleibt geteilt." : "„{$model->name}“ ist jetzt privat."]);
     }
 
     public function reject(Request $request, User $user): RedirectResponse

@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $approved_at
  * @property Carbon|null $last_login_at
+ * @property bool $is_adult
  * @property string|null $approved_by
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'approved_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'is_adult' => 'boolean',
         ];
     }
 
@@ -80,6 +82,16 @@ class User extends Authenticatable
     public function followedDecks(): BelongsToMany
     {
         return $this->belongsToMany(Deck::class, 'deck_follows');
+    }
+
+    /**
+     * Parents assigned by an admin (docs/specs/eltern-konten.md).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function guardians(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'guardian_links', 'child_id', 'guardian_id');
     }
 
     /** @return HasMany<Note, $this> */

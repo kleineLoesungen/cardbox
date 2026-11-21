@@ -153,7 +153,7 @@ class CardImportService
      */
     public function import(User $user, string $deckId, array $input): array
     {
-        return $this->importInto($this->decks->getOwned($user, $deckId), $user, $input);
+        return $this->importInto($this->decks->getManaged($user, $deckId), $user, $input);
     }
 
     /**

@@ -4,27 +4,21 @@ namespace App\Services;
 
 use App\Models\Deck;
 use App\Models\User;
-use App\Support\ShareCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 /**
- * Parents see the progress (docs/specs/eltern-ansicht.md).
+ * Parents see the progress (docs/specs/eltern-ansicht.md) and look after
+ * their children's decks (docs/specs/eltern-konten.md).
  *
- * A child hands out a one-time code; whoever redeems it may look at the
- * child's learning progress until either side ends the link. This is the
- * only place where one account reads another account's learning data, so
- * every read goes through getChild() first.
- *
- * Codes (App\Support\ShareCode) are stored as a keyed hash only. Wrong,
- * expired and used codes give the same message, so nothing tells whether a
- * code ever existed.
+ * An admin assigns parents (UserService); the child cannot end the link.
+ * This is the only place where one account reads another account's learning
+ * data, so every read goes through getChild() first. Changing a child's
+ * decks needs a parent of 18 or older (isGuardianOf).
  *
  * @phpstan-import-type Progress from LearningOverviewService
  */
@@ -32,107 +26,10 @@ class GuardianService
 {
     public const MAX_GUARDIANS = 4;
 
-    public const MAX_CHILDREN = 10;
-
-    private const CODE_HOURS = 24;
-
-    private const WRONG_CODE = 'Dieser Code passt nicht. Bitte das Kind um einen neuen.';
-
     public function __construct(
         private LearningOverviewService $overview,
         private LeitnerService $leitner,
     ) {}
-
-    /**
-     * New code for the child, shown as "XXXX-XXXX". Replaces an open one.
-     */
-    public function createCode(User $child): string
-    {
-        $this->deleteExpiredCodes();
-
-        for ($attempt = 1; ; $attempt++) {
-            $code = ShareCode::generate();
-
-            try {
-                DB::table('guardian_codes')->upsert([
-                    'child_id' => $child->id,
-                    'code_hash' => ShareCode::hash($code),
-                    'expires_at' => now()->addHours(self::CODE_HOURS),
-                    'created_at' => now(),
-                ], ['child_id'], ['code_hash', 'expires_at', 'created_at']);
-
-                return ShareCode::format($code);
-            } catch (UniqueConstraintViolationException $e) {
-                // Another child holds the same code (about 1 in 10¹²); draw again.
-                if ($attempt >= 3) {
-                    throw $e;
-                }
-            }
-        }
-    }
-
-    /** When the child's open code runs out, or null without one. */
-    public function codeExpiry(User $child): ?Carbon
-    {
-        $expires = DB::table('guardian_codes')
-            ->where('child_id', $child->id)
-            ->where('expires_at', '>', now())
-            ->value('expires_at');
-
-        return $expires === null ? null : Carbon::parse($expires);
-    }
-
-    /**
-     * "Kind hinzufügen": links the child behind the code to the guardian and
-     * uses the code up.
-     *
-     * @throws ValidationException
-     */
-    public function redeem(User $guardian, mixed $input): User
-    {
-        $code = ShareCode::normalize($input);
-        if ($code === '') {
-            throw ValidationException::withMessages(['code' => 'Bitte den Code vom Kind eingeben.']);
-        }
-        if ($code === null) {
-            throw ValidationException::withMessages(['code' => self::WRONG_CODE]);
-        }
-
-        $this->deleteExpiredCodes();
-
-        return DB::transaction(function () use ($guardian, $code) {
-            $row = DB::table('guardian_codes')
-                ->where('code_hash', ShareCode::hash($code))
-                ->where('expires_at', '>', now())
-                ->lockForUpdate()
-                ->first();
-            $child = $row === null ? null : User::find($row->child_id);
-            if ($child === null) {
-                throw ValidationException::withMessages(['code' => self::WRONG_CODE]);
-            }
-
-            if ($child->id === $guardian->id) {
-                throw ValidationException::withMessages(['code' => 'Das ist dein eigener Code.']);
-            }
-            // Serialises redeeming for both accounts, so both limits hold. Fixed order: no deadlock.
-            User::whereKey([$guardian->id, $child->id])->orderBy('id')->lockForUpdate()->get();
-            $links = DB::table('guardian_links');
-            if ((clone $links)->where('guardian_id', $guardian->id)->where('child_id', $child->id)->exists()) {
-                throw ValidationException::withMessages(['code' => "{$child->name} ist schon in deiner Liste."]);
-            }
-            if ((clone $links)->where('child_id', $child->id)->count() >= self::MAX_GUARDIANS) {
-                throw ValidationException::withMessages(['code' => 'Höchstens '.self::MAX_GUARDIANS.' Eltern je Kind.']);
-            }
-            if ((clone $links)->where('guardian_id', $guardian->id)->count() >= self::MAX_CHILDREN) {
-                throw ValidationException::withMessages(['code' => 'Höchstens '.self::MAX_CHILDREN.' Kinder.']);
-            }
-
-            DB::table('guardian_links')->insert(['guardian_id' => $guardian->id, 'child_id' => $child->id, 'created_at' => now()]);
-            DB::table('guardian_codes')->where('child_id', $child->id)->delete();
-
-            return $child;
-        });
-    }
 
     /**
      * Who sees the child's progress.
@@ -141,8 +38,14 @@ class GuardianService
      */
     public function guardiansOf(User $child): Collection
     {
-        return User::whereIn('id', DB::table('guardian_links')->where('child_id', $child->id)->select('guardian_id'))
-            ->orderBy('name')
+        // link_confirmed: assigned or confirmed by an admin; otherwise a link
+        // from the time of codes, which shows the overview only.
+        return User::query()
+            ->join('guardian_links', 'guardian_links.guardian_id', '=', 'users.id')
+            ->where('guardian_links.child_id', $child->id)
+            ->select('users.*')
+            ->selectRaw('guardian_links.confirmed_at is not null as link_confirmed')
+            ->orderBy('users.name')
             ->get();
     }
 
@@ -171,23 +74,29 @@ class GuardianService
     }
 
     /**
-     * "Nicht mehr zeigen" by the child.
-     *
-     * @throws ModelNotFoundException<User>
+     * Whether `$guardian` is a parent of `$child` who may act for them
+     * (docs/specs/eltern-konten.md).
      */
-    public function unlinkAsChild(User $child, string $guardianId): User
+    public function isGuardianOf(User $guardian, User $child): bool
     {
-        return $this->unlink($guardianId, $child->id, $guardianId);
+        return self::managedChildIds($guardian)->where('child_id', $child->id)->exists();
     }
 
     /**
-     * "Entfernen" by the guardian.
-     *
-     * @throws ModelNotFoundException<User>
+     * Ids of the children a parent may act for: the parent is 18 or older,
+     * the child under 18, and an admin assigned or confirmed the link.
+     * Links from the time of codes (confirmed_at null) show the overview
+     * only — the child agreed to being watched, not to edits.
      */
-    public function unlinkAsGuardian(User $guardian, string $childId): User
+    public static function managedChildIds(User $guardian): QueryBuilder
     {
-        return $this->unlink($guardian->id, $childId, $childId);
+        $ids = DB::table('guardian_links')
+            ->where('guardian_id', $guardian->id)
+            ->whereNotNull('confirmed_at')
+            ->whereIn('child_id', DB::table('users')->where('is_adult', false)->select('id'))
+            ->select('child_id');
+
+        return $guardian->is_adult ? $ids : $ids->whereRaw('false');
     }
 
     /**
@@ -283,31 +192,10 @@ class GuardianService
         return $weeks;
     }
 
-    /** @throws ModelNotFoundException<User> */
-    private function unlink(string $guardianId, string $childId, string $otherId): User
-    {
-        $this->ensureUuid($otherId);
-
-        return DB::transaction(function () use ($guardianId, $childId, $otherId) {
-            $deleted = DB::table('guardian_links')->where('guardian_id', $guardianId)->where('child_id', $childId)->delete();
-            if ($deleted === 0) {
-                throw (new ModelNotFoundException)->setModel(User::class, [$otherId]);
-            }
-
-            return User::findOrFail($otherId);
-        });
-    }
-
-    /** @throws ModelNotFoundException<User> */
     private function ensureUuid(string $id): void
     {
         if (! Str::isUuid($id)) {
             throw (new ModelNotFoundException)->setModel(User::class, [$id]);
         }
-    }
-
-    private function deleteExpiredCodes(): void
-    {
-        DB::table('guardian_codes')->where('expires_at', '<=', now())->delete();
     }
 }

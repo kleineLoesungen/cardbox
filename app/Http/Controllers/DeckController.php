@@ -12,6 +12,7 @@ use App\Services\DeckRunService;
 use App\Services\DeckService;
 use App\Services\LearningOverviewService;
 use App\Services\LeitnerService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -73,22 +74,30 @@ class DeckController extends Controller
     public function show(Request $request, string $deck): View
     {
         $user = $request->user();
-        $model = $this->decks->getVisible($user, $deck);
+        try {
+            $model = $this->decks->getVisible($user, $deck);
+        } catch (ModelNotFoundException $e) {
+            // A parent opens a child's private deck to edit it (eltern-konten.md).
+            $model = $this->decks->getManaged($user, $deck);
+        }
         $isOwner = $model->isOwnedBy($user);
+        $asGuardian = $this->decks->managesAsGuardian($user, $model);
+        $canEdit = $isOwner || $asGuardian;
         $withReverse = $this->preferences->withReverse($user, $model);
         // Direction only switches the box tiles, and only when back → front is learned.
         $direction = $withReverse ? (Direction::tryFrom($this->queryText($request, 'direction')) ?? Direction::Forward) : Direction::Forward;
         $cards = $this->cards->listForDeck($model);
-        $runs = $this->runs->listOwned($user, $model);
+        // Parents edit, they do not learn the child's deck: no runs, no boxes.
+        $runs = $asGuardian ? collect() : $this->runs->listOwned($user, $model);
         // Learning only part of the deck (issue #10): null = every card.
         $activeIds = $this->selection->activeIds($user, $model);
         $run = $runs->firstWhere('id', $this->queryText($request, 'run')) ?? $runs->first();
-        $isFollowing = ! $isOwner && $this->decks->isFollowing($user, $model);
+        $isFollowing = ! $isOwner && ! $asGuardian && $this->decks->isFollowing($user, $model);
 
         // Box tiles for one direction; "Nur diesen Stapel lernen" counts every learned one.
         $boxes = null;
         $learnable = 0;
-        if ($cards->isNotEmpty()) {
+        if ($cards->isNotEmpty() && ! $asGuardian) {
             $count = $activeIds === null ? $cards->count() : count($activeIds);
             // Other directions only matter for "Nur diesen Stapel lernen", shown to learners.
             $directions = $withReverse && ($isOwner || $isFollowing) ? Direction::cases() : [$direction];
@@ -116,21 +125,25 @@ class DeckController extends Controller
             'cards' => $cards,
             'isOwner' => $isOwner,
             'isFollowing' => $isFollowing,
+            // Parents of the owner edit like the owner (eltern-konten.md); only adults share.
+            'asGuardian' => $asGuardian,
+            'canEdit' => $canEdit,
+            'canShare' => $this->decks->canShare($user, $model),
             'followerCount' => $this->decks->followerCount($model),
             // Sharing with single persons (stapel-mit-einzelnen-teilen.md).
-            'shares' => $isOwner ? $this->decks->sharesOwned($user, $model->id) : collect(),
+            'shares' => $isOwner || $asGuardian ? $this->decks->sharesOwned($user, $model->id) : collect(),
             'sharedWithMe' => ! $isOwner && $this->decks->isSharedWith($user, $model),
-            'openAddSheet' => $isOwner && $request->boolean('new'),
+            'openAddSheet' => $canEdit && $request->boolean('new'),
             'changedOriginals' => $this->cards->pendingOriginalCount($user, $model),
             'openSuggestions' => $this->suggestions->openCountForDeck($user, $model),
             // Status of the viewer's own suggestions, shown at the cards.
-            'mySuggestions' => $isOwner ? [] : $this->suggestions->latestByUser($user, $cards),
+            'mySuggestions' => $isOwner || $asGuardian ? [] : $this->suggestions->latestByUser($user, $cards),
         ]);
     }
 
     public function update(Request $request, string $deck): RedirectResponse
     {
-        $this->decks->updateOwned($request->user(), $deck, $request->only('name', 'description', 'front_language', 'back_language'));
+        $this->decks->updateManaged($request->user(), $deck, $request->only('name', 'description', 'front_language', 'back_language'));
 
         return redirect("/decks/{$deck}")->with('toast', ['kind' => 'success', 'message' => 'Stapel gespeichert.']);
     }
@@ -180,9 +193,11 @@ class DeckController extends Controller
 
     public function destroy(Request $request, string $deck): RedirectResponse
     {
-        $this->decks->deleteOwned($request->user(), $deck);
+        $model = $this->decks->deleteManaged($request->user(), $deck);
+        // A parent deleting a child's deck goes back to the child.
+        $back = $model->user_id === $request->user()->id ? '/decks' : "/children/{$model->user_id}";
 
-        return redirect('/decks')->with('toast', ['kind' => 'success', 'message' => 'Stapel gelöscht.']);
+        return redirect($back)->with('toast', ['kind' => 'success', 'message' => 'Stapel gelöscht.']);
     }
 
     public function follow(Request $request, string $deck): RedirectResponse

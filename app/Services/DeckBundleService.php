@@ -144,7 +144,7 @@ class DeckBundleService
                     'back_language' => $entry['back'],
                 ];
                 if ($entry['action'] === 'update' && $entry['deck'] !== null) {
-                    $deck = $this->decks->updateOwned($user, $entry['deck']->id, $input);
+                    $deck = $this->decks->updateManaged($user, $entry['deck']->id, $input);
                 } else {
                     $deck = $this->decks->create($user, $input);
                     // Never user input, so not fillable (as when copying).

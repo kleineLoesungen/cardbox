@@ -7,6 +7,13 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.11.21.2
+- Eltern-Konten: Beim Anlegen und Freigeben eines Kontos legt die Verwaltung fest, ob es „unter 18“ oder „ab 18“ ist. Ein Konto unter 18 braucht mindestens ein Elternteil ab 18; die Zuordnung macht nur die Verwaltung, das Kind kann sie nicht lösen. Der Code vom Kind für Eltern entfällt
+- Eltern bearbeiten die Stapel ihrer Kinder wie die Kinder selbst (Karten, Liste einfügen, umbenennen, löschen, neuer Stapel für das Kind) und können Stapel, die andere mit dem Kind geteilt haben, ablehnen oder entfernen. Lernen und Lernstand bleiben beim Kind
+- Teilen dürfen nur Konten ab 18 – ihre eigenen Stapel und, als Eltern, die Stapel ihrer Kinder. Beim Teilen erscheint ein Hinweis auf Urheber- und Lizenzrechte. Zurücknehmen (privat machen, Personen herausnehmen) können Kinder weiterhin selbst
+- Für Betreiber: Nach dem Update gelten alle Konten außer Admins und Moderatoren als „unter 18“. Bitte unter Benutzer Erwachsene auf „ab 18“ stellen und Kindern Eltern zuordnen – die Liste zeigt „Elternteil fehlt“. Bisher per Code verknüpfte Eltern sehen weiter den Fortschritt, bearbeiten und teilen aber erst, wenn ihr sie beim Kind mit „Bestätigen“ freigebt (Hinweis „nur zuschauen“); Verknüpfungen zu Admins und Moderatoren enden. Was Konten unter 18 schon geteilt hatten, bleibt geteilt, bis ein Elternteil (bei Kindern ohne Eltern die Verwaltung) es einmal mit „So lassen“ oder „Privat machen“ durchsieht
+- Migration: 2026_11_21_100000_add_adult_and_review_to_users_and_decks.php
+
 ## 2026.11.21
 - Stapel mit bestimmten Personen teilen: Unter ⋯ → Teilen gibt man Benutzernamen ein – nur diese Personen sehen den Stapel, nicht alle. Sie finden ihn unter Stapel → „Mit dir geteilt“ (mit Zähler an „Stapel“) und können ihn lernen oder ablehnen, dazu wie bei geteilten Stapeln kopieren und Fehler melden. Wer herausgenommen wird oder ablehnt, behält seinen Lernstand für ein späteres erneutes Teilen. Wer ablehnt, bekommt denselben Stapel nicht noch einmal zugeschoben
 - Migration: 2026_11_21_000000_create_deck_shares_table.php

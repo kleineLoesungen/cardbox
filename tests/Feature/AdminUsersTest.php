@@ -38,6 +38,7 @@ it('legt einen sofort freigegebenen Benutzer an', function () {
         'username' => 'Bernd.Neu',
         'password' => 'startpasswort-123',
         'role' => 'moderator',
+        'age' => 'adult',
     ]);
 
     $created = User::where('username', 'bernd.neu')->sole();
@@ -197,7 +198,7 @@ describe('Freigabe', function () {
         $admin = actingAsAdmin();
         $wartend = User::factory()->pending()->create();
 
-        $this->post("/admin/users/{$wartend->id}/approve")->assertRedirect('/admin/users');
+        $this->post("/admin/users/{$wartend->id}/approve", ['age' => 'adult'])->assertRedirect('/admin/users');
 
         expect($wartend->refresh()->isApproved())->toBeTrue()
             ->and($wartend->approved_by)->toBe($admin->id);

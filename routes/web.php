@@ -130,15 +130,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/round-size', [AccountController::class, 'updateRoundSize']);
     Route::post('/account/push-subscriptions', [AccountController::class, 'storePushSubscription'])->middleware('throttle:10,1');
 
-    // Parents see the progress (docs/specs/eltern-ansicht.md). The link is
-    // checked in GuardianService: children not linked answer 404, for admins too.
-    Route::post('/account/guardian-code', [AccountController::class, 'createGuardianCode']);
-    Route::post('/account/guardians/{user}/delete', [AccountController::class, 'removeGuardian'])->whereUuid('user');
-    // Own prefix, so the limit counts code attempts only: 10 per hour and account.
-    Route::post('/account/children', [AccountController::class, 'addChild'])->middleware('throttle:10,60,guardian-code');
-    Route::post('/account/children/{user}/delete', [AccountController::class, 'removeChild'])->whereUuid('user');
+    // Parents see the progress (docs/specs/eltern-ansicht.md) and look after
+    // the decks (eltern-konten.md); admins assign them. The link is checked in
+    // GuardianService/DeckService: children not linked answer 404, for admins too.
     Route::get('/children', [ChildController::class, 'index']);
     Route::get('/children/{user}', [ChildController::class, 'show'])->whereUuid('user');
+    Route::post('/children/{user}/decks', [ChildController::class, 'storeDeck'])->whereUuid('user');
+    Route::post('/children/{user}/shared/{deck}/decline', [ChildController::class, 'declineDeck'])->whereUuid(['user', 'deck']);
+    Route::post('/children/{user}/review/{deck}', [ChildController::class, 'reviewDeck'])->whereUuid(['user', 'deck']);
 
     // Decks and cards. Ownership and visibility are checked in DeckService /
     // CardService: other people's private decks answer 404.
@@ -261,6 +260,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users/suggest-username', [UserController::class, 'suggestUsername']);
     Route::post('/users/{user}/approve', [UserController::class, 'approve'])->whereUuid('user');
     Route::post('/users/{user}/reject', [UserController::class, 'reject'])->whereUuid('user');
+    // Age and parents (docs/specs/eltern-konten.md).
+    Route::post('/users/{user}/age', [UserController::class, 'setAge'])->whereUuid('user');
+    Route::post('/users/{user}/guardians', [UserController::class, 'addGuardian'])->whereUuid('user');
+    Route::post('/users/{user}/guardians/{guardian}/confirm', [UserController::class, 'confirmGuardian'])->whereUuid(['user', 'guardian']);
+    Route::post('/users/{user}/guardians/{guardian}/delete', [UserController::class, 'removeGuardian'])->whereUuid(['user', 'guardian']);
+    Route::post('/users/{user}/review/{deck}', [UserController::class, 'reviewDeck'])->whereUuid(['user', 'deck']);
     Route::get('/users/{user}', [UserController::class, 'show'])->whereUuid('user');
     Route::post('/users/{user}', [UserController::class, 'update'])->whereUuid('user');
     Route::post('/users/{user}/password', [UserController::class, 'updatePassword'])->whereUuid('user');

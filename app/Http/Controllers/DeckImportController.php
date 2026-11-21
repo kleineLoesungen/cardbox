@@ -87,10 +87,10 @@ class DeckImportController extends Controller
         ]);
     }
 
-    /** The deck to import into: one of the user's own. */
+    /** The deck to import into: one of the user's own, or a child's for a parent. */
     protected function deck(Request $request, string $id): Deck
     {
-        return $this->decks->getOwned($request->user(), $id);
+        return $this->decks->getManaged($request->user(), $id);
     }
 
     /** Where the forms of the import pages post to. */

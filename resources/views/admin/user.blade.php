@@ -42,6 +42,112 @@
   </div>
 @endif
 
+{{-- --- Age and parents (docs/specs/eltern-konten.md, B) ------------------ --}}
+<section class="card mb-6" id="familie">
+  <div class="card-header"><h2 class="card-title">Alter und Eltern</h2></div>
+  <div class="card-body stack">
+    <x-form-error bag="family" />
+    <p>
+      {{ $edited->name }} gilt als <strong>{{ $edited->is_adult ? 'ab 18' : 'unter 18' }}</strong>.
+      {{ $edited->is_adult ? 'Darf teilen und Elternteil sein.' : 'Teilt nichts selbst; die Eltern bearbeiten und teilen die Stapel.' }}
+    </p>
+
+    @if ($edited->is_adult)
+      <form method="post" action="/admin/users/{{ $edited->id }}/age" class="stack gap-2">
+        @csrf
+        <input type="hidden" name="age" value="minor">
+        <label class="label" for="new-parents">Auf „unter 18“ stellen – Eltern</label>
+        <input class="input" type="text" id="new-parents" name="parents" placeholder="Benutzernamen, durch Komma getrennt"
+               autocomplete="off" autocapitalize="none" spellcheck="false" required>
+        <button type="submit" class="btn btn-secondary">Auf „unter 18“ stellen</button>
+      </form>
+    @else
+      <form method="post" action="/admin/users/{{ $edited->id }}/age"
+            @if ($guardians->isNotEmpty()) data-confirm-action="Auf „ab 18“ stellen" data-confirm="{{ $guardians->pluck('name')->implode(' und ') }} können {{ $edited->name }}s Stapel danach nicht mehr bearbeiten." @endif>
+        @csrf
+        <input type="hidden" name="age" value="adult">
+        <button type="submit" class="btn btn-secondary">Auf „ab 18“ stellen</button>
+      </form>
+
+      <h3 class="text-sm font-semibold">Eltern</h3>
+      @php($confirmedGuardians = $guardians->filter(fn ($g) => (bool) $g->link_confirmed))
+      @if ($confirmedGuardians->isEmpty())
+        <p class="alert alert-warning text-sm">Noch kein Elternteil – bis dahin kann niemand die Stapel von {{ $edited->name }} teilen.</p>
+      @endif
+      @if ($guardians->isNotEmpty())
+        <ul class="list">
+          @foreach ($guardians as $guardian)
+            <li class="list-row flex-wrap">
+              <a href="/admin/users/{{ $guardian->id }}" class="min-w-0 flex-1 break-words font-medium">{{ $guardian->name }} <span class="font-normal text-muted">({{ $guardian->username }})</span></a>
+              <span class="flex shrink-0 gap-2">
+                @unless ($guardian->link_confirmed)
+                  {{-- Linked by a code before eltern-konten.md: overview only until confirmed. --}}
+                  <span class="badge badge-neutral self-center">nur zuschauen</span>
+                  <form method="post" action="/admin/users/{{ $edited->id }}/guardians/{{ $guardian->id }}/confirm"
+                        data-confirm-action="Bestätigen" data-confirm="{{ $guardian->name }} kann danach die Stapel von {{ $edited->name }} bearbeiten, löschen und teilen.">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-sm">Bestätigen</button>
+                  </form>
+                @endunless
+                <form method="post" action="/admin/users/{{ $edited->id }}/guardians/{{ $guardian->id }}/delete"
+                      data-confirm-action="Entfernen" data-confirm="{{ $guardian->name }} ist danach nicht mehr Elternteil von {{ $edited->name }}.">
+                  @csrf
+                  <button type="submit" class="btn btn-ghost btn-sm" @disabled($guardian->link_confirmed && $confirmedGuardians->count() === 1)>Entfernen</button>
+                </form>
+              </span>
+            </li>
+          @endforeach
+        </ul>
+        @if ($guardians->count() > $confirmedGuardians->count())
+          <p class="text-sm text-muted">„Nur zuschauen“: früher vom Kind per Code verknüpft. Erst nach „Bestätigen“ darf diese Person die Stapel bearbeiten und teilen.</p>
+        @endif
+      @endif
+      @if ($guardians->count() < \App\Services\GuardianService::MAX_GUARDIANS)
+        <form method="post" action="/admin/users/{{ $edited->id }}/guardians" class="flex gap-2">
+          @csrf
+          <input class="input min-w-0 flex-1" type="text" name="username" placeholder="Benutzername eines Kontos ab 18"
+                 aria-label="Elternteil hinzufügen" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+          <button type="submit" class="btn btn-secondary shrink-0">Hinzufügen</button>
+        </form>
+      @endif
+
+      @if ($reviewPending->isNotEmpty() && $confirmedGuardians->isEmpty())
+        {{-- Without parents the admin decides (eltern-konten.md, F). --}}
+        <h3 class="text-sm font-semibold">Geteilte Stapel – bitte durchsehen</h3>
+        <p class="text-sm text-muted">Achte auf Urheber- und Lizenzrechte.</p>
+        <ul class="list">
+          @foreach ($reviewPending as $pending)
+            <li class="list-row flex-wrap">
+              <span class="min-w-0 flex-1 break-words font-medium">{{ $pending->name }}</span>
+              <span class="flex shrink-0 gap-2">
+                <form method="post" action="/admin/users/{{ $edited->id }}/review/{{ $pending->id }}">
+                  @csrf
+                  <input type="hidden" name="keep" value="0">
+                  <button type="submit" class="btn btn-ghost btn-sm">Privat machen</button>
+                </form>
+                <form method="post" action="/admin/users/{{ $edited->id }}/review/{{ $pending->id }}">
+                  @csrf
+                  <input type="hidden" name="keep" value="1">
+                  <button type="submit" class="btn btn-secondary btn-sm">So lassen</button>
+                </form>
+              </span>
+            </li>
+          @endforeach
+        </ul>
+      @endif
+    @endif
+
+    @if ($children->isNotEmpty())
+      <h3 class="text-sm font-semibold">Kinder</h3>
+      <ul class="list">
+        @foreach ($children as $child)
+          <li><a href="/admin/users/{{ $child->id }}" class="list-row break-words font-medium">{{ $child->name }} <span class="font-normal text-muted">({{ $child->username }})</span></a></li>
+        @endforeach
+      </ul>
+    @endif
+  </div>
+</section>
+
 <div class="grid gap-6 lg:grid-cols-2">
 
   {{-- --- Stammdaten, Rolle, Status ---------------------------------------- --}}

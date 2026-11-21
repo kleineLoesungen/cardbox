@@ -16,35 +16,16 @@ use Illuminate\Support\Facades\DB;
  * Parents see the progress (docs/specs/eltern-ansicht.md).
  */
 
-const WRONG_CODE = 'Dieser Code passt nicht. Bitte das Kind um einen neuen.';
-
 beforeEach(function () {
     $this->travelTo(Carbon::parse('2026-10-14 08:00:00', 'UTC'));
 });
 
-/** The child creates a code on its account page; returns it as shown. */
-function guardianCode(User $child): string
-{
-    test()->actingAs($child)->post('/account/guardian-code')->assertRedirect('/account#eltern');
-
-    return (string) session('guardian_code');
-}
-
-/** Links the guardian to the child through a fresh code. */
+/** Links the guardian to the child, as an admin does (eltern-konten.md); the child is under 18. */
 function linkGuardian(User $guardian, User $child): void
 {
-    $code = guardianCode($child);
-    test()->actingAs($guardian)->post('/account/children', ['code' => $code])->assertRedirect("/children/{$child->id}");
-}
-
-function redeemError(string $code): string
-{
-    test()->from('/account')->post('/account/children', ['code' => $code])->assertRedirect('/account#kinder');
-
-    $errors = session('errors');
-
-    // The session stores the bags as plain arrays (JSON serialisation).
-    return is_array($errors) ? (string) ($errors['children']['messages']['code'][0] ?? '') : (string) $errors?->getBag('children')->first('code');
+    DB::table('users')->where('id', $child->id)->update(['is_adult' => false]);
+    DB::table('guardian_links')->insert(['guardian_id' => $guardian->id, 'child_id' => $child->id, 'created_at' => now(), 'confirmed_at' => now()]);
+    test()->actingAs($guardian);
 }
 
 /** One card with progress of the child: box (5 = "Kann ich") and wrong answers. */
@@ -55,121 +36,6 @@ function childProgress(User $child, Card $card, int $box, int $wrong = 0, ?Carbo
         'box' => $box, 'due_on' => $box >= 5 ? null : app(LeitnerService::class)->today()->toDateString(),
         'review_count' => $wrong + 2, 'correct_count' => 2, 'last_reviewed_at' => $reviewed ?? now()]);
 }
-
-describe('Code vom Kind', function () {
-    it('zeigt einen Code, und ein neuer ersetzt den alten', function () {
-        $kind = User::factory()->create();
-        $eltern = User::factory()->create();
-
-        $this->actingAs($kind)->post('/account/guardian-code');
-        $first = session('guardian_code');
-        expect($first)->toMatch('/^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$/');
-        $this->get('/account')->assertSee($first)->assertSee('Gilt 24 Stunden und nur einmal.');
-        // Shown once: reloading shows only how long it is valid.
-        $this->get('/account')->assertDontSee($first)->assertSee('Ein Code ist noch gültig bis');
-
-        $second = guardianCode($kind);
-        expect($second)->not->toBe($first)
-            ->and(DB::table('guardian_codes')->count())->toBe(1)
-            ->and(DB::table('guardian_codes')->value('code_hash'))->toBe(hash_hmac('sha256', str_replace('-', '', $second), (string) config('app.key')));
-
-        $this->actingAs($eltern);
-        expect(redeemError($first))->toBe(WRONG_CODE);
-        $this->post('/account/children', ['code' => $second])->assertRedirect("/children/{$kind->id}");
-    });
-
-    it('verknüpft beim Einlösen und verbraucht den Code', function () {
-        $kind = User::factory()->create(['name' => 'Ben']);
-        $mama = User::factory()->create();
-        $papa = User::factory()->create();
-        $code = guardianCode($kind);
-
-        $this->actingAs($mama)->post('/account/children', ['code' => $code])
-            ->assertRedirect("/children/{$kind->id}")
-            ->assertSessionHas('toast.message', 'Ben ist jetzt in deiner Liste.');
-        expect(DB::table('guardian_links')->where('guardian_id', $mama->id)->where('child_id', $kind->id)->exists())->toBeTrue()
-            ->and(DB::table('guardian_codes')->count())->toBe(0);
-
-        $this->actingAs($papa);
-        expect(redeemError($code))->toBe(WRONG_CODE);
-    });
-
-    it('lässt den Code nach 24 Stunden nicht mehr gelten', function () {
-        $kind = User::factory()->create();
-        $code = guardianCode($kind);
-
-        $this->travel(24)->hours();
-        $this->actingAs(User::factory()->create());
-        expect(redeemError($code))->toBe(WRONG_CODE)
-            ->and(DB::table('guardian_codes')->count())->toBe(0);
-    });
-
-    it('nimmt den Code ohne Rücksicht auf Groß/Klein, Leerzeichen und Bindestrich', function () {
-        $kind = User::factory()->create();
-        $code = guardianCode($kind);
-        $typed = ' '.strtolower(substr($code, 0, 2)).' '.strtolower(substr($code, 2, 2)).substr($code, 5).' ';
-
-        $this->actingAs(User::factory()->create())->post('/account/children', ['code' => $typed])->assertRedirect("/children/{$kind->id}");
-    });
-});
-
-describe('Fehler beim Einlösen', function () {
-    it('gibt für falsche und unsinnige Codes dieselbe Meldung', function (string $code) {
-        guardianCode(User::factory()->create());
-        $this->actingAs(User::factory()->create());
-
-        expect(redeemError($code))->toBe(WRONG_CODE);
-    })->with(['ABCD-EFGH', 'K7P2-M9Q', '0000-0000', 'K7P2-M9QX-ZZ', '😀😀😀😀😀😀😀😀']);
-
-    it('verlangt einen Code', function () {
-        $this->actingAs(User::factory()->create());
-
-        expect(redeemError('  '))->toBe('Bitte den Code vom Kind eingeben.');
-    });
-
-    it('erkennt den eigenen Code und eine schon bestehende Verknüpfung', function () {
-        $kind = User::factory()->create(['name' => 'Ben']);
-        $mama = User::factory()->create();
-
-        $own = guardianCode($kind);
-        expect(redeemError($own))->toBe('Das ist dein eigener Code.');
-
-        linkGuardian($mama, $kind);
-        $again = guardianCode($kind);
-        $this->actingAs($mama);
-        expect(redeemError($again))->toBe('Ben ist schon in deiner Liste.');
-    });
-
-    it('erlaubt höchstens 4 Eltern je Kind und 10 Kinder je Elternteil', function () {
-        $kind = User::factory()->create();
-        foreach (User::factory()->count(4)->create() as $guardian) {
-            linkGuardian($guardian, $kind);
-        }
-        $code = guardianCode($kind);
-        $this->get('/account')->assertDontSee('Code für Eltern erzeugen');
-        $this->actingAs(User::factory()->create());
-        expect(redeemError($code))->toBe('Höchstens 4 Eltern je Kind.');
-
-        $mama = User::factory()->create();
-        foreach (User::factory()->count(10)->create() as $child) {
-            DB::table('guardian_links')->insert(['guardian_id' => $mama->id, 'child_id' => $child->id, 'created_at' => now()]);
-        }
-        $code = guardianCode(User::factory()->create());
-        $this->actingAs($mama);
-        expect(redeemError($code))->toBe('Höchstens 10 Kinder.');
-    });
-
-    it('bremst nach 10 Versuchen in der Stunde', function () {
-        $this->actingAs(User::factory()->create());
-
-        foreach (range(1, 10) as $i) {
-            $this->post('/account/children', ['code' => 'ABCD-EFGH'])->assertRedirect();
-        }
-        $this->post('/account/children', ['code' => 'ABCD-EFGH'])->assertStatus(429);
-        // Other throttled routes keep their own count.
-        $this->post('/password-suggestion')->assertOk();
-    });
-});
 
 describe('Trennung', function () {
     it('zeigt nicht verknüpfte Kinder niemandem, auch Admins nicht', function () {
@@ -184,42 +50,17 @@ describe('Trennung', function () {
         $this->get("/children/{$kind->id}")->assertOk();
     });
 
-    it('beendet die Verknüpfung sofort, wenn das Kind „Nicht mehr zeigen“ wählt', function () {
-        $kind = User::factory()->create();
+    it('lässt die Zuordnung weder vom Kind noch vom Elternteil lösen (das macht die Verwaltung)', function () {
+        $kind = User::factory()->create(['name' => 'Ben']);
         $mama = User::factory()->create(['name' => 'Anna']);
         linkGuardian($mama, $kind);
 
-        $this->actingAs($kind)->get('/account')->assertSee('Anna')->assertSee('sieht deinen Fortschritt');
-        $this->post("/account/guardians/{$mama->id}/delete")
-            ->assertRedirect('/account#eltern')
-            ->assertSessionHas('toast.message', 'Anna sieht deinen Fortschritt nicht mehr.');
-
-        $this->actingAs($mama)->get("/children/{$kind->id}")->assertNotFound();
-    });
-
-    it('beendet die Verknüpfung, wenn der Elternteil das Kind entfernt', function () {
-        $kind = User::factory()->create(['name' => 'Ben']);
-        $mama = User::factory()->create();
-        linkGuardian($mama, $kind);
-
-        $this->actingAs($mama)->get('/account')->assertSee('Meine Kinder')->assertSee("/children/{$kind->id}", false);
-        $this->post("/account/children/{$kind->id}/delete")->assertRedirect('/account#kinder');
-
-        $this->get("/children/{$kind->id}")->assertNotFound();
-        expect(DB::table('guardian_links')->count())->toBe(0);
-    });
-
-    it('lässt fremde Verknüpfungen nicht lösen', function () {
-        $kind = User::factory()->create();
-        $mama = User::factory()->create();
-        linkGuardian($mama, $kind);
-
-        $this->actingAs(User::factory()->create());
-        $this->post("/account/children/{$kind->id}/delete")->assertNotFound();
+        $this->actingAs($kind)->get('/account')->assertSee('Deine Eltern:')->assertSee('Anna')->assertDontSee('Nicht mehr zeigen');
         $this->post("/account/guardians/{$mama->id}/delete")->assertNotFound();
-        // The guardian cannot end it from the child's side, and the other way round.
-        $this->actingAs($mama)->post("/account/guardians/{$kind->id}/delete")->assertNotFound();
-        $this->actingAs($kind)->post("/account/children/{$mama->id}/delete")->assertNotFound();
+        $this->post('/account/guardian-code')->assertNotFound();
+        $this->actingAs($mama)->get('/account')->assertSee('Meine Kinder')->assertSee('Kinder ordnet die Verwaltung zu.');
+        $this->post("/account/children/{$kind->id}/delete")->assertNotFound();
+        $this->post('/account/children', ['code' => 'ABCD-EFGH'])->assertNotFound();
 
         expect(DB::table('guardian_links')->count())->toBe(1);
     });
@@ -228,12 +69,10 @@ describe('Trennung', function () {
         $kind = User::factory()->create();
         $mama = User::factory()->create();
         linkGuardian($mama, $kind);
-        guardianCode($kind);
 
         app(UserService::class)->delete($kind);
 
-        expect(DB::table('guardian_links')->count())->toBe(0)
-            ->and(DB::table('guardian_codes')->count())->toBe(0);
+        expect(DB::table('guardian_links')->count())->toBe(0);
         $this->actingAs($mama)->get('/children')->assertSee('Noch keine Kinder');
     });
 
@@ -315,12 +154,13 @@ describe('Ansicht für Eltern', function () {
             ->assertSee('0 kann Ben · 0 fast geschafft · 1 im Karteikasten · 1 noch nicht gelernt')
             ->assertSee('1 fällig')
             ->assertSeeInOrder(['Knifflige Wörter', 'Zum Mitüben', 'Haus – house', 'Englisch Unit 3', 'Katze – le chat', 'Französisch Tiere'])
-            ->assertSee('Ben hat dir das freigegeben')
+            ->assertSee('Die Zuordnung als Elternteil hat die Verwaltung eingerichtet.')
             ->assertDontSee('Geheim')
             ->getContent();
 
-        expect($html)->not->toContain("/decks/{$own->id}")
-            ->and($html)->not->toContain("/decks/{$fremd->id}");
+        // The child's own deck to edit (eltern-konten.md); others' decks only by name.
+        expect($html)->toContain("/decks/{$own->id}")
+            ->and($html)->not->toContain("/decks/{$fremd->id}\"");
     });
 
     it('sagt, wenn das Kind noch nicht gelernt hat', function () {

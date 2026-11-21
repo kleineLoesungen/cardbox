@@ -34,9 +34,10 @@ class CardService
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck>
      */
-    public function createOwned(User $user, string $deckId, array $input): Card
+    public function createManaged(User $user, string $deckId, array $input): Card
     {
-        $deck = $this->decks->getOwned($user, $deckId);
+        // Own deck, or a parent's child's deck (eltern-konten.md).
+        $deck = $this->decks->getManaged($user, $deckId);
 
         $card = new Card($this->validate($input));
         $card->deck_id = $deck->id;
@@ -53,7 +54,23 @@ class CardService
      */
     public function getOwned(User $user, string $deckId, string $cardId): Card
     {
-        $deck = $this->decks->getOwned($user, $deckId);
+        return $this->cardIn($this->decks->getOwned($user, $deckId), $cardId);
+    }
+
+    /**
+     * A card the user may change: in an own deck or, for a parent, in a
+     * child's deck (eltern-konten.md). Only for editing and deleting.
+     *
+     * @throws ModelNotFoundException<Deck|Card>
+     */
+    public function getManaged(User $user, string $deckId, string $cardId): Card
+    {
+        return $this->cardIn($this->decks->getManaged($user, $deckId), $cardId);
+    }
+
+    /** @throws ModelNotFoundException<Card> */
+    private function cardIn(Deck $deck, string $cardId): Card
+    {
         $this->ensureUuid($cardId);
 
         $card = $deck->cards()->findOrFail($cardId);
@@ -68,9 +85,9 @@ class CardService
      * @throws ValidationException
      * @throws ModelNotFoundException<Deck|Card>
      */
-    public function updateOwned(User $user, string $deckId, string $cardId, array $input): Card
+    public function updateManaged(User $user, string $deckId, string $cardId, array $input): Card
     {
-        $card = $this->getOwned($user, $deckId, $cardId);
+        $card = $this->getManaged($user, $deckId, $cardId);
         $card->update($this->validate($input));
 
         return $card;
@@ -279,9 +296,9 @@ class CardService
      *
      * @throws ModelNotFoundException<Deck|Card>
      */
-    public function deleteOwned(User $user, string $deckId, string $cardId): void
+    public function deleteManaged(User $user, string $deckId, string $cardId): void
     {
-        $this->getOwned($user, $deckId, $cardId)->delete();
+        $this->getManaged($user, $deckId, $cardId)->delete();
     }
 
     /**

@@ -6,11 +6,13 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\PasswordWords;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -63,27 +65,34 @@ class UserService
             $first = User::count() === 0;
 
             $user = new User([...$data, 'role' => $first ? Role::Admin : Role::User, 'is_active' => true]);
-            $user->forceFill(['approved_at' => $first ? now() : null])->save();
+            // The first account runs the installation: an adult (eltern-konten.md).
+            // Everybody else gets their age from the admin at approval.
+            $user->forceFill(['approved_at' => $first ? now() : null, 'is_adult' => $first])->save();
 
             return $user;
         });
     }
 
     /**
-     * An administrator creates an account. It is usable right away.
+     * An administrator creates an account. It is usable right away. Under 18
+     * it needs at least one parent (docs/specs/eltern-konten.md).
      *
-     * @param  array<string, mixed>  $input  name, username, password
+     * @param  array<string, mixed>  $input  name, username, password, age ("minor"/"adult"), parents (usernames)
      *
      * @throws ValidationException
      */
     public function create(array $input, Role $role, ?User $createdBy = null): User
     {
         $data = $this->validateNewAccount($input, confirmPassword: false);
+        $family = $this->validateFamily($input);
 
-        $user = new User([...$data, 'role' => $role, 'is_active' => true]);
-        $user->forceFill(['approved_at' => now(), 'approved_by' => $createdBy?->id])->save();
+        return DB::transaction(function () use ($data, $role, $createdBy, $family) {
+            $user = new User([...$data, 'role' => $role, 'is_active' => true]);
+            $user->forceFill(['approved_at' => now(), 'approved_by' => $createdBy?->id, 'is_adult' => $family['adult']])->save();
+            $this->link($user, $family['guardians'], $createdBy);
 
-        return $user;
+            return $user;
+        });
     }
 
     /**
@@ -131,6 +140,8 @@ class UserService
                     ->where('name', 'ilike', $pattern)
                     ->orWhere('username', 'ilike', $pattern));
             })
+            // For "unter 18" / "Elternteil fehlt" in the list (eltern-konten.md).
+            ->withCount(['guardians' => fn ($q) => $q->whereNotNull('guardian_links.confirmed_at')])
             ->latest()
             ->get();
     }
@@ -202,14 +213,242 @@ class UserService
         return $user;
     }
 
-    /** Makes a waiting account usable. Approving twice changes nothing. */
-    public function approve(User $user, User $approvedBy): User
+    /**
+     * Makes a waiting account usable, with its age and — under 18 — its
+     * parents (eltern-konten.md). Approving twice changes nothing.
+     *
+     * @param  array<string, mixed>  $input  age ("minor"/"adult"), parents (usernames)
+     *
+     * @throws ValidationException
+     */
+    public function approve(User $user, User $approvedBy, array $input): User
     {
-        if (! $user->isApproved()) {
-            $user->forceFill(['approved_at' => now(), 'approved_by' => $approvedBy->id])->save();
+        if ($user->isApproved()) {
+            return $user;
+        }
+        $family = $this->validateFamily($input, $user);
+
+        return DB::transaction(function () use ($user, $approvedBy, $family) {
+            $user->forceFill(['approved_at' => now(), 'approved_by' => $approvedBy->id, 'is_adult' => $family['adult']])->save();
+            $this->link($user, $family['guardians'], $approvedBy);
+
+            return $user;
+        });
+    }
+
+    /**
+     * "unter 18" / "ab 18" for an existing account. To 18 or older the links
+     * to the parents end; under 18 needs parents (given or kept) and no own
+     * children. Decks shared before become "bitte durchsehen".
+     *
+     * @param  array<string, mixed>  $input  age, parents (only for "minor")
+     *
+     * @throws ValidationException
+     */
+    public function setAge(User $user, array $input, User $by): User
+    {
+        $family = $this->validateFamily($input, $user, required: $this->confirmedCount($user) === 0);
+
+        return DB::transaction(function () use ($user, $by, $family) {
+            User::whereKey($user->id)->lockForUpdate()->first();
+            if ($family['adult']) {
+                DB::table('guardian_links')->where('child_id', $user->id)->delete();
+                $user->forceFill(['is_adult' => true])->save();
+                // Of age, the account decides about its shares itself.
+                DB::table('decks')->where('user_id', $user->id)->update(['share_review_pending' => false]);
+
+                return $user;
+            }
+            $this->ensureNotGuardian($user);
+            $user->forceFill(['is_adult' => false])->save();
+            $this->link($user, $family['guardians'], $by);
+            if ($this->guardianCount($user) > GuardianService::MAX_GUARDIANS) {
+                throw ValidationException::withMessages(['parents' => 'Höchstens '.GuardianService::MAX_GUARDIANS.' Eltern.']);
+            }
+            // What the account shared as an adult: a parent looks once.
+            DB::table('decks')->where('user_id', $user->id)
+                ->where(fn ($q) => $q->where('is_shared', true)
+                    ->orWhereExists(fn ($e) => $e->selectRaw('1')->from('deck_shares')->whereColumn('deck_shares.deck_id', 'decks.id')->whereNull('deck_shares.declined_at')))
+                ->update(['share_review_pending' => true]);
+
+            return $user;
+        });
+    }
+
+    /**
+     * Adds a parent to an account under 18 (admin only). A link from the
+     * time of codes ("nur zuschauen") is confirmed instead.
+     *
+     * @throws ValidationException
+     */
+    public function addGuardian(User $child, mixed $username, User $by): User
+    {
+        if ($child->is_adult) {
+            throw ValidationException::withMessages(['parents' => 'Eltern gibt es nur für Konten unter 18.']);
+        }
+        $guardian = $this->findAdult(self::normalizeUsername(is_string($username) ? $username : ''));
+        if ($guardian === null || $guardian->is($child)) {
+            throw ValidationException::withMessages(['parents' => 'Kein freigegebenes Konto ab 18 mit diesem Benutzernamen.']);
         }
 
-        return $user;
+        return DB::transaction(function () use ($child, $guardian, $by) {
+            // Re-read under the lock: the age may have changed meanwhile.
+            if (User::whereKey($child->id)->lockForUpdate()->value('is_adult')) {
+                throw ValidationException::withMessages(['parents' => 'Eltern gibt es nur für Konten unter 18.']);
+            }
+            $this->ensureNotGuardian($child, 'parents');
+            $link = DB::table('guardian_links')->where('child_id', $child->id)->where('guardian_id', $guardian->id)->first();
+            if ($link !== null && $link->confirmed_at !== null) {
+                throw ValidationException::withMessages(['parents' => "{$guardian->name} ist schon eingetragen."]);
+            }
+            if ($link === null && $this->guardianCount($child) >= GuardianService::MAX_GUARDIANS) {
+                throw ValidationException::withMessages(['parents' => 'Höchstens '.GuardianService::MAX_GUARDIANS.' Eltern.']);
+            }
+            $this->link($child, [$guardian], $by);
+
+            return $guardian;
+        });
+    }
+
+    /**
+     * "Bestätigen" for a link from the time of codes: from then on the
+     * parent may act for the child (admin only).
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<User>
+     */
+    public function confirmGuardian(User $child, string $guardianId, User $by): User
+    {
+        return $this->addGuardian($child, $this->linkedGuardian($child, $guardianId)->username, $by);
+    }
+
+    /**
+     * Removes a parent (admin only); the last confirmed one stays.
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<User>
+     */
+    public function removeGuardian(User $child, string $guardianId): User
+    {
+        $guardian = $this->linkedGuardian($child, $guardianId);
+
+        return DB::transaction(function () use ($child, $guardian) {
+            User::whereKey($child->id)->lockForUpdate()->first();
+            $confirmed = DB::table('guardian_links')->where('child_id', $child->id)->where('guardian_id', $guardian->id)->whereNotNull('confirmed_at')->exists();
+            if ($confirmed && ! $child->is_adult && $this->confirmedCount($child) <= 1) {
+                throw ValidationException::withMessages(['parents' => 'Das letzte Elternteil lässt sich nicht entfernen. Erst ein anderes eintragen oder das Konto auf „ab 18“ stellen.']);
+            }
+            DB::table('guardian_links')->where('child_id', $child->id)->where('guardian_id', $guardian->id)->delete();
+
+            return $guardian;
+        });
+    }
+
+    /** Accounts under 18 without a parent who may act for them. */
+    public function minorsWithoutGuardian(): int
+    {
+        return User::where('is_adult', false)->whereNotNull('approved_at')
+            ->whereNotIn('id', DB::table('guardian_links')->whereNotNull('confirmed_at')->select('child_id'))
+            ->count();
+    }
+
+    /** @throws ModelNotFoundException<User> */
+    private function linkedGuardian(User $child, string $guardianId): User
+    {
+        $guardian = Str::isUuid($guardianId)
+            ? User::whereKey($guardianId)->whereIn('id', DB::table('guardian_links')->where('child_id', $child->id)->select('guardian_id'))->first()
+            : null;
+        if ($guardian === null) {
+            throw (new ModelNotFoundException)->setModel(User::class, [$guardianId]);
+        }
+
+        return $guardian;
+    }
+
+    /**
+     * No chains: a parent of others cannot become a child.
+     *
+     * @throws ValidationException
+     */
+    private function ensureNotGuardian(User $user, string $field = 'age'): void
+    {
+        if (DB::table('guardian_links')->where('guardian_id', $user->id)->exists()) {
+            throw ValidationException::withMessages([$field => "{$user->name} ist für andere als Elternteil eingetragen. Erst diese Zuordnung lösen."]);
+        }
+    }
+
+    /** All links, also those from the time of codes. */
+    private function guardianCount(User $child): int
+    {
+        return DB::table('guardian_links')->where('child_id', $child->id)->count();
+    }
+
+    /** Parents an admin assigned or confirmed. */
+    private function confirmedCount(User $child): int
+    {
+        return DB::table('guardian_links')->where('child_id', $child->id)->whereNotNull('confirmed_at')->count();
+    }
+
+    /**
+     * Age and parents from an admin form. Under 18 needs one to four parents
+     * of 18 or older (unless `$required` is off because parents are kept).
+     *
+     * @param  array<string, mixed>  $input
+     * @return array{adult: bool, guardians: list<User>}
+     *
+     * @throws ValidationException
+     */
+    private function validateFamily(array $input, ?User $self = null, bool $required = true): array
+    {
+        $age = $input['age'] ?? null;
+        if (! in_array($age, ['minor', 'adult'], true)) {
+            throw ValidationException::withMessages(['age' => 'Bitte „unter 18“ oder „ab 18“ wählen.']);
+        }
+        if ($age === 'adult') {
+            return ['adult' => true, 'guardians' => []];
+        }
+
+        $raw = is_string($input['parents'] ?? null) ? $input['parents'] : '';
+        $names = array_values(array_unique(array_filter(array_map(
+            fn (string $name) => self::normalizeUsername($name),
+            preg_split('/[\s,;]+/u', $raw) ?: [],
+        ))));
+        if ($names === [] && $required) {
+            throw ValidationException::withMessages(['parents' => 'Für ein Konto unter 18 braucht es mindestens ein Elternteil.']);
+        }
+        if (count($names) > GuardianService::MAX_GUARDIANS) {
+            throw ValidationException::withMessages(['parents' => 'Höchstens '.GuardianService::MAX_GUARDIANS.' Eltern.']);
+        }
+        $guardians = [];
+        foreach ($names as $name) {
+            $guardian = $this->findAdult($name);
+            if ($guardian === null || ($self !== null && $guardian->is($self))) {
+                throw ValidationException::withMessages(['parents' => "Kein freigegebenes Konto ab 18 mit dem Benutzernamen „{$name}“."]);
+            }
+            $guardians[] = $guardian;
+        }
+
+        return ['adult' => false, 'guardians' => $guardians];
+    }
+
+    /** An approved, active account of 18 or older — the only kind that can be a parent. */
+    private function findAdult(string $username): ?User
+    {
+        return $username === '' ? null : User::where('username', $username)
+            ->where('is_adult', true)->where('is_active', true)->whereNotNull('approved_at')
+            ->first();
+    }
+
+    /** @param  list<User>  $guardians */
+    private function link(User $child, array $guardians, ?User $by): void
+    {
+        foreach ($guardians as $guardian) {
+            DB::table('guardian_links')->upsert(
+                ['guardian_id' => $guardian->id, 'child_id' => $child->id, 'linked_by' => $by?->id, 'created_at' => now(), 'confirmed_at' => now()],
+                ['guardian_id', 'child_id'],
+                ['linked_by', 'confirmed_at'],
+            );
+        }
     }
 
     /**

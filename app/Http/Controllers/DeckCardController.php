@@ -24,7 +24,7 @@ class DeckCardController extends Controller
      */
     public function store(Request $request, string $deck): Response
     {
-        $card = $this->cards->createOwned($request->user(), $deck, $request->only('front', 'back', 'hint'));
+        $card = $this->cards->createManaged($request->user(), $deck, $request->only('front', 'back', 'hint'));
         $close = $request->boolean('close');
 
         $response = response()->view('partials.card-created', [
@@ -40,7 +40,7 @@ class DeckCardController extends Controller
 
     public function edit(Request $request, string $deck, string $card): View
     {
-        $model = $this->cards->getOwned($request->user(), $deck, $card);
+        $model = $this->cards->getManaged($request->user(), $deck, $card);
 
         return view('partials.card-edit', [
             'deck' => $model->deck,
@@ -51,7 +51,7 @@ class DeckCardController extends Controller
 
     public function update(Request $request, string $deck, string $card): Response
     {
-        $model = $this->cards->updateOwned($request->user(), $deck, $card, $request->only('front', 'back', 'hint'));
+        $model = $this->cards->updateManaged($request->user(), $deck, $card, $request->only('front', 'back', 'hint'));
 
         return response()
             ->view('partials.card-updated', ['deck' => $model->deck, 'card' => $model])
@@ -60,8 +60,8 @@ class DeckCardController extends Controller
 
     public function destroy(Request $request, string $deck, string $card): Response
     {
-        $model = $this->cards->getOwned($request->user(), $deck, $card);
-        $this->cards->deleteOwned($request->user(), $deck, $card);
+        $model = $this->cards->getManaged($request->user(), $deck, $card);
+        $this->cards->deleteManaged($request->user(), $deck, $card);
 
         return response()
             ->view('partials.card-deleted', [
@@ -75,7 +75,7 @@ class DeckCardController extends Controller
     /** Hint below the front field: "Gibt es schon in diesem Stapel". */
     public function frontCheck(Request $request, string $deck): View
     {
-        $model = $this->decks->getOwned($request->user(), $deck);
+        $model = $this->decks->getManaged($request->user(), $deck);
         $front = $request->query('front');
         $first = is_array($front) ? ($front[0] ?? '') : $front;
 

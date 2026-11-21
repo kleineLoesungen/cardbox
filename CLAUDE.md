@@ -144,6 +144,7 @@ Unterschied ist sicherheitsrelevant.
 | Fassung | Für | Verhalten |
 |---|---|---|
 | `listForUser`, `getOwned`, `updateOwned`, `deleteOwned` | Web-Controller | filtert nach Besitzer |
+| `getManaged`, `updateManaged`, `deleteManaged` (Stapel, Karten) | Web-Controller | Besitzer **oder** bestätigtes Elternteil ab 18 eines Kindes unter 18 – nur zum Bearbeiten, nie für Lernen und Lernstand |
 | `listAll`, `get`, `update`, `delete` | API-Controller | systemweit, ohne Filter |
 
 **Wer in einem Web-Controller versehentlich die systemweite Fassung benutzt,
@@ -193,6 +194,15 @@ freigegebener Administrator — sonst käme niemand an die Verwaltung.
 * `LogoutInactiveUsers` wirft gesperrte **und** nicht freigegebene Konten
   bei der nächsten Anfrage hinaus.
 * Wer Konten anlegt (Admin), bekommt sie sofort freigegeben.
+* Beim Anlegen und Freigeben legt der Admin **„unter 18“ / „ab 18“** fest
+  (`users.is_adult`); ein Konto unter 18 braucht mindestens ein Elternteil
+  ab 18 (`guardian_links`), das nur der Admin ändert. **Teilen dürfen nur
+  Konten ab 18** — eigene Stapel und als Eltern die Stapel ihrer Kinder.
+  Eltern bearbeiten diese über `DeckService::getManaged`; Lernen und
+  Lernstand bleiben beim Kind. Wer für ein Kind handeln darf, entscheidet
+  allein `GuardianService::managedChildIds` (bestätigte Verknüpfung,
+  `guardian_links.confirmed_at`). Verknüpfungen aus der Zeit der Codes
+  zeigen nur den Fortschritt, bis ein Admin sie bestätigt. Siehe [eltern-konten.md](docs/specs/eltern-konten.md).
 
 ---
 
