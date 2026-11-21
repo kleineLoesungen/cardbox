@@ -100,6 +100,9 @@
   </a>
 
   <a href="/decks" class="tab {{ $navSection === 'decks' ? 'tab-active' : '' }}">
+    @if ($pendingShareCount > 0)
+      <span class="tab-badge" aria-label="{{ $pendingShareCount === 1 ? '1 Stapel mit dir geteilt' : $pendingShareCount.' Stapel mit dir geteilt' }}">{{ $pendingShareCount }}</span>
+    @endif
     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="4" y="7" width="14" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/>

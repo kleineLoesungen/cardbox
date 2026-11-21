@@ -27,7 +27,8 @@ describe('Sichtbarkeit', function () {
 
         $this->get("/decks/{$fremd->id}")->assertOk()->assertSee('Tiere')->assertSee('Hund')->assertSee('Lernen')->assertDontSee('Folgen');
         $this->post("/decks/{$fremd->id}", ['name' => 'Gekapert', 'front_language' => 'de', 'back_language' => 'en'])->assertNotFound();
-        $this->post("/decks/{$fremd->id}/share", ['shared' => '0'])->assertNotFound();
+        $this->post("/decks/{$fremd->id}/visibility", ['visibility' => 'private'])->assertNotFound();
+        $this->post("/decks/{$fremd->id}/shares", ['username' => 'jemand'])->assertNotFound();
         $this->post("/decks/{$fremd->id}/delete")->assertNotFound();
         $this->post("/decks/{$fremd->id}/cards", ['front' => ['x'], 'back' => ['y']])->assertNotFound();
         $this->get("/decks/{$fremd->id}/import")->assertNotFound();
@@ -113,10 +114,10 @@ describe('Eigene Stapel', function () {
         $ich = actingAsUser();
         $deck = Deck::factory()->for($ich)->create();
 
-        $this->post("/decks/{$deck->id}/share", ['shared' => '1']);
+        $this->post("/decks/{$deck->id}/visibility", ['visibility' => 'all']);
         expect($deck->refresh()->is_shared)->toBeTrue();
 
-        $this->post("/decks/{$deck->id}/share", ['shared' => '0']);
+        $this->post("/decks/{$deck->id}/visibility", ['visibility' => 'private']);
         expect($deck->refresh()->is_shared)->toBeFalse();
     });
 

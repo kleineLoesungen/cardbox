@@ -7,6 +7,10 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
+## 2026.11.21
+- Stapel mit bestimmten Personen teilen: Unter ⋯ → Teilen gibt man Benutzernamen ein – nur diese Personen sehen den Stapel, nicht alle. Sie finden ihn unter Stapel → „Mit dir geteilt“ (mit Zähler an „Stapel“) und können ihn lernen oder ablehnen, dazu wie bei geteilten Stapeln kopieren und Fehler melden. Wer herausgenommen wird oder ablehnt, behält seinen Lernstand für ein späteres erneutes Teilen. Wer ablehnt, bekommt denselben Stapel nicht noch einmal zugeschoben
+- Migration: 2026_11_21_000000_create_deck_shares_table.php
+
 ## 2026.11.15
 - Wörterbuch: Die Suche achtet nicht mehr auf Akzente – „eleve“ findet „élève“, „garcon“ findet „garçon“, „coeur“ findet „cœur“, „Strasse“ findet „Straße“, „schuler“ und „Schueler“ finden „Schüler“, und umgekehrt. Gilt auch für „Aus anderen Stapeln übernehmen“
 - Benutzerverwaltung: Die Liste zeigt die letzte Anmeldung jedes Kontos, die Seite eines Kontos dazu, wann es zuletzt aktiv war (Anmeldungen halten 30 Tage). Für Anmeldungen vor diesem Update steht „unbekannt“

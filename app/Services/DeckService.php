@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -22,9 +23,10 @@ use Illuminate\Validation\ValidationException;
  *
  * The rules (docs/specs/vokabelkarten.md, "Privat und geteilt"):
  *
- * * Visibility belongs to the deck. Own decks and shared decks are visible,
+ * * Visibility belongs to the deck. Own decks, decks shared with everybody
+ *   and decks shared with the person by name (deck_shares) are visible;
  *   other people's private decks are not — they answer 404, for moderators
- *   and admins too.
+ *   and admins too. Moderation only ever sees decks shared with everybody.
  * * Only the owner changes a deck or its cards.
  * * Other people's shared decks can be followed (read and learn) or copied.
  *
@@ -37,6 +39,9 @@ use Illuminate\Validation\ValidationException;
  */
 class DeckService
 {
+    /** Most people one deck is shared with by name; beyond that, "Mit allen". */
+    public const MAX_SHARES = 50;
+
     // -------------------------------------------------------------------------
     // Reading
     // -------------------------------------------------------------------------
@@ -64,7 +69,7 @@ class DeckService
     {
         return $query
             ->with('user')
-            ->withCount(['cards', 'followers', 'suggestions as open_suggestions_count' => fn (Builder $q) => $q->where('card_suggestions.status', 'open')])
+            ->withCount(['cards', 'followers' => self::seeingFollowers(), 'sharedWith as shares_count' => fn (Builder $q) => $q->whereNull('deck_shares.declined_at'), 'suggestions as open_suggestions_count' => fn (Builder $q) => $q->where('card_suggestions.status', 'open')])
             ->orderByRaw('user_id = ? DESC', [$user->id])
             ->orderBy('name');
     }
@@ -80,7 +85,7 @@ class DeckService
         return Deck::query()->where(fn (Builder $q) => $q
             ->where('user_id', $user->id)
             ->orWhere(fn (Builder $q) => $q
-                ->where('is_shared', true)
+                ->where(fn (Builder $q) => $q->where('is_shared', true)->orWhereIn('id', $this->sharedWithIds($user)))
                 ->whereHas('followers', fn (Builder $f) => $f->whereKey($user->id))));
     }
 
@@ -244,7 +249,34 @@ class DeckService
     {
         return Deck::query()->where(fn (Builder $q) => $q
             ->where('user_id', $user->id)
-            ->orWhere('is_shared', true));
+            ->orWhere('is_shared', true)
+            ->orWhereIn('id', $this->sharedWithIds($user)));
+    }
+
+    /**
+     * Ids of the decks shared with the person by name
+     * (docs/specs/stapel-mit-einzelnen-teilen.md).
+     */
+    private function sharedWithIds(User $user): QueryBuilder
+    {
+        return DB::table('deck_shares')->where('user_id', $user->id)->whereNull('declined_at')->select('deck_id');
+    }
+
+    /** Shares of one deck that count: not declined. */
+    private function activeShares(Deck $deck): QueryBuilder
+    {
+        return DB::table('deck_shares')->where('deck_id', $deck->id)->whereNull('declined_at');
+    }
+
+    /**
+     * What moderation may touch: own decks and decks shared with everybody —
+     * never decks shared only by name, even when the moderator is on the list.
+     *
+     * @return Builder<Deck>
+     */
+    public function ownOrPublic(User $user): Builder
+    {
+        return Deck::query()->where(fn (Builder $q) => $q->where('user_id', $user->id)->orWhere('is_shared', true));
     }
 
     public function isFollowing(User $user, Deck $deck): bool
@@ -255,9 +287,26 @@ class DeckService
             ->exists();
     }
 
+    /**
+     * People learning along who still see the deck: shared with everybody,
+     * or still on the list. Old follows of a deck no longer shared do not count.
+     */
     public function followerCount(Deck $deck): int
     {
-        return DB::table('deck_follows')->where('deck_id', $deck->id)->count();
+        return Deck::whereKey($deck->id)->withCount(['followers' => self::seeingFollowers()])->value('followers_count') ?? 0;
+    }
+
+    /**
+     * For withCount('followers'): only followers who still see the deck.
+     *
+     * @return \Closure(Builder<User>): Builder<User>
+     */
+    public static function seeingFollowers(): \Closure
+    {
+        return fn (Builder $q) => $q->where(fn (Builder $q) => $q
+            ->whereExists(fn ($e) => $e->selectRaw('1')->from('decks as d')->whereColumn('d.id', 'deck_follows.deck_id')->where('d.is_shared', true))
+            ->orWhereExists(fn ($e) => $e->selectRaw('1')->from('deck_shares as s')
+                ->whereColumn('s.deck_id', 'deck_follows.deck_id')->whereColumn('s.user_id', 'deck_follows.user_id')->whereNull('s.declined_at')));
     }
 
     /**
@@ -312,11 +361,183 @@ class DeckService
         return $deck;
     }
 
-    /** @throws ModelNotFoundException<Deck> */
-    public function setSharedOwned(User $user, string $id, bool $shared): Deck
+    /**
+     * "Teilen": private, with single persons (the list stays) or with
+     * everybody. Private ends the shares with single persons; their progress
+     * stays, as when they stop learning, for a later share.
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function setVisibility(User $user, string $id, mixed $visibility): Deck
     {
         $deck = $this->getOwned($user, $id);
-        $deck->forceFill(['is_shared' => $shared])->save();
+        if (! in_array($visibility, ['private', 'people', 'all'], true)) {
+            throw ValidationException::withMessages(['visibility' => 'Bitte „Privat“, „Mit bestimmten Personen“ oder „Mit allen“ wählen.']);
+        }
+
+        DB::transaction(function () use ($deck, $visibility) {
+            $deck->forceFill(['is_shared' => $visibility === 'all'])->save();
+            if ($visibility === 'private') {
+                $this->endShares($deck);
+            }
+        });
+
+        return $deck;
+    }
+
+    /**
+     * The people an own deck is shared with by name, oldest first; each with
+     * `learns` (they accepted and follow it).
+     *
+     * @return Collection<int, User>
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function sharesOwned(User $user, string $id): Collection
+    {
+        $deck = $this->getOwned($user, $id);
+
+        return User::query()
+            ->join('deck_shares', 'deck_shares.user_id', '=', 'users.id')
+            ->where('deck_shares.deck_id', $deck->id)
+            ->whereNull('deck_shares.declined_at')
+            ->select('users.*')
+            ->selectRaw('exists (select 1 from deck_follows f where f.deck_id = deck_shares.deck_id and f.user_id = users.id) as learns')
+            ->orderBy('deck_shares.created_at')
+            ->orderBy('users.name')
+            ->get();
+    }
+
+    /**
+     * Shares an own deck with one person, by username. Unknown, blocked and
+     * not approved accounts get the same answer, so the field reveals as
+     * little as possible.
+     *
+     * @throws ValidationException
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function shareWith(User $user, string $id, mixed $username): User
+    {
+        $deck = $this->getOwned($user, $id);
+        $name = UserService::normalizeUsername(is_string($username) ? $username : '');
+        if ($name === '') {
+            throw ValidationException::withMessages(['username' => 'Bitte einen Benutzernamen eingeben.']);
+        }
+        $person = User::where('username', $name)->first();
+        if ($person === null || ! $person->isApproved() || ! $person->is_active) {
+            throw ValidationException::withMessages(['username' => 'Diesen Benutzernamen gibt es nicht.']);
+        }
+        if ($person->is($user)) {
+            throw ValidationException::withMessages(['username' => 'Das bist du selbst.']);
+        }
+
+        return DB::transaction(function () use ($deck, $person) {
+            // Locked: two quick taps must not pass the limit together.
+            Deck::whereKey($deck->id)->lockForUpdate()->first();
+            $existing = DB::table('deck_shares')->where('deck_id', $deck->id)->where('user_id', $person->id)->first();
+            if ($existing !== null && $existing->declined_at !== null) {
+                // Declining blocks: nobody pushes a deck on a person again.
+                throw ValidationException::withMessages(['username' => "{$person->name} hat den Stapel abgelehnt."]);
+            }
+            if ($existing !== null) {
+                throw ValidationException::withMessages(['username' => "Mit {$person->name} ist der Stapel schon geteilt."]);
+            }
+            if ($this->activeShares($deck)->count() >= self::MAX_SHARES) {
+                throw ValidationException::withMessages(['username' => 'Mehr als '.self::MAX_SHARES.' Personen geht nicht – teil den Stapel lieber mit allen.']);
+            }
+            DB::table('deck_shares')->insert(['deck_id' => $deck->id, 'user_id' => $person->id, 'created_at' => now()]);
+
+            return $person;
+        });
+    }
+
+    /**
+     * Takes a person off the list. Unless the deck is shared with everybody,
+     * it leaves their decks; their progress stays for a later share.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function unshareWith(User $user, string $id, string $personId): User
+    {
+        $deck = $this->getOwned($user, $id);
+        $person = Str::isUuid($personId)
+            ? User::whereKey($personId)->whereIn('id', $this->activeShares($deck)->select('user_id'))->first()
+            : null;
+        if ($person === null) {
+            throw (new ModelNotFoundException)->setModel(User::class, [$personId]);
+        }
+
+        DB::transaction(function () use ($deck, $person) {
+            DB::table('deck_shares')->where('deck_id', $deck->id)->where('user_id', $person->id)->delete();
+            if (! $deck->is_shared) {
+                $person->followedDecks()->detach($deck->id);
+            }
+        });
+
+        return $person;
+    }
+
+    /**
+     * Decks shared with the person by name that wait for "Lernen" or
+     * "Ablehnen": not learned yet, newest first.
+     *
+     * @return Collection<int, Deck>
+     */
+    public function pendingShares(User $user): Collection
+    {
+        return Deck::query()
+            ->with('user')
+            ->withCount('cards')
+            ->whereIn('id', $this->sharedWithIds($user))
+            ->whereDoesntHave('followers', fn (Builder $f) => $f->whereKey($user->id))
+            ->orderByDesc(DB::table('deck_shares')->select('created_at')->whereColumn('deck_shares.deck_id', 'decks.id')->where('deck_shares.user_id', $user->id)->limit(1))
+            ->get();
+    }
+
+    /** How many decks wait for "Lernen" or "Ablehnen" (the badge on "Stapel"). */
+    public function pendingShareCount(User $user): int
+    {
+        return Deck::query()
+            ->whereIn('id', $this->sharedWithIds($user))
+            ->whereDoesntHave('followers', fn (Builder $f) => $f->whereKey($user->id))
+            ->count();
+    }
+
+    public function isSharedWith(User $user, Deck $deck): bool
+    {
+        return $this->activeShares($deck)->where('user_id', $user->id)->exists();
+    }
+
+    /**
+     * Ends every share by name: the people lose the deck (progress stays),
+     * declines stay as blocks.
+     */
+    private function endShares(Deck $deck): void
+    {
+        $people = $this->activeShares($deck)->pluck('user_id')->all();
+        DB::table('deck_follows')->where('deck_id', $deck->id)->whereIn('user_id', $people)->delete();
+        $this->activeShares($deck)->delete();
+    }
+
+    /**
+     * "Ablehnen" or "Stapel entfernen" for a deck shared by name: out of the
+     * own decks, and the owner cannot add the person to this deck again (the
+     * row stays as a block). Progress stays, as when one stops learning.
+     *
+     * @throws ModelNotFoundException<Deck>
+     */
+    public function decline(User $user, string $id): Deck
+    {
+        $deck = Str::isUuid($id) ? Deck::whereIn('id', $this->sharedWithIds($user))->find($id) : null;
+        if ($deck === null) {
+            throw (new ModelNotFoundException)->setModel(Deck::class, [$id]);
+        }
+
+        DB::transaction(function () use ($user, $deck) {
+            DB::table('deck_shares')->where('deck_id', $deck->id)->where('user_id', $user->id)->update(['declined_at' => now()]);
+            $user->followedDecks()->detach($deck->id);
+        });
 
         return $deck;
     }
@@ -483,7 +704,11 @@ class DeckService
     public function unshareShared(string $id): Deck
     {
         $deck = $this->getShared($id);
-        $deck->forceFill(['is_shared' => false])->save();
+        // Moderation takes a deck out of circulation: shares by name end too.
+        DB::transaction(function () use ($deck) {
+            $deck->forceFill(['is_shared' => false])->save();
+            $this->endShares($deck);
+        });
 
         return $deck;
     }
@@ -553,6 +778,8 @@ class DeckService
                 $deck->forceFill(['user_id' => $to->id])->save();
             }
             $to->followedDecks()->detach($deckIds);
+            // Owners are never on their own share list.
+            DB::table('deck_shares')->whereIn('deck_id', $deckIds)->where('user_id', $to->id)->delete();
             $shared = $decks->where('is_shared', true)->modelKeys();
             $from->followedDecks()->syncWithoutDetaching($shared);
             // A deck one learns from somebody else is "Lerne ich" or "pausiert", never without either.

@@ -86,13 +86,39 @@
       </ul>
     @endif
   @else
+    @if ($pending->isNotEmpty())
+      {{-- Shared with the viewer by name: learn or decline (stapel-mit-einzelnen-teilen.md). --}}
+      <h2 class="mb-2 text-base font-semibold">Mit dir geteilt <span class="font-normal text-muted">({{ $pending->count() }})</span></h2>
+      <ul class="list mb-6">
+        @foreach ($pending as $shared)
+          <li class="list-row flex-wrap">
+            <a href="/decks/{{ $shared->id }}" class="min-w-0 flex-1">
+              <span class="block break-words font-medium">{{ $shared->name }}</span>
+              <span class="block text-sm text-muted">von {{ $shared->user->name }} · {{ $shared->cards_count === 1 ? '1 Karte' : $shared->cards_count.' Karten' }}</span>
+            </a>
+            <span class="flex shrink-0 gap-2">
+              <form method="post" action="/decks/{{ $shared->id }}/decline"
+                    data-confirm-action="Ablehnen" data-confirm="„{{ $shared->name }}“ ablehnen? Der Stapel verschwindet aus deiner Liste.">
+                @csrf
+                <button type="submit" class="btn btn-ghost btn-sm">Ablehnen</button>
+              </form>
+              <form method="post" action="/decks/{{ $shared->id }}/follow">
+                @csrf
+                <button type="submit" class="btn btn-primary btn-sm">Lernen</button>
+              </form>
+            </span>
+          </li>
+        @endforeach
+      </ul>
+    @endif
+
     @if ($decks->isEmpty() && $search !== '')
       <div class="empty">
         <p class="empty-title">Kein Stapel passt zu „{{ $search }}“</p>
         <p class="empty-hint">Gesucht wird in Name und Beschreibung deiner Stapel.</p>
         <a href="/decks" class="btn btn-secondary">Alle zeigen</a>
       </div>
-    @elseif ($decks->isEmpty())
+    @elseif ($decks->isEmpty() && $pending->isEmpty())
       <div class="empty">
         <p class="empty-title">Du hast noch keine Stapel</p>
         <p class="empty-hint">Leg einen eigenen an oder schau, was andere geteilt haben.</p>

@@ -14,7 +14,8 @@
 @php
     $me = auth()->user();
     $moderator = $me->hasRole(\App\Enums\Role::Moderator);
-    $canEdit = fn (\App\Models\Card $c) => $c->deck->user_id === $me->id || $moderator;
+    // Moderation only on decks shared with everybody, never on ones shared by name.
+    $canEdit = fn (\App\Models\Card $c) => $c->deck->user_id === $me->id || ($moderator && $c->deck->is_shared);
     $base = $group->first();
     $editable = $group->filter($canEdit)->values();
     $chosen = match (true) {
@@ -33,7 +34,8 @@
       $decks = $chosen->pluck('deck')->unique('id');
       $foreign = $chosen->filter(fn ($c) => $c->deck->user_id !== $me->id)->count();
       $prefix = $foreign > 0 ? '/moderation' : '';
-      $followers = $decks->where('is_shared', true)->sum('followers_count');
+      // Shared with everybody or by name: whoever learns along loses the card.
+      $followers = $decks->sum('followers_count');
       $question = ($count > 1 ? "{$count} Karten löschen?" : 'Karte löschen?').match (true) {
           $followers === 1 => ' Eine Person, die damit lernt, verliert sie samt Lernstand.',
           $followers > 1 => " {$followers} Personen, die damit lernen, verlieren sie samt Lernstand.",

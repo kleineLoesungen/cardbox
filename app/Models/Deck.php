@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $updated_at
  * @property-read int|null $cards_count
  * @property-read int|null $followers_count
+ * @property-read int|null $shares_count
  * @property-read int|null $open_suggestions_count
  */
 #[Fillable(['name', 'description', 'front_language', 'back_language'])]
@@ -68,6 +69,16 @@ class Deck extends Model
     public function followers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'deck_follows');
+    }
+
+    /**
+     * The people the deck is shared with by name (stapel-mit-einzelnen-teilen.md).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function sharedWith(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'deck_shares');
     }
 
     public function isOwnedBy(User $user): bool

@@ -21,6 +21,9 @@
           @if ($deck->is_shared)
             <span class="badge badge-brand">geteilt</span>
             {{ $followerCount === 1 ? '1 Person lernt mit' : $followerCount.' Personen lernen mit' }}
+          @elseif ($shares->isNotEmpty())
+            <span class="badge badge-brand">geteilt mit {{ $shares->count() === 1 ? '1 Person' : $shares->count().' Personen' }}</span>
+            @if ($followerCount > 0){{ $followerCount === 1 ? '1 lernt mit' : $followerCount.' lernen mit' }}@endif
           @else
             <span class="badge badge-neutral">privat</span> nur für dich sichtbar
           @endif
@@ -28,7 +31,7 @@
             · Kopie von „{{ $deck->copied_from_name }}“
           @endif
         @else
-          von {{ $deck->user->name }}
+          von {{ $deck->user->name }}@if ($sharedWithMe && ! $deck->is_shared) · mit dir geteilt @endif
         @endif
       </p>
       @if ($deck->description)
@@ -108,7 +111,7 @@
   <ul id="card-list" class="list">
     @foreach ($cards as $card)
       <x-card-row :card="$card" :deck="$deck" :editable="$isOwner"
-                  :can-suggest="! $isOwner && $deck->is_shared" :can-moderate="$canModerate"
+                  :can-suggest="! $isOwner" :can-moderate="$canModerate"
                   :suggestion="$mySuggestions[$card->id] ?? null"
                   :paused="$activeIds !== null && ! in_array($card->id, $activeIds, true)"
                   :hard="in_array($card->id, $hardIds, true)" />
@@ -148,7 +151,75 @@
   </x-sheet>
 @endif
 
-@if (! $isOwner && $deck->is_shared)
+@if ($isOwner)
+  {{-- Sharing (docs/specs/stapel-mit-einzelnen-teilen.md). --}}
+  <x-sheet id="share-sheet" title="Teilen" :data-open-on-load="session('open_share') || $errors->share->any() ? 'true' : null">
+    <div class="stack">
+      <p class="text-sm text-muted">
+        @if ($deck->is_shared)
+          Mit allen geteilt: Alle finden den Stapel unter „Entdecken“.
+        @elseif ($shares->isNotEmpty())
+          Nur die Personen unten sehen den Stapel.
+        @else
+          Privat: nur du siehst den Stapel.
+        @endif
+      </p>
+
+      <form method="post" action="/decks/{{ $deck->id }}/visibility">
+        @csrf
+        <input type="hidden" name="visibility" value="{{ $deck->is_shared ? 'people' : 'all' }}">
+        <button type="submit" class="btn btn-secondary btn-block">
+          {{ $deck->is_shared ? 'Nicht mehr mit allen teilen' : 'Mit allen teilen' }}
+        </button>
+      </form>
+
+      <h3 class="text-sm font-semibold">Mit bestimmten Personen</h3>
+      @if ($deck->is_shared && $shares->isNotEmpty())
+        <p class="hint">Solange der Stapel mit allen geteilt ist, sehen ihn ohnehin alle. Die Liste gilt wieder, wenn du nicht mehr mit allen teilst.</p>
+      @endif
+      @if ($shares->isNotEmpty())
+        <ul class="list">
+          @foreach ($shares as $person)
+            <li class="list-row">
+              <span class="min-w-0 flex-1">
+                <span class="block break-words font-medium">{{ $person->name }} <span class="font-normal text-muted">({{ $person->username }})</span></span>
+                <span class="block text-sm text-muted">{{ $person->learns ? 'lernt mit' : 'noch nicht angenommen' }}</span>
+              </span>
+              <form method="post" action="/decks/{{ $deck->id }}/shares/{{ $person->id }}/delete" class="shrink-0"
+                    data-confirm-action="Entfernen"
+                    data-confirm="{{ $person->name }} verliert den Stapel. Teilst du ihn wieder, ist der Lernstand noch da.">
+                @csrf
+                <button type="submit" class="btn btn-ghost btn-sm">Entfernen</button>
+              </form>
+            </li>
+          @endforeach
+        </ul>
+      @endif
+      <form method="post" action="/decks/{{ $deck->id }}/shares" class="stack gap-2">
+        @csrf
+        <x-form-error bag="share" />
+        <label class="label" for="share-username">Benutzername</label>
+        <div class="flex gap-2">
+          <input class="input min-w-0 flex-1" type="text" id="share-username" name="username" value="{{ old('username') }}"
+                 autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="z. B. mia">
+          <button type="submit" class="btn btn-primary shrink-0">Hinzufügen</button>
+        </div>
+        <p class="hint">Die Person findet den Stapel unter „Stapel → Mit dir geteilt“ und kann ihn lernen oder ablehnen.</p>
+      </form>
+
+      @if ($deck->is_shared || $shares->isNotEmpty())
+        <form method="post" action="/decks/{{ $deck->id }}/visibility"
+              @if ($shares->isNotEmpty()) data-confirm-action="Privat machen" data-confirm="{{ $shares->count() === 1 ? '1 Person verliert' : $shares->count().' Personen verlieren' }} den Stapel. Teilst du ihn wieder, ist ihr Lernstand noch da." @endif>
+          @csrf
+          <input type="hidden" name="visibility" value="private">
+          <button type="submit" class="btn btn-ghost btn-block">Privat machen</button>
+        </form>
+      @endif
+    </div>
+  </x-sheet>
+@endif
+
+@if (! $isOwner)
   <x-sheet id="suggest-sheet" title="Fehler melden"></x-sheet>
 @endif
 
@@ -192,13 +263,12 @@
     @endif
     @if ($isOwner)
       <button type="button" class="sheet-action" data-open-sheet="deck-edit">Umbenennen oder Sprachen ändern</button>
-      <form method="post" action="/decks/{{ $deck->id }}/share">
-        @csrf
-        <input type="hidden" name="shared" value="{{ $deck->is_shared ? '0' : '1' }}">
-        <button type="submit" class="sheet-action">
-          {{ $deck->is_shared ? 'Nicht mehr teilen' : 'Mit allen teilen' }}
-        </button>
-      </form>
+      <button type="button" class="sheet-action flex items-center justify-between gap-3" data-open-sheet="share-sheet">
+        <span>Teilen</span>
+        <span class="badge {{ $deck->is_shared || $shares->isNotEmpty() ? 'badge-brand' : 'badge-neutral' }} shrink-0">
+          {{ $deck->is_shared ? 'mit allen' : ($shares->isNotEmpty() ? 'mit '.$shares->count() : 'privat') }}
+        </span>
+      </button>
       <a href="/decks/{{ $deck->id }}/import" class="sheet-action">Liste einfügen</a>
       <button type="button" class="sheet-action" data-open-sheet="adopt-sheet">Aus anderen Stapeln übernehmen</button>
       <form method="post" action="/decks/{{ $deck->id }}/copy">
@@ -214,6 +284,15 @@
         <button type="submit" class="sheet-action sheet-action-danger">Stapel löschen</button>
       </form>
     @else
+      @if ($sharedWithMe && ! $deck->is_shared)
+        {{-- Shared by name: out of the own decks; progress stays should it come again. --}}
+        <form method="post" action="/decks/{{ $deck->id }}/decline"
+              data-confirm-action="Stapel entfernen"
+              data-confirm="„{{ $deck->name }}“ aus deinen Stapeln entfernen? Teilt {{ $deck->user->name }} ihn wieder mit dir, ist dein Lernstand noch da.">
+          @csrf
+          <button type="submit" class="sheet-action">Stapel entfernen</button>
+        </form>
+      @endif
       @if ($isFollowing)
         <form method="post" action="/decks/{{ $deck->id }}/unfollow"
               data-confirm-action="Nicht mehr lernen"
@@ -246,8 +325,8 @@
         <a href="/admin/decks/{{ $deck->id }}/import" class="sheet-action">Liste einfügen (Karten überschreiben)</a>
       @endif
 
-      {{-- Display only; the moderation routes check the role themselves. --}}
-      @if (auth()->user()->hasRole(\App\Enums\Role::Moderator))
+      {{-- Display only; the moderation routes check the role themselves. Never for decks shared only by name. --}}
+      @if (auth()->user()->hasRole(\App\Enums\Role::Moderator) && $deck->is_shared)
         <div class="my-2 border-t border-border"></div>
         <p class="px-3 text-xs font-medium text-subtle">Moderation</p>
         <form method="post" action="/moderation/decks/{{ $deck->id }}/unshare"

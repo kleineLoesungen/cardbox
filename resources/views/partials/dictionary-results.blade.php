@@ -70,8 +70,8 @@
               @endif
             @endif
 
-            {{-- Issue #12: edit own cards (moderation: also shared ones of others), otherwise report. --}}
-            @php($canEdit = auth()->user()->hasRole(\App\Enums\Role::Moderator) || collect($hit['decks'])->contains(fn ($d) => $d->user_id === auth()->id()))
+            {{-- Issue #12: edit own cards (moderation: also ones of others shared with everybody, never by name), otherwise report. --}}
+            @php($canEdit = collect($hit['decks'])->contains(fn ($d) => $d->user_id === auth()->id() || ($d->is_shared && auth()->user()->hasRole(\App\Enums\Role::Moderator))))
             <details>
               <summary class="btn btn-ghost btn-sm cursor-pointer list-none">Mehr …</summary>
               <div class="mt-2 stack gap-2">

@@ -146,7 +146,7 @@ class CardService
      */
     public function updateManyModerated(User $user, mixed $ids, mixed $baseId, array $input): Collection
     {
-        return $this->updateMany($this->decks->visibleTo($user), $ids, $baseId, $input);
+        return $this->updateMany($this->decks->ownOrPublic($user), $ids, $baseId, $input);
     }
 
     /**
@@ -170,7 +170,7 @@ class CardService
      */
     public function deleteManyModerated(User $user, mixed $ids): Collection
     {
-        return $this->deleteMany($this->decks->visibleTo($user), $ids);
+        return $this->deleteMany($this->decks->ownOrPublic($user), $ids);
     }
 
     /**

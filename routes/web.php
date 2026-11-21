@@ -154,7 +154,12 @@ Route::middleware('auth')->group(function () {
     Route::whereUuid(['deck', 'card'])->prefix('/decks/{deck}')->group(function () {
         Route::get('/', [DeckController::class, 'show']);
         Route::post('/', [DeckController::class, 'update']);
-        Route::post('/share', [DeckController::class, 'share']);
+        // Sharing (docs/specs/stapel-mit-einzelnen-teilen.md): the service checks ownership.
+        Route::post('/visibility', [DeckController::class, 'visibility']);
+        // Throttled: usernames must not be tried out one after another.
+        Route::post('/shares', [DeckController::class, 'shareWith'])->middleware('throttle:30,60,deck-share');
+        Route::post('/shares/{person}/delete', [DeckController::class, 'unshareWith'])->whereUuid('person');
+        Route::post('/decline', [DeckController::class, 'decline']);
         Route::post('/delete', [DeckController::class, 'destroy']);
         Route::post('/follow', [DeckController::class, 'follow']);
         Route::post('/unfollow', [DeckController::class, 'unfollow']);

@@ -206,6 +206,14 @@
       du den Stapel nicht.
     </p>
     <p class="text-muted">
+      Einen eigenen Stapel teilst du unter <strong>⋯ → Teilen</strong> mit allen
+      oder nur mit bestimmten Personen – dafür gibst du ihren Benutzernamen
+      ein. Wer so einen Stapel bekommt, findet ihn unter <strong>Stapel → Mit
+      dir geteilt</strong> und kann ihn lernen oder ablehnen. Nimmst du jemanden
+      wieder heraus, verschwindet der Stapel bei ihm; teilst du ihn später
+      wieder, ist sein Lernstand noch da.
+    </p>
+    <p class="text-muted">
       Willst du selbst etwas ändern, legst du unter <strong>⋯ → Eigene Fassung
       anlegen</strong> eine Kopie an. Dein bisheriger Lernstand kommt mit.
       Ändert die Person später etwas am Original, zeigt dein Stapel das an –

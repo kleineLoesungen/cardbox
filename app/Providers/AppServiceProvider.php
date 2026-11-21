@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\DeckService;
 use App\Services\GuardianService;
 use App\Services\LeitnerService;
 use App\Services\PushSender;
@@ -65,6 +66,13 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
             'pendingUserCount',
             auth()->user()?->isAdmin() ? app(UserService::class)->pendingCount() : 0,
+        ));
+
+        // Decks shared with the viewer by name that wait for "Lernen" or
+        // "Ablehnen" (stapel-mit-einzelnen-teilen.md): a badge on "Stapel".
+        View::composer('layouts.app', fn (\Illuminate\View\View $view) => $view->with(
+            'pendingShareCount',
+            auth()->user() !== null ? app(DeckService::class)->pendingShareCount(auth()->user()) : 0,
         ));
 
         // The section to mark in the tab bar and menu: below a section, the one

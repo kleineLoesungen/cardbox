@@ -36,6 +36,8 @@
       <span class="badge badge-brand shrink-0">{{ $stats['due'] }} fällig</span>
     @elseif ($own && $deck->is_shared)
       <span class="badge badge-brand shrink-0" title="Mit allen geteilt">geteilt</span>
+    @elseif ($own && ($deck->shares_count ?? 0) > 0)
+      <span class="badge badge-brand shrink-0" title="Mit bestimmten Personen geteilt">geteilt mit {{ $deck->shares_count }}</span>
     @elseif ($own)
       <span class="badge badge-neutral shrink-0" title="Nur für dich sichtbar">privat</span>
     @endif

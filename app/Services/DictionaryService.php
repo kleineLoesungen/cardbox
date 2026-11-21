@@ -119,7 +119,7 @@ class DictionaryService
         }
 
         $visible = $this->decks->visibleTo($user);
-        $withDeck = ['deck' => fn ($q) => $q->with('user')->withCount('followers')];
+        $withDeck = ['deck' => fn ($q) => $q->with('user')->withCount(['followers' => DeckService::seeingFollowers()])];
         $base = Card::with($withDeck)->whereIn('deck_id', $visible->select('id'))->findOrFail($cardId);
         $deck = $base->deck;
 

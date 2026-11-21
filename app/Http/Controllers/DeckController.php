@@ -15,6 +15,7 @@ use App\Services\LeitnerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 
@@ -50,6 +51,8 @@ class DeckController extends Controller
             'decks' => $tab === 'mine'
                 ? $this->decks->mine($user, $search)
                 : $this->decks->discover($user, $search, $language),
+            // Shared with the viewer by name, waiting for "Lernen" or "Ablehnen".
+            'pending' => $tab === 'mine' && $search === '' ? $this->decks->pendingShares($user) : collect(),
             // "Lerne ich", "pausiert" or neither, for sections and badges.
             'states' => $this->decks->learningStates($user),
         ]);
@@ -114,6 +117,9 @@ class DeckController extends Controller
             'isOwner' => $isOwner,
             'isFollowing' => $isFollowing,
             'followerCount' => $this->decks->followerCount($model),
+            // Sharing with single persons (stapel-mit-einzelnen-teilen.md).
+            'shares' => $isOwner ? $this->decks->sharesOwned($user, $model->id) : collect(),
+            'sharedWithMe' => ! $isOwner && $this->decks->isSharedWith($user, $model),
             'openAddSheet' => $isOwner && $request->boolean('new'),
             'changedOriginals' => $this->cards->pendingOriginalCount($user, $model),
             'openSuggestions' => $this->suggestions->openCountForDeck($user, $model),
@@ -129,15 +135,47 @@ class DeckController extends Controller
         return redirect("/decks/{$deck}")->with('toast', ['kind' => 'success', 'message' => 'Stapel gespeichert.']);
     }
 
-    public function share(Request $request, string $deck): RedirectResponse
+    /** "Teilen": private, with single persons or with everybody (stapel-mit-einzelnen-teilen.md). */
+    public function visibility(Request $request, string $deck): RedirectResponse
     {
-        $shared = $request->boolean('shared');
-        $this->decks->setSharedOwned($request->user(), $deck, $shared);
+        $model = $this->decks->setVisibility($request->user(), $deck, $request->input('visibility'));
+        $message = match (true) {
+            $model->is_shared => 'Der Stapel ist jetzt mit allen geteilt.',
+            $this->decks->sharesOwned($request->user(), $model->id)->isNotEmpty() => 'Der Stapel ist jetzt nur noch mit bestimmten Personen geteilt.',
+            default => 'Der Stapel ist jetzt privat.',
+        };
 
-        return redirect("/decks/{$deck}")->with('toast', [
-            'kind' => 'success',
-            'message' => $shared ? 'Der Stapel ist jetzt mit allen geteilt.' : 'Der Stapel ist jetzt privat.',
-        ]);
+        return redirect("/decks/{$model->id}")->with('toast', ['kind' => 'success', 'message' => $message]);
+    }
+
+    public function shareWith(Request $request, string $deck): RedirectResponse
+    {
+        try {
+            $person = $this->decks->shareWith($request->user(), $deck, $request->input('username'));
+        } catch (ValidationException $e) {
+            throw $e->errorBag('share')->redirectTo("/decks/{$deck}");
+        }
+
+        return redirect("/decks/{$deck}")
+            ->with('toast', ['kind' => 'success', 'message' => "Mit {$person->name} geteilt."])
+            ->with('open_share', true);
+    }
+
+    public function unshareWith(Request $request, string $deck, string $person): RedirectResponse
+    {
+        $removed = $this->decks->unshareWith($request->user(), $deck, $person);
+
+        return redirect("/decks/{$deck}")
+            ->with('toast', ['kind' => 'success', 'message' => "{$removed->name} hat den Stapel nicht mehr."])
+            ->with('open_share', true);
+    }
+
+    /** "Ablehnen" / "Stapel entfernen" for a deck shared with the viewer by name. */
+    public function decline(Request $request, string $deck): RedirectResponse
+    {
+        $model = $this->decks->decline($request->user(), $deck);
+
+        return redirect('/decks')->with('toast', ['kind' => 'success', 'message' => "„{$model->name}“ ist nicht mehr in deinen Stapeln."]);
     }
 
     public function destroy(Request $request, string $deck): RedirectResponse
