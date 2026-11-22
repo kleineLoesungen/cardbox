@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $hint short context like "(Zug)", shown before flipping
  * @property string|null $source_card_id original this card was copied from (no foreign key)
  * @property Carbon|null $source_updated_at the original's updated_at when copied or last synced
+ * @property string|null $origin_user_id who wrote it, when it came from another deck (inherited along copies)
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -62,5 +63,11 @@ class Card extends Model
     public static function alternatives(array $side): array
     {
         return array_slice($side, 1);
+    }
+
+    /** Who wrote this card: the original author, else the owner of its deck. */
+    public function authorId(): string
+    {
+        return $this->origin_user_id ?? $this->deck->user_id;
     }
 }

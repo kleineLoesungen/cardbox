@@ -134,6 +134,7 @@ class DeckController extends Controller
             'canEdit' => $canEdit,
             'canLearn' => $canLearn,
             'canShare' => $this->decks->canShare($user, $model),
+            'canManageSharing' => $this->decks->canManageSharing($user, $model),
             'followerCount' => $this->decks->followerCount($model),
             // Sharing with single persons (stapel-mit-einzelnen-teilen.md).
             'shares' => $isOwner || $asGuardian ? $this->decks->sharesOwned($user, $model->id) : collect(),

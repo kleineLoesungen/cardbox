@@ -384,6 +384,7 @@ class CardService
             ->whereIn('deck_id', $this->adoptableDecks($user, $target)->select('id'))
             ->findOrFail($cardId);
 
+        $this->decks->ensureMayTakeOver($target, $source->authorId(), 'card');
         $swap = $source->deck->front_language !== $target->front_language;
 
         $copy = new Card([
@@ -393,7 +394,7 @@ class CardService
         ]);
         $copy->deck_id = $target->id;
         // Never user input, so not fillable.
-        $copy->forceFill(['source_card_id' => $source->id, 'source_updated_at' => $source->updated_at]);
+        $copy->forceFill(['source_card_id' => $source->id, 'source_updated_at' => $source->updated_at, 'origin_user_id' => $source->authorId()]);
         $copy->save();
         $copy->setRelation('deck', $target);
 
@@ -448,9 +449,13 @@ class CardService
     public function takeOriginal(User $user, string $deckId, string $cardId): Card
     {
         [$card, $original] = $this->withVisibleOriginal($user, $deckId, $cardId);
+        // The text then is the original's: a shared deck takes no text by
+        // other people, and the card carries its author from now on.
+        $author = $original->loadMissing('deck')->authorId();
+        $this->decks->ensureMayTakeOver($card->deck, $author, 'card');
 
         $card->fill($this->contentFor($card->deck, $original));
-        $card->forceFill(['source_updated_at' => $original->updated_at])->save();
+        $card->forceFill(['source_updated_at' => $original->updated_at, 'origin_user_id' => $author])->save();
 
         return $card;
     }

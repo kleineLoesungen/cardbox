@@ -3,9 +3,11 @@
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\User;
+use App\Services\CardService;
 use App\Services\DeckService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 /*
  * Accounts under 18 and their parents (docs/specs/eltern-konten.md).
@@ -167,7 +169,9 @@ it('lässt Kinder Freigaben selbst zurücknehmen', function () {
 
     $this->post("/decks/{$deck->id}/visibility", ['visibility' => 'private'])->assertSessionHasNoErrors();
     expect($deck->fresh()->share_review_pending)->toBeFalse();
-    $this->post("/decks/{$deck->id}/visibility", ['visibility' => 'people'])->assertSessionHasErrors('share');
+    // From private, "people" widens nothing: the list stays ended.
+    $this->post("/decks/{$deck->id}/visibility", ['visibility' => 'people'])->assertSessionHasNoErrors();
+    expect($deck->fresh()->is_shared)->toBeFalse()->and(app(DeckService::class)->isSharedWith($freundin, $deck->fresh()))->toBeFalse();
 });
 
 it('lässt Erwachsene ihre Stapel teilen, mit Hinweis auf Urheber- und Lizenzrechte', function () {
@@ -463,4 +467,122 @@ it('stellt bei der Migration Alter, Durchsicht und alte Verknüpfungen richtig',
         ->and(DB::table('guardian_links')->where('child_id', $moderator->id)->exists())->toBeFalse()
         ->and(DB::table('guardian_links')->where('child_id', $kind->id)->value('confirmed_at'))->toBeNull()
         ->and(Schema::hasTable('guardian_codes'))->toBeFalse();
+});
+
+// -----------------------------------------------------------------------------
+// Other people's cards are never passed on
+// -----------------------------------------------------------------------------
+
+it('lässt Kopien und übernommene Karten fremder Stapel nicht weiterteilen', function () {
+    $lena = User::factory()->create(['name' => 'Lena']);
+    $original = childDeck($lena, 'Lenas Stapel');
+    $original->forceFill(['is_shared' => true])->save();
+    $tom = actingAsUser(['username' => 'tom']);
+    User::factory()->create(['username' => 'freundin']);
+    $decks = app(DeckService::class);
+    $cards = app(CardService::class);
+
+    // "Eigene Fassung anlegen".
+    $copy = $decks->copy($tom, $original->id);
+    $this->post("/decks/{$copy->id}/visibility", ['visibility' => 'all'])->assertSessionHasErrors(['share' => DeckService::FOREIGN_CONTENT]);
+    $this->post("/decks/{$copy->id}/shares", ['username' => 'freundin'])->assertSessionHasErrors(['share' => DeckService::FOREIGN_CONTENT], null, 'share');
+    $this->get("/decks/{$copy->id}")->assertSee('Teilen geht nicht: Der Stapel enthält Karten aus Stapeln anderer.');
+    expect($copy->fresh()->is_shared)->toBeFalse();
+
+    // Laundering through an own copy of the copy does not help.
+    $copy2 = $decks->copy($tom, $copy->id);
+    $this->post("/decks/{$copy2->id}/visibility", ['visibility' => 'all'])->assertSessionHasErrors('share');
+
+    // A single card taken over, also via an own deck in between.
+    $own = childDeck($tom, 'Eigener');
+    $between = childDeck($tom, 'Zwischen');
+    $taken = $cards->adopt($tom, $between->id, $original->cards()->sole()->id);
+    $cards->adopt($tom, $own->id, $taken->id);
+    $this->post("/decks/{$own->id}/visibility", ['visibility' => 'all'])->assertSessionHasErrors('share');
+
+    // Nor once the original and its author are gone.
+    $lena->delete();
+    $this->post("/decks/{$copy->id}/visibility", ['visibility' => 'all'])->assertSessionHasErrors('share');
+
+    // A copy of an own deck stays shareable.
+    $ownCopy = $decks->copy($tom, childDeck($tom, 'Noch einer')->id);
+    $this->post("/decks/{$ownCopy->id}/visibility", ['visibility' => 'all'])->assertSessionHasNoErrors();
+});
+
+it('nimmt in geteilte Stapel keine fremden Karten auf', function () {
+    $lena = User::factory()->create();
+    $original = childDeck($lena);
+    $original->forceFill(['is_shared' => true])->save();
+    $foreign = $original->cards()->sole();
+    $tom = actingAsUser();
+    $shared = childDeck($tom, 'Geteilt');
+    $this->post("/decks/{$shared->id}/visibility", ['visibility' => 'all'])->assertSessionHasNoErrors();
+
+    expect(fn () => app(CardService::class)->adopt($tom, $shared->id, $foreign->id))
+        ->toThrow(ValidationException::class);
+    $this->post("/decks/{$shared->id}/import", ['text' => "id;Deutsch;Englisch\n{$foreign->id};Hund;dog"])->assertSessionHasErrors('text');
+    expect($shared->cards()->count())->toBe(1);
+
+    // Own cards may come over into a shared deck.
+    $mine = childDeck($tom, 'Meins')->cards()->sole();
+    app(CardService::class)->adopt($tom, $shared->id, $mine->id);
+    expect($shared->cards()->count())->toBe(2);
+});
+
+it('zählt Karten aus der Familie nicht als fremd', function () {
+    [$bea, $mia] = family();
+    $beas = childDeck($bea, 'Von Mama');
+    $beas->forceFill(['is_shared' => true])->save();
+    $miasDeck = childDeck($mia, 'Mias');
+    app(CardService::class)->adopt($mia, $miasDeck->id, $beas->cards()->sole()->id);
+
+    $this->post("/decks/{$miasDeck->id}/visibility", ['visibility' => 'all'])->assertSessionHasNoErrors();
+});
+
+it('lässt Eltern auch Stapel mit fremden Karten mit sich selbst teilen', function () {
+    $lena = User::factory()->create();
+    $original = childDeck($lena);
+    $original->forceFill(['is_shared' => true])->save();
+    [, $mia] = family();
+    $copy = app(DeckService::class)->copy($mia, $original->id);
+
+    $this->post("/decks/{$copy->id}/shares", ['username' => 'bea'])->assertSessionHasNoErrors();
+    $this->post("/decks/{$copy->id}/shares", ['username' => User::factory()->create()->username])->assertSessionHasErrors('share', null, 'share');
+});
+
+it('lässt bei fremden Karten das Zurücknehmen zu, aber kein „So lassen“', function () {
+    $lena = User::factory()->create();
+    $original = childDeck($lena);
+    $original->forceFill(['is_shared' => true])->save();
+    [$bea, $mia] = family();
+    $copy = app(DeckService::class)->copy($mia, $original->id);
+    $freundin = User::factory()->create();
+    $copy->forceFill(['is_shared' => true, 'share_review_pending' => true])->save();
+    DB::table('deck_shares')->insert(['deck_id' => $copy->id, 'user_id' => $freundin->id, 'created_at' => now()]);
+
+    $this->post("/children/{$mia->id}/review/{$copy->id}", ['keep' => '1'])->assertSessionHasErrors('share');
+    $this->post("/decks/{$copy->id}/shares/{$freundin->id}/delete")->assertSessionHasNoErrors();
+    $this->post("/decks/{$copy->id}/visibility", ['visibility' => 'private'])->assertSessionHasNoErrors();
+    expect($copy->fresh()->is_shared)->toBeFalse()->and($copy->fresh()->share_review_pending)->toBeFalse();
+});
+
+it('übernimmt geänderte Originale fremder Karten nicht in geteilte Stapel', function () {
+    $lena = User::factory()->create();
+    $original = childDeck($lena);
+    $original->forceFill(['is_shared' => true])->save();
+    $tom = actingAsUser();
+    $copy = app(DeckService::class)->copy($tom, $original->id);
+    $card = $copy->cards()->sole();
+    // As after a merge by moderation: linked to Lena's card, but without author.
+    $card->forceFill(['origin_user_id' => null])->save();
+    $copy->forceFill(['is_shared' => true])->save();
+    $this->travel(1)->minutes();
+    $original->cards()->sole()->update(['back' => ['hound']]);
+
+    $this->post("/decks/{$copy->id}/cards/{$card->id}/origin/take")->assertSessionHasErrors('card');
+    expect($card->fresh()->back)->toBe(['dog']);
+
+    $copy->forceFill(['is_shared' => false])->save();
+    $this->post("/decks/{$copy->id}/cards/{$card->id}/origin/take");
+    expect($card->fresh()->back)->toBe(['hound'])->and($card->fresh()->origin_user_id)->toBe($lena->id);
 });

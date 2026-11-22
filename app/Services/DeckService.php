@@ -39,6 +39,8 @@ use Illuminate\Validation\ValidationException;
  */
 class DeckService
 {
+    public const FOREIGN_CONTENT = 'Dieser Stapel enthält Karten aus Stapeln anderer. Weitergeben darf sie nur, wer sie erstellt hat.';
+
     /** Most people one deck is shared with by name; beyond that, "Mit allen". */
     public const MAX_SHARES = 50;
 
@@ -265,19 +267,90 @@ class DeckService
     }
 
     /**
-     * Sharing is for adults only (eltern-konten.md): the owner when 18 or
+     * Who decides about sharing (eltern-konten.md): the owner when 18 or
      * older, or a parent of the owner.
+     */
+    public function canManageSharing(User $user, Deck $deck): bool
+    {
+        return $user->is_adult && ($deck->user_id === $user->id || $this->managesAsGuardian($user, $deck));
+    }
+
+    /**
+     * Sharing more: who decides, and only own content — a deck with cards
+     * from other people's decks (copy, cards taken over, import with
+     * origin) is never passed on; only their author shares those.
      */
     public function canShare(User $user, Deck $deck): bool
     {
-        return $user->is_adult && ($deck->user_id === $user->id || $this->managesAsGuardian($user, $deck));
+        return $this->canManageSharing($user, $deck) && ! $this->hasForeignContent($deck);
+    }
+
+    /** Whether the deck holds cards written by somebody outside the owner's family. */
+    public function hasForeignContent(Deck $deck): bool
+    {
+        return Card::where('deck_id', $deck->id)
+            ->whereNotNull('origin_user_id')
+            ->whereNotIn('origin_user_id', $this->ownAuthors($deck))
+            ->exists();
+    }
+
+    /**
+     * A shared deck takes no cards by other people: they would be passed on
+     * that way. Checked when cards come over with their origin.
+     *
+     * @throws ValidationException
+     */
+    public function ensureMayTakeOver(Deck $target, string $authorId, string $field): void
+    {
+        if (! in_array($authorId, $this->ownAuthors($target), true) && $this->isSharedAnyhow($target)) {
+            throw ValidationException::withMessages([$field => 'Dieser Stapel ist geteilt. Karten aus Stapeln anderer kannst du nur in einen privaten Stapel übernehmen.']);
+        }
+    }
+
+    /**
+     * Authors whose cards count as the owner's own: the owner, their
+     * children and their parents (the family decides together).
+     *
+     * @return list<string>
+     */
+    private function ownAuthors(Deck $deck): array
+    {
+        $family = DB::table('guardian_links')->whereNotNull('confirmed_at')
+            ->where(fn (QueryBuilder $q) => $q->where('guardian_id', $deck->user_id)->orWhere('child_id', $deck->user_id))
+            ->get(['guardian_id', 'child_id']);
+
+        return array_values(array_unique([
+            $deck->user_id,
+            ...$family->pluck('guardian_id')->map(fn ($id) => (string) $id)->all(),
+            ...$family->pluck('child_id')->map(fn ($id) => (string) $id)->all(),
+        ]));
+    }
+
+    private function isSharedAnyhow(Deck $deck): bool
+    {
+        return $deck->is_shared || $this->activeShares($deck)->exists();
+    }
+
+    /** @throws ValidationException */
+    private function ensureCanManageSharing(User $user, Deck $deck): void
+    {
+        if (! $this->canManageSharing($user, $deck)) {
+            throw ValidationException::withMessages(['share' => 'Teilen dürfen nur Erwachsene – bei Kindern ihre Eltern.']);
+        }
     }
 
     /** @throws ValidationException */
     private function ensureCanShare(User $user, Deck $deck): void
     {
-        if (! $this->canShare($user, $deck)) {
-            throw ValidationException::withMessages(['share' => 'Teilen dürfen nur Erwachsene – bei Kindern ihre Eltern.']);
+        $this->ensureCanManageSharing($user, $deck);
+        $this->ensureOwnContent($deck);
+    }
+
+    /** @throws ValidationException */
+    private function ensureOwnContent(Deck $deck): void
+    {
+        if ($this->hasForeignContent($deck)) {
+            throw ValidationException::withMessages(['share' => self::FOREIGN_CONTENT]);
         }
     }
 
@@ -439,9 +512,13 @@ class DeckService
             throw ValidationException::withMessages(['visibility' => 'Bitte „Privat“, „Mit bestimmten Personen“ oder „Mit allen“ wählen.']);
         }
         $canShare = $this->canShare($user, $deck);
-        // Sharing less is always the owner's call, also under 18.
-        $narrows = $visibility === 'private' || ($visibility === 'people' && $deck->is_shared);
-        if (! $canShare && ! ($narrows && $deck->user_id === $user->id)) {
+        // Sharing less is always possible for the owner (also under 18) and
+        // for whoever decides — also for decks with other people's cards.
+        // "people" never widens: from private the list stays ended.
+        $narrows = $visibility !== 'all';
+        if ($narrows && $deck->user_id !== $user->id) {
+            $this->ensureCanManageSharing($user, $deck);
+        } elseif (! $narrows) {
             $this->ensureCanShare($user, $deck);
         }
 
@@ -492,7 +569,7 @@ class DeckService
     public function shareWith(User $user, string $id, mixed $username): User
     {
         $deck = $this->getManaged($user, $id);
-        $this->ensureCanShare($user, $deck);
+        $this->ensureCanManageSharing($user, $deck);
         $name = UserService::normalizeUsername(is_string($username) ? $username : '');
         if ($name === '') {
             throw ValidationException::withMessages(['username' => 'Bitte einen Benutzernamen eingeben.']);
@@ -504,7 +581,11 @@ class DeckService
         if ($person->is($user) && $deck->user_id === $user->id) {
             throw ValidationException::withMessages(['username' => 'Das bist du selbst.']);
         }
-        // A parent may share a child's deck with themselves to learn it too.
+        // A parent may share a child's deck with themselves to learn it too;
+        // that passes nothing on, so other people's cards do not matter.
+        if (! $person->is($user)) {
+            $this->ensureOwnContent($deck);
+        }
         if ($person->id === $deck->user_id) {
             throw ValidationException::withMessages(['username' => "Der Stapel gehört {$person->name} schon."]);
         }
@@ -540,7 +621,7 @@ class DeckService
         $deck = $this->getManaged($user, $id);
         // Taking a person out is always the owner's call, also under 18.
         if ($deck->user_id !== $user->id) {
-            $this->ensureCanShare($user, $deck);
+            $this->ensureCanManageSharing($user, $deck);
         }
         $person = Str::isUuid($personId)
             ? User::whereKey($personId)->whereIn('id', $this->activeShares($deck)->select('user_id'))->first()
@@ -760,6 +841,9 @@ class DeckService
 
     private function settleReview(Deck $deck, bool $keep): Deck
     {
+        if ($keep) {
+            $this->ensureOwnContent($deck);
+        }
         DB::transaction(function () use ($deck, $keep) {
             if (! $keep) {
                 $deck->forceFill(['is_shared' => false])->save();
@@ -835,7 +919,7 @@ class DeckService
             $now = now();
             $newIds = [];
             $rows = $original->cards()->orderBy('created_at')->get()
-                ->map(function (Card $card) use ($copy, $now, &$newIds) {
+                ->map(function (Card $card) use ($copy, $now, $original, &$newIds) {
                     $newIds[$card->id] = (string) Str::uuid();
 
                     return [
@@ -846,6 +930,8 @@ class DeckService
                         'hint' => $card->hint,
                         'source_card_id' => $card->id,
                         'source_updated_at' => $card->updated_at,
+                        // Who wrote it travels along (no sharing of other people's cards).
+                        'origin_user_id' => $card->origin_user_id ?? $original->user_id,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];

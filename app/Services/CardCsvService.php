@@ -122,6 +122,7 @@ class CardCsvService
         $visible = $foreignIds === [] ? collect() : Card::query()
             ->whereIn('id', array_unique($foreignIds))
             ->whereIn('deck_id', $this->decks->visibleTo($user)->select('id'))
+            ->with('deck')
             ->get()
             ->keyBy('id');
 
@@ -211,6 +212,12 @@ class CardCsvService
             throw ValidationException::withMessages(['text' => 'In der Datei wurde keine gültige Zeile gefunden.']);
         }
 
+        foreach ($result['rows'] as $row) {
+            if ($row['action'] === 'new' && $row['source'] !== null) {
+                $this->decks->ensureMayTakeOver($deck, $row['source']->authorId(), 'text');
+            }
+        }
+
         DB::transaction(function () use ($deck, $result) {
             foreach ($result['rows'] as $row) {
                 if ($row['action'] === 'update' && $row['card'] !== null) {
@@ -220,7 +227,7 @@ class CardCsvService
                     $card->deck_id = $deck->id;
                     if ($row['source'] !== null) {
                         // Never user input, so not fillable (as when adopting a card).
-                        $card->forceFill(['source_card_id' => $row['source']->id, 'source_updated_at' => $row['source']->updated_at]);
+                        $card->forceFill(['source_card_id' => $row['source']->id, 'source_updated_at' => $row['source']->updated_at, 'origin_user_id' => $row['source']->authorId()]);
                     }
                     $card->save();
                 }

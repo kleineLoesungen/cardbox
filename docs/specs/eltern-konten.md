@@ -125,6 +125,30 @@ bekommt.
   - einem **Elternteil** der Besitzerin (Konto unter 18).
 - Sonst: „Teilen dürfen nur Erwachsene – bei Kindern ihre Eltern.“ – und
   die Knöpfe fehlen.
+- **Fremde Karten werden nicht weitergegeben** (ergänzt am 22.11.2026):
+  Jede Karte, die aus einem anderen Stapel kommt (eigene Fassung,
+  „Aus anderen Stapeln übernehmen“, Import mit ID-Spalte), trägt ihren
+  Urheber in `cards.origin_user_id` – über Kopien von Kopien vererbt und
+  ohne Fremdschlüssel, damit er auch nach dem Löschen des Originals bleibt
+  (Migration `2026_11_22_000000_add_origin_user_id_to_cards.php`, füllt
+  Bestandskarten entlang der `source_card_id`-Kette).
+  - Ein Stapel mit Karten fremder Urheber lässt sich nicht teilen, auch
+    nicht von Erwachsenen oder Eltern (`DeckService::hasForeignContent`).
+    Zurücknehmen geht; „So lassen“ nicht.
+  - Ein geteilter Stapel nimmt keine fremden Karten auf
+    (`ensureMayTakeOver` beim Übernehmen und beim Import mit Herkunft).
+  - Als eigen gelten Karten des Besitzers, seiner Kinder und seiner Eltern
+    (bestätigte Verknüpfung).
+  - Ein Elternteil darf einen solchen Stapel trotzdem mit sich selbst
+    teilen (Mitlernen gibt nichts weiter).
+  - „Übernehmen“ eines geänderten Originals trägt dessen Urheber ein und
+    geht in geteilten Stapeln nur bei eigenem Urheber.
+  - Grenzen: Abtippen oder ein Import ohne ID-Spalte trägt keinen Urheber;
+    das lässt sich technisch nicht verhindern. Bestandskarten, deren
+    Original und Quellstapel schon gelöscht waren, bleiben ohne Urheber.
+    Früher von der Moderation zusammengeführte Karten bekommen beim
+    Backfill den Besitzer der behaltenen Karte als Urheber (am 22.11.2026
+    betraf das keinen geteilten Stapel).
 - **Weniger teilen darf jede Besitzerin**, auch unter 18: privat machen,
   „Nicht mehr mit allen teilen“ und Personen herausnehmen. Das Teilen-Fenster
   zeigt Kindern dann nur diese Knöpfe („Weitergeben können deine Eltern.

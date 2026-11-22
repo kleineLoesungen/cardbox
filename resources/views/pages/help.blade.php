@@ -211,7 +211,9 @@
       ein. Teilen dürfen nur Erwachsene; bist du unter 18, teilen deine Eltern
       deine Stapel für dich. Teile nur, was du weitergeben darfst – Vokabeln
       aus Schulbüchern oder Arbeitsblättern sind oft urheberrechtlich
-      geschützt. Wer so einen Stapel bekommt, findet ihn unter <strong>Stapel → Mit
+      geschützt. Stapel mit Karten, die du von anderen übernommen hast – etwa
+      eine eigene Fassung oder „Aus anderen Stapeln übernehmen“ –, lassen
+      sich nicht weiterteilen. Wer so einen Stapel bekommt, findet ihn unter <strong>Stapel → Mit
       dir geteilt</strong> und kann ihn lernen oder ablehnen. Nimmst du jemanden
       wieder heraus, verschwindet der Stapel bei ihm; teilst du ihn später
       wieder, ist sein Lernstand noch da.

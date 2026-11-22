@@ -7,7 +7,9 @@ Die oberste Überschrift ist die Version, die die Anwendung von sich meldet.
 Einträge sind reiner Text — Markdown darin wird nicht ausgewertet.
 Zeilen, die mit `Migration:` beginnen, werden getrennt hervorgehoben.
 
-## 2026.11.21.3
+## 2026.11.22
+- Fremde Karten werden nicht weitergegeben: Ein Stapel mit Karten anderer – eigene Fassung eines fremden Stapels, „Aus anderen Stapeln übernehmen“ oder Import mit ID-Spalte – lässt sich nicht teilen, auch nicht über Umwege wie eine Kopie der Kopie. In einen schon geteilten Stapel lassen sich keine fremden Karten übernehmen. Karten innerhalb einer Familie (Eltern und Kinder) zählen nicht als fremd. Zurücknehmen geht weiterhin
+- Migration: 2026_11_22_000000_add_origin_user_id_to_cards.php
 - Eltern können einen Stapel ihres Kindes mit sich selbst teilen (eigenen Benutzernamen im Teilen-Fenster eingeben) und ihn dann selbst lernen – mit eigenem Lernstand, getrennt vom Kind. Bearbeiten geht weiter wie bisher
 
 ## 2026.11.21.2

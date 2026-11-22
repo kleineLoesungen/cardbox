@@ -165,8 +165,8 @@
   </x-sheet>
 @endif
 
-{{-- Under 18 the owner may still share less (take people out, make it private). --}}
-@php($canNarrow = ! $canShare && $isOwner && ($deck->is_shared || $shares->isNotEmpty()))
+{{-- Sharing less stays possible: for owners under 18, and for decks with other people's cards. --}}
+@php($canNarrow = ! $canShare && $canEdit && ($deck->is_shared || $shares->isNotEmpty()))
 @if ($canShare || $canNarrow)
   {{-- Sharing (stapel-mit-einzelnen-teilen.md); adults only, for children their parents (eltern-konten.md). --}}
   <x-sheet id="share-sheet" title="Teilen" :data-open-on-load="session('open_share') || $errors->share->any() ? 'true' : null">
@@ -180,7 +180,9 @@
           </p>
         </div>
       @else
-        <p class="text-sm text-muted">Weitergeben können deine Eltern. Zurücknehmen kannst du es selbst.</p>
+        <p class="text-sm text-muted">
+          {{ $canManageSharing ? \App\Services\DeckService::FOREIGN_CONTENT.' Zurücknehmen geht.' : 'Weitergeben können deine Eltern. Zurücknehmen kannst du es selbst.' }}
+        </p>
       @endif
       <p class="text-sm text-muted">
         @if ($deck->is_shared)
@@ -301,12 +303,16 @@
     @if ($asGuardian)
       {{-- A parent edits the child's deck; copying and exporting stay with the child. --}}
       <button type="button" class="sheet-action" data-open-sheet="deck-edit">Umbenennen oder Sprachen ändern</button>
-      <button type="button" class="sheet-action flex items-center justify-between gap-3" data-open-sheet="share-sheet">
-        <span>Teilen</span>
-        <span class="badge {{ $deck->is_shared || $shares->isNotEmpty() ? 'badge-brand' : 'badge-neutral' }} shrink-0">
-          {{ $deck->is_shared ? 'mit allen' : ($shares->isNotEmpty() ? 'mit '.$shares->count() : 'privat') }}
-        </span>
-      </button>
+      @if ($canShare || $canNarrow)
+        <button type="button" class="sheet-action flex items-center justify-between gap-3" data-open-sheet="share-sheet">
+          <span>Teilen</span>
+          <span class="badge {{ $deck->is_shared || $shares->isNotEmpty() ? 'badge-brand' : 'badge-neutral' }} shrink-0">
+            {{ $deck->is_shared ? 'mit allen' : ($shares->isNotEmpty() ? 'mit '.$shares->count() : 'privat') }}
+          </span>
+        </button>
+      @else
+        <p class="px-3 py-2 text-sm text-muted">Teilen geht nicht: Der Stapel enthält Karten aus Stapeln anderer.</p>
+      @endif
       <a href="/decks/{{ $deck->id }}/import" class="sheet-action">Liste einfügen</a>
       @if ($canLearn)
         {{-- Shared with the parent too: learning it with their own progress. --}}
@@ -329,8 +335,8 @@
           </span>
         </button>
       @else
-        {{-- Under 18: sharing is for parents (eltern-konten.md). --}}
-        <p class="px-3 py-2 text-sm text-muted">Teilen können deine Eltern.</p>
+        {{-- Under 18 sharing is for parents (eltern-konten.md); other people's cards are never passed on. --}}
+        <p class="px-3 py-2 text-sm text-muted">{{ $canManageSharing ? 'Teilen geht nicht: Der Stapel enthält Karten aus Stapeln anderer.' : 'Teilen können deine Eltern.' }}</p>
       @endif
       <a href="/decks/{{ $deck->id }}/import" class="sheet-action">Liste einfügen</a>
       <button type="button" class="sheet-action" data-open-sheet="adopt-sheet">Aus anderen Stapeln übernehmen</button>
