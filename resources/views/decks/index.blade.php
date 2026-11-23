@@ -8,7 +8,7 @@
 
   <nav class="segmented mb-4" aria-label="Ansicht">
     <a href="/decks" class="{{ $tab === 'mine' ? 'is-active' : '' }}" @if ($tab === 'mine') aria-current="page" @endif>Meine</a>
-    <a href="/decks?tab=discover" class="{{ $tab === 'discover' ? 'is-active' : '' }}" @if ($tab === 'discover') aria-current="page" @endif>Entdecken</a>
+    <a href="/decks?tab=discover" data-tour="stapel-entdecken" class="{{ $tab === 'discover' ? 'is-active' : '' }}" @if ($tab === 'discover') aria-current="page" @endif>Entdecken</a>
   </nav>
 
   <x-form-error />
@@ -130,7 +130,7 @@
       @foreach (['active' => 'Lerne ich', 'paused' => 'Pausiert', 'idle' => 'Weitere Stapel'] as $state => $heading)
         @php($group = $decks->filter(fn ($d) => ($states[$d->id] ?? 'active') === $state))
         @if ($group->isNotEmpty())
-          <h2 class="mt-6 mb-2 text-base font-semibold first:mt-0">{{ $heading }} <span class="font-normal text-muted">({{ $group->count() }})</span></h2>
+          <h2 class="mt-6 mb-2 text-base font-semibold first:mt-0" @if ($state === 'active') data-tour="stapel-gruppen" @endif>{{ $heading }} <span class="font-normal text-muted">({{ $group->count() }})</span></h2>
           <ul class="list">
             @foreach ($group as $deck)
               <x-deck-row :deck="$deck" :state="$state" />
@@ -142,9 +142,11 @@
   @endif
 </div>
 
-<button type="button" class="fab" data-open-sheet="new-deck">
+<button type="button" class="fab" data-open-sheet="new-deck" data-tour="stapel-neu">
   <span aria-hidden="true" class="text-xl leading-none">+</span> Neuer Stapel
 </button>
+
+<x-tour :pages="['stapel']" />
 
 <x-sheet id="new-deck" title="Neuer Stapel" :data-open-on-load="$errors->any() || request()->boolean('new') ? 'true' : null">
   {{-- 'deck' => null explicitly: the loops above leave $deck set. --}}

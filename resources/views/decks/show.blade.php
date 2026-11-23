@@ -50,7 +50,8 @@
         <p class="mt-2 text-sm break-words">{{ $deck->description }}</p>
       @endif
     </div>
-    <button type="button" class="btn btn-ghost btn-icon mt-11 shrink-0" data-open-sheet="deck-menu" aria-label="Weitere Aktionen">
+    <button type="button" class="btn btn-ghost btn-icon mt-11 shrink-0" data-open-sheet="deck-menu" aria-label="Weitere Aktionen"
+            data-tour="{{ $canEdit ? 'stapel-eigen-menue' : 'stapel-fremd-fassung' }}">
       <span aria-hidden="true" class="text-xl leading-none">⋯</span>
     </button>
   </div>
@@ -109,7 +110,7 @@
         <p class="text-sm">{{ $asGuardian ? 'Du kannst den Stapel auch selbst lernen – mit deinem eigenen Lernstand.' : "Diesen Stapel hat {$deck->user->name} geteilt." }}</p>
         <form method="post" action="/decks/{{ $deck->id }}/follow">
           @csrf
-          <button type="submit" class="btn btn-primary btn-lg btn-block">Lernen</button>
+          <button type="submit" class="btn btn-primary btn-lg btn-block" data-tour="stapel-fremd-lernen">Lernen</button>
           <p class="hint mt-1 text-center">Die Karten kommen ab jetzt unter Heute dran.</p>
         </form>
       </div>
@@ -122,7 +123,7 @@
 
   <ul id="card-list" class="list">
     @foreach ($cards as $card)
-      <x-card-row :card="$card" :deck="$deck" :editable="$canEdit"
+      <x-card-row :card="$card" :deck="$deck" :editable="$canEdit" :tour="$loop->first && ! $canEdit ? 'stapel-fremd-fehler' : null"
                   :can-suggest="! $canEdit" :can-moderate="$canModerate"
                   :suggestion="$mySuggestions[$card->id] ?? null"
                   :paused="$activeIds !== null && ! in_array($card->id, $activeIds, true)"
@@ -173,7 +174,7 @@
     <div class="stack">
       @if ($canShare)
         {{-- Why only adults share: copyright and licences (eltern-konten.md). --}}
-        <div class="alert alert-warning text-sm">
+        <div class="alert alert-warning text-sm" data-tour="teilen-rechte">
           <p>
             Teile nur, was du weitergeben darfst: Achte auf <strong>Urheber- und Lizenzrechte</strong> –
             zum Beispiel bei Vokabellisten aus Schulbüchern oder Arbeitsblättern.
@@ -200,7 +201,7 @@
         <form method="post" action="/decks/{{ $deck->id }}/visibility">
           @csrf
           <input type="hidden" name="visibility" value="{{ $deck->is_shared ? 'people' : 'all' }}">
-          <button type="submit" class="btn btn-secondary btn-block">
+          <button type="submit" class="btn btn-secondary btn-block" @if ($canShare) data-tour="teilen-alle" @endif>
             {{ $deck->is_shared ? 'Nicht mehr mit allen teilen' : 'Mit allen teilen' }}
           </button>
         </form>
@@ -235,7 +236,7 @@
           @csrf
           <x-form-error bag="share" />
           <label class="label" for="share-username">Benutzername</label>
-          <div class="flex gap-2">
+          <div class="flex gap-2" data-tour="teilen-personen">
             <input class="input min-w-0 flex-1" type="text" id="share-username" name="username" value="{{ old('username') }}"
                    autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="z. B. mia">
             <button type="submit" class="btn btn-primary shrink-0">Hinzufügen</button>
@@ -393,4 +394,6 @@
     @endif
   </div>
 </x-sheet>
+{{-- Own (or a child's) deck, or somebody else's; sharing only for those who may share. --}}
+<x-tour :pages="array_values(array_filter([$canEdit ? 'stapel-eigen' : 'stapel-fremd', $canShare ? 'teilen' : null]))" />
 @endsection

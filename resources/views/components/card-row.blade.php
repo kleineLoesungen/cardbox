@@ -9,10 +9,10 @@
   is display only, the role:moderator routes decide. "knifflig": often
   answered wrong (runden-und-knifflige-woerter.md, B).
 --}}
-@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null, 'paused' => false, 'hard' => false])
+@props(['card', 'deck', 'editable' => false, 'canSuggest' => false, 'canModerate' => false, 'suggestion' => null, 'paused' => false, 'hard' => false, 'tour' => null])
 @php($more = count($card->front) + count($card->back) - 2)
 {{-- Paused (issue #10): shown faded, with a badge; editing and suggesting still work. --}}
-<li id="card-{{ $card->id }}" @class(['opacity-60' => $paused])>
+<li id="card-{{ $card->id }}" @class(['opacity-60' => $paused]) @if ($tour) data-tour="{{ $tour }}" @endif>
   @if ($editable)
     <button type="button" class="list-row"
             hx-get="/decks/{{ $deck->id }}/cards/{{ $card->id }}/edit"

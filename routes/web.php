@@ -27,6 +27,7 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\StudyRoundController;
+use App\Http\Controllers\TourController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -122,6 +123,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/learn/round/answer', [StudyRoundController::class, 'answer'])->block(5, 5);
 
     Route::get('/account', [AccountController::class, 'show']);
+    // Guided tours (docs/specs/gefuehrte-tour.md): own account only.
+    Route::post('/tours/seen', [TourController::class, 'seen'])->middleware('throttle:60,1,tours');
+    Route::post('/tours/reset', [TourController::class, 'reset']);
     Route::post('/account', [AccountController::class, 'updateProfile']);
     Route::post('/account/password', [AccountController::class, 'updatePassword']);
     // Daily reminder (docs/specs/schreiben-und-erinnern.md, B): time or off, and this device.

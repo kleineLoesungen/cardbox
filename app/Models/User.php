@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $approved_at
  * @property Carbon|null $last_login_at
  * @property bool $is_adult
+ * @property list<string> $tour_steps_seen ids of tour steps already shown (gefuehrte-tour.md)
  * @property string|null $approved_by
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -44,6 +45,14 @@ class User extends Authenticatable
     /** Kein "Angemeldet bleiben" — die Spalte gibt es nicht. */
     protected $rememberTokenName = '';
 
+    /**
+     * The database default, also on a model that was just created (the
+     * tours read it in the same request).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['tour_steps_seen' => '[]'];
+
     protected function casts(): array
     {
         return [
@@ -53,6 +62,7 @@ class User extends Authenticatable
             'approved_at' => 'datetime',
             'last_login_at' => 'datetime',
             'is_adult' => 'boolean',
+            'tour_steps_seen' => 'array',
         ];
     }
 

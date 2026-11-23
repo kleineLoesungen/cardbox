@@ -170,7 +170,7 @@
 
   {{-- Top: leave, progress --}}
   <div class="flex items-center gap-3">
-    <a href="{{ $return }}" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden">✕</a>
+    <a href="{{ $return }}" class="btn btn-ghost btn-icon shrink-0" aria-label="Runde beenden" data-tour="runde-aufhoeren">✕</a>
     {{-- In a test round progress counts the cards known, as repeats never end there. --}}
     @php($done = $test ? $round['known'] : $position - 1)
     <div class="meter flex-1" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $round['total'] }}" aria-valuenow="{{ $test ? $done : $position }}">
@@ -231,7 +231,7 @@
     --}}
     {{-- min-h-12 (the button's height) also when typing: a voice found late must not push the field under the keyboard. --}}
     <div @class(['flex min-h-12 justify-center', 'mt-3' => ! $current['typed'], 'mt-1' => $current['typed']])>
-      <button type="button" class="btn btn-ghost" data-speak hidden
+      <button type="button" class="btn btn-ghost" data-speak hidden data-tour="runde-vorlesen"
               data-question="{{ $question[0] ?? '' }}" data-question-lang="{{ $qLang?->tag() }}"
               @unless ($current['typed']) data-answer="{{ $answer[0] ?? '' }}" data-answer-lang="{{ $aLang?->tag() }}" @endunless>
         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -265,7 +265,7 @@
     <button type="button" class="btn btn-primary btn-lg btn-block" data-flip>Umdrehen</button>
   </div>
 
-  <form data-after-flip hidden class="grid grid-cols-2 gap-3"
+  <form data-after-flip hidden data-tour="runde-ehrlich" class="grid grid-cols-2 gap-3"
         hx-post="/learn/round/answer" hx-target="#round" hx-swap="outerHTML" hx-disabled-elt="find button">
     <input type="hidden" name="card" value="{{ $card->id }}">
     <input type="hidden" name="step" value="{{ $round['step'] }}">

@@ -11,7 +11,7 @@
 
 @if ($minorsWithoutGuardian > 0)
   {{-- After the switch to parent accounts (docs/specs/eltern-konten.md). --}}
-  <div class="alert alert-warning mb-6" role="status">
+  <div class="alert alert-warning mb-6" role="status" data-tour="admin-eltern-fehlen">
     {{ $minorsWithoutGuardian === 1 ? '1 Konto unter 18 hat' : $minorsWithoutGuardian.' Konten unter 18 haben' }} kein Elternteil.
     Erwachsene auf „ab 18“ stellen, für Kinder Eltern eintragen – bis dahin teilen sie nichts.
   </div>
@@ -19,7 +19,7 @@
 
 {{-- Waiting registrations first: on a phone they would otherwise sit below the create form. --}}
 @if ($pending->isNotEmpty())
-  <section class="card mb-6" aria-labelledby="pending-title">
+  <section class="card mb-6" aria-labelledby="pending-title" data-tour="admin-freigabe">
     <div class="card-header">
       <h2 class="card-title" id="pending-title">Warten auf Freigabe ({{ $pending->count() }})</h2>
     </div>
@@ -176,7 +176,7 @@
                   @if ($u->last_login_at)<x-datetime :value="$u->last_login_at" />@else unbekannt @endif
                 </td>
                 <td class="text-right">
-                  <a href="/admin/users/{{ $u->id }}" class="btn btn-ghost btn-sm">Bearbeiten</a>
+                  <a href="/admin/users/{{ $u->id }}" class="btn btn-ghost btn-sm" @if ($loop->first) data-tour="admin-konto" @endif>Bearbeiten</a>
                 </td>
               </tr>
             @endforeach
@@ -186,4 +186,5 @@
     @endif
   </div>
 </div>
+<x-tour :pages="['admin']" />
 @endsection

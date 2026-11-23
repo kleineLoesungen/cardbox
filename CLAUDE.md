@@ -36,6 +36,7 @@ externen PostgreSQL. **Kein Node, kein Vite, kein npm, kein Frontend-Framework.*
 |---|---|---|
 | **htmx** | **2.0.10** | htmx 4 ist erschienen, bringt aber Breaking Changes (`<hx-partial>`, umbenannte Events, Erweiterungs-Allowlist). Sprachmodelle kennen fast ausschließlich htmx-1/2-Syntax und erzeugen für htmx 4 still kaputtes Markup. Liegt als Datei unter `public/js/htmx.min.js`. |
 | **Tailwind** | **v4.3.3** | Standalone-Binary, festgelegt in `scripts/get-tailwind.sh` und im `Dockerfile`. **Nicht** über npm installieren. |
+| **Driver.js** | **1.10.2** | Geführte Touren ([gefuehrte-tour.md](docs/specs/gefuehrte-tour.md)). Liegt als `public/js/driver-1.10.2.js` und `public/css/driver-1.10.2.css` (Version im Dateinamen, damit der Service Worker nichts Altes ausliefert), Lizenz daneben. Neue Version nur bewusst: Startskript in `components/tour.blade.php` prüfen (Blätter, htmx). |
 | **Laravel** | **13.x** | `composer update` innerhalb von 13.x ist in Ordnung, ein Sprung auf 14 nicht ohne Upgrade-Guide. |
 
 ---

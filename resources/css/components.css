@@ -625,3 +625,42 @@
   .feature-card-title { @apply font-semibold; }
   .feature-card-text { @apply mt-1 text-sm text-muted; }
 }
+
+/* --- Guided tours (Driver.js 1.10.2, docs/specs/gefuehrte-tour.md) --------
+   Outside @layer on purpose: driver-1.10.2.css is unlayered and loads later,
+   so layered rules would always lose. Every selector starts with
+   .driver-popover.tour-popover to win over Driver.js's own (1–2 classes).
+   The bubble uses the tokens (dark mode) and buttons as big as the app's. */
+.driver-popover.tour-popover {
+  @apply rounded-ui border border-border bg-surface-raised p-4 text-content shadow-lg;
+  max-width: min(22rem, calc(100vw - 2rem));
+  font-family: inherit;
+}
+.driver-popover.tour-popover .driver-popover-title { @apply pr-8 text-base font-semibold text-content; font-family: inherit; }
+.driver-popover.tour-popover .driver-popover-description { @apply mt-1 text-sm leading-relaxed text-muted; font-family: inherit; }
+.driver-popover.tour-popover .driver-popover-arrow { display: none; }
+.driver-popover.tour-popover .driver-popover-close-btn {
+  @apply top-1 right-1 size-11 rounded-ui text-xl text-muted hover:bg-surface-sunken hover:text-content;
+}
+.driver-popover.tour-popover .driver-popover-footer { @apply mt-4 flex-wrap gap-2; }
+.driver-popover.tour-popover .driver-popover-progress-text { @apply text-xs text-subtle; }
+.driver-popover.tour-popover .driver-popover-navigation-btns { @apply gap-2; }
+.driver-popover.tour-popover .driver-popover-footer button {
+  @apply m-0 rounded-ui border border-border bg-surface-raised px-4 text-sm font-medium text-content;
+  height: var(--ui-control-height);
+  text-shadow: none;
+  font-family: inherit;
+}
+.driver-popover.tour-popover .driver-popover-footer button.driver-popover-next-btn {
+  @apply border-brand bg-brand text-brand-content hover:bg-brand-hover;
+}
+/* Phones: full width with the usual 16 px gutter instead of hugging an edge
+   (Driver.js places the bubble with inline left/right, hence !important). */
+@media (max-width: 40rem) {
+  .driver-popover.tour-popover {
+    left: 1rem !important;
+    right: 1rem !important;
+    width: auto;
+    max-width: none;
+  }
+}

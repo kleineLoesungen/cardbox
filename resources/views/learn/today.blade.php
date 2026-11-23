@@ -34,7 +34,7 @@
     </div>
   @else
     {{-- The last 7 days: green = daily goal met (with how many times), grey = not (or not yet today). --}}
-    <ol class="week-dots mt-3" aria-label="Tagesziel der letzten 7 Tage">
+    <ol class="week-dots mt-3" data-tour="heute-serie" aria-label="Tagesziel der letzten 7 Tage">
       @foreach ($week as $day)
         @php
             $label = $day['date']->locale('de')->isoFormat('dd D.M.').': '.match (true) {
@@ -97,7 +97,7 @@
           <form method="post" action="/learn/round">
             @csrf
             {{-- After the goal learning on is welcome, but no longer the one main action. --}}
-            <button type="submit" @class(['btn btn-lg btn-block', 'btn-primary' => ! $reached, 'btn-secondary' => $reached])>{{ $reached ? 'Weiterlernen' : "Los geht's" }}</button>
+            <button type="submit" data-tour="heute-los" @class(['btn btn-lg btn-block', 'btn-primary' => ! $reached, 'btn-secondary' => $reached])>{{ $reached ? 'Weiterlernen' : "Los geht's" }}</button>
           </form>
         @elseif ($today['more_new'] > 0)
           <form method="post" action="/learn/round">
@@ -126,7 +126,7 @@
       </p>
     @endif
 
-    <div class="mt-6 mb-2 flex items-center justify-between">
+    <div class="mt-6 mb-2 flex items-center justify-between" data-tour="heute-lerne-ich">
       <h2 class="text-base font-semibold">Lerne ich</h2>
       <a href="/decks" class="link-action -mr-3 px-3 text-sm">Alle</a>
     </div>
@@ -138,4 +138,5 @@
     </ul>
   @endif
 </div>
+<x-tour :pages="['heute']" />
 @endsection

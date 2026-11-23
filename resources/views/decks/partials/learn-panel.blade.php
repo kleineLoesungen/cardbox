@@ -95,7 +95,7 @@
     @csrf
     <input type="hidden" name="mode" value="test">
     <input type="hidden" name="deck" value="{{ $deck->id }}">
-    <button type="submit" class="btn btn-secondary btn-block"><x-icon name="test" />Für den Test üben</button>
+    <button type="submit" class="btn btn-secondary btn-block" data-tour="stapel-eigen-test"><x-icon name="test" />Für den Test üben</button>
     <p class="hint text-center">Alle Karten, bis du jede einmal gewusst hast. Zählt nicht für den Karteikasten.</p>
   </form>
   @if ($hardIds !== [])
@@ -110,7 +110,7 @@
   @endif
   @if ($canDuel)
     {{-- Duels (docs/specs/duell.md): the same words for everybody with the code. --}}
-    <button type="button" class="btn btn-secondary btn-block" data-open-sheet="duel-sheet"><x-icon name="duel" />Duell starten</button>
+    <button type="button" class="btn btn-secondary btn-block" data-open-sheet="duel-sheet" data-tour="stapel-eigen-duell"><x-icon name="duel" />Duell starten</button>
   @endif
 </section>
 

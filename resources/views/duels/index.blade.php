@@ -7,7 +7,7 @@
   <h1 class="text-2xl font-semibold tracking-tight">Duelle</h1>
   <p class="mt-1 text-sm text-muted">Alle bekommen dieselben Wörter – wer mehr weiß, gewinnt. Ein Duell startest du auf der Seite eines Stapels.</p>
 
-  <form method="post" action="/duels/join" class="card mt-6">
+  <form method="post" action="/duels/join" class="card mt-6" data-tour="duelle-code">
     @csrf
     <div class="card-body stack">
       <x-form-error bag="duel" />
@@ -24,7 +24,7 @@
   @if ($duels->isEmpty())
     <p class="mt-6 text-center text-sm text-muted">Noch keine Duelle.</p>
   @else
-    <h2 class="mt-6 mb-2 text-base font-semibold">Meine Duelle</h2>
+    <h2 class="mt-6 mb-2 text-base font-semibold" data-tour="duelle-liste">Meine Duelle</h2>
     <ul class="list">
       @foreach ($duels as $duel)
         @php
@@ -59,4 +59,5 @@
   @endif
 </div>
 @include('duels.partials.code-from-link', ['field' => 'duel-code', 'keep' => false])
+<x-tour :pages="['duelle']" />
 @endsection

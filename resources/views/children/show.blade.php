@@ -150,7 +150,7 @@
       @endif
 
       {{-- --- The child's decks: edit like the child (eltern-konten.md, D) ---- --}}
-      <h2 class="mt-6 mb-2 text-base font-semibold">Stapel von {{ $child->name }} bearbeiten</h2>
+      <h2 class="mt-6 mb-2 text-base font-semibold" data-tour="kind-stapel">Stapel von {{ $child->name }} bearbeiten</h2>
       @if ($childDecks->isNotEmpty())
         <ul class="list">
           @foreach ($childDecks as $childDeck)
@@ -179,7 +179,7 @@
 
       {{-- --- Decks others gave the child ------------------------------------ --}}
       @if ($sharedWithChild->isNotEmpty())
-        <h2 class="mt-6 mb-2 text-base font-semibold">Mit {{ $child->name }} geteilt</h2>
+        <h2 class="mt-6 mb-2 text-base font-semibold" data-tour="kind-geteilt">Mit {{ $child->name }} geteilt</h2>
         <ul class="list">
           @foreach ($sharedWithChild as $given)
             <li class="list-row">
@@ -201,7 +201,7 @@
 
     {{-- --- Tricky words ------------------------------------------------------ --}}
     @if ($overview['learned_ever'] && $overview['hard'] !== [])
-      <section class="card mt-6">
+      <section class="card mt-6" data-tour="kind-knifflig">
         <div class="card-header"><h2 class="card-title">Knifflige Wörter</h2></div>
         <div class="card-body stack">
           <p class="text-sm text-muted">Zum Mitüben: Frag die Wörter einfach mal beim Abendessen ab.</p>
@@ -224,6 +224,8 @@
     @endif
   </p>
 </div>
+
+<x-tour :pages="['kind']" />
 
 @if ($manages)
   <x-sheet id="child-deck" title="Neuer Stapel für {{ $child->name }}" :data-open-on-load="$errors->any() ? 'true' : null">

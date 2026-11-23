@@ -12,7 +12,7 @@
 <div class="grid gap-6 lg:grid-cols-2">
 
   {{-- --- Learning plan (moved here from the menu) -------------------------- --}}
-  <a href="/learn/settings" class="card h-fit block hover:border-border-strong">
+  <a href="/learn/settings" class="card h-fit block hover:border-border-strong" data-tour="konto-lernplan">
     <div class="card-body flex items-center justify-between gap-3">
       <span class="min-w-0">
         <span class="block font-semibold">Lernplan</span>
@@ -30,7 +30,7 @@
   </a>
 
   {{-- --- Cards per round (docs/specs/runden-und-knifflige-woerter.md, A) -- --}}
-  <div class="card h-fit">
+  <div class="card h-fit" data-tour="konto-runde">
     <div class="card-header"><h2 class="card-title">Karten je Runde</h2></div>
     <form class="card-body stack" method="post" action="/account/round-size">
       @csrf
@@ -53,7 +53,7 @@
 
   {{-- --- Daily reminder (docs/specs/schreiben-und-erinnern.md, B) --------- --}}
   @if ($reminder)
-    <div class="card h-fit" data-reminder data-public-key="{{ $reminder['publicKey'] }}">
+    <div class="card h-fit" data-tour="konto-erinnerung" data-reminder data-public-key="{{ $reminder['publicKey'] }}">
       <div class="card-header"><h2 class="card-title">Erinnerung</h2></div>
       <div class="card-body stack">
         <x-form-error bag="reminder" />
@@ -189,7 +189,19 @@
       <button type="submit" class="btn btn-primary">Passwort ändern</button>
     </form>
   </div>
+
+  {{-- --- Touren (gefuehrte-tour.md) ---------------------------------------- --}}
+  <div class="card h-fit">
+    <div class="card-header"><h2 class="card-title">Touren</h2></div>
+    <form class="card-body stack" method="post" action="/tours/reset">
+      @csrf
+      <p class="text-sm text-muted">Die kurzen Erklärungen auf jeder Seite noch einmal sehen.</p>
+      <button type="submit" class="btn btn-secondary">Touren noch einmal zeigen</button>
+    </form>
+  </div>
 </div>
+
+<x-tour :pages="['konto']" />
 
 @if ($reminder)
 @push('scripts')

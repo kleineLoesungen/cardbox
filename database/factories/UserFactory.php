@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Support\Tours;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -32,7 +33,15 @@ class UserFactory extends Factory
             'approved_at' => now(),
             // Adults by default: most tests are about adults; minor() for children.
             'is_adult' => true,
+            // Tests see no tours unless they ask for them (withTours()).
+            'tour_steps_seen' => Tours::stepIds(),
         ];
+    }
+
+    /** Every tour step still to come (docs/specs/gefuehrte-tour.md). */
+    public function withTours(): static
+    {
+        return $this->state(['tour_steps_seen' => []]);
     }
 
     /** Under 18 (docs/specs/eltern-konten.md): shares nothing, may have parents. */

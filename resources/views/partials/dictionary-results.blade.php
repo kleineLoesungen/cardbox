@@ -61,7 +61,7 @@
             @if ($hit['learn'] === 'active')
               <p class="text-sm"><span class="badge badge-success">lerne ich</span></p>
             @else
-              <button type="button" class="btn btn-primary btn-block"
+              <button type="button" class="btn btn-primary btn-block" @if ($loop->first) data-tour="woerterbuch-lernen" @endif
                       hx-post="/dictionary/learn/{{ $card->id }}" hx-target="this" hx-swap="outerHTML">
                 Lernen
               </button>
@@ -73,7 +73,7 @@
             {{-- Issue #12: edit own cards (moderation: also ones of others shared with everybody, never by name), otherwise report. --}}
             @php($canEdit = collect($hit['decks'])->contains(fn ($d) => $d->user_id === auth()->id() || ($d->is_shared && auth()->user()->hasRole(\App\Enums\Role::Moderator))))
             <details>
-              <summary class="btn btn-ghost btn-sm cursor-pointer list-none">Mehr …</summary>
+              <summary class="btn btn-ghost btn-sm cursor-pointer list-none" @if ($loop->first) data-tour="woerterbuch-mehr" @endif>Mehr …</summary>
               <div class="mt-2 stack gap-2">
                 <button type="button" class="btn btn-secondary btn-block justify-start" hx-target="#dictionary-sheet-body"
                         hx-get="{{ ! $canEdit && count($hit['decks']) === 1 ? "/decks/{$deck->id}/cards/{$card->id}/suggest?context=dictionary" : "/dictionary/cards/{$card->id}/edit" }}">

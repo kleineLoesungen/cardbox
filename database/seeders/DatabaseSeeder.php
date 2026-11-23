@@ -46,11 +46,11 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $anna = User::factory()->admin()->create(['name' => 'Anna Admin', 'username' => 'anna']);
-        $moritz = User::factory()->moderator()->create(['name' => 'Moritz Moderator', 'username' => 'moritz']);
-        $bea = User::factory()->create(['name' => 'Bea Benutzer', 'username' => 'bea']);
+        $anna = User::factory()->admin()->withTours()->create(['name' => 'Anna Admin', 'username' => 'anna']);
+        $moritz = User::factory()->moderator()->withTours()->create(['name' => 'Moritz Moderator', 'username' => 'moritz']);
+        $bea = User::factory()->withTours()->create(['name' => 'Bea Benutzer', 'username' => 'bea']);
         User::factory()->pending()->create(['name' => 'Neu Nutzer', 'username' => 'neu.nutzer']);
-        $mia = User::factory()->minor()->create(['name' => 'Mia Kind', 'username' => 'mia']);
+        $mia = User::factory()->minor()->withTours()->create(['name' => 'Mia Kind', 'username' => 'mia']);
         DB::table('guardian_links')->insert(['guardian_id' => $bea->id, 'child_id' => $mia->id, 'linked_by' => $anna->id, 'created_at' => now(), 'confirmed_at' => now()]);
         $this->deck($mia, 'Tiere (Mia)', 'de', 'en', shared: false, cards: [
             [['Katze'], ['cat']],

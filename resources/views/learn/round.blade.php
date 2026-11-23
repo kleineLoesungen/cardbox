@@ -3,4 +3,5 @@
 
 @section('main')
   @include('learn.partials.round-body')
+  <x-tour :pages="['runde']" />
 @endsection

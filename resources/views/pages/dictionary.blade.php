@@ -17,7 +17,7 @@
   <p class="mt-1 mb-4 text-sm text-muted">Schlag ein Wort nach – in deinen Stapeln und allen geteilten.</p>
 
   <form method="get" action="/dictionary" class="stack gap-2" role="search">
-    <input class="input input-lg" type="search" name="q" value="{{ $term }}" placeholder="Wort suchen …"
+    <input class="input input-lg" type="search" name="q" value="{{ $term }}" placeholder="Wort suchen …" data-tour="woerterbuch-suche"
            aria-label="Wort suchen" autocomplete="off" autocapitalize="off" enterkeyhint="search"
            @if ($term === '') autofocus @endif
            hx-get="/dictionary/search" hx-trigger="input changed delay:350ms, search, dictionary-refresh from:body"
@@ -46,4 +46,5 @@
 @push('scripts')
   @include('partials.speak-script')
 @endpush
+<x-tour :pages="['woerterbuch']" />
 @endsection

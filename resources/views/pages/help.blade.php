@@ -105,6 +105,18 @@
     </p>
   </section>
 
+  <section class="stack gap-2 scroll-mt-20" id="touren">
+    <h2 class="text-lg font-semibold">Kurze Touren</h2>
+    <p class="text-muted">
+      Auf jeder Seite zeigt dir beim ersten Besuch eine kurze Tour, was man
+      leicht übersieht. Mit <strong>✕</strong> überspringst du sie.
+    </p>
+    <form method="post" action="/tours/reset">
+      @csrf
+      <button type="submit" class="btn btn-secondary">Touren noch einmal zeigen</button>
+    </form>
+  </section>
+
   <section class="stack gap-2">
     <h2 class="text-lg font-semibold">Neue Wörter</h2>
     <p class="text-muted">
